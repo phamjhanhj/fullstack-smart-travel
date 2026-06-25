@@ -16,5 +16,6 @@ frontend/out-tsc/
 .idea/
 
 # Misc
+awesome-design-md/
 *.zip
 *.log
