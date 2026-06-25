@@ -1,0 +1,815 @@
+<header class="top-nav">
+  <div class="nav-container">
+    <div class="brand" (click)="goBack()">
+      <span class="logo-icon">✈</span>
+      <span class="logo-text">Smart Travel</span>
+    </div>
+    <div class="nav-actions">
+      <a class="profile-link" routerLink="/profile" *ngIf="currentUser()">
+        <img [src]="currentUser()?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'" class="user-avatar-mini" alt="Profile" />
+        <span class="user-welcome">Chào, {{ currentUser()?.full_name }}</span>
+      </a>
+      <button class="btn-back" (click)="goBack()">← Quay lại Dashboard</button>
+    </div>
+  </div>
+</header>
+
+<main class="trip-detail-content" *ngIf="trip()">
+  <!-- Top Banner Section -->
+  <section class="trip-banner">
+    <div class="banner-image-wrapper">
+      <img [src]="getTripImage(trip()?.destination)" [alt]="trip()?.title" class="banner-image" />
+      <div class="banner-overlay">
+        <h1 class="banner-title">{{ trip()?.title }}</h1>
+        <div class="banner-meta">
+          <span>📍 {{ trip()?.destination }}</span>
+          <span>•</span>
+          <span>📅 {{ trip()?.start_date | date:'dd/MM/yyyy' }} - {{ trip()?.end_date | date:'dd/MM/yyyy' }}</span>
+          <span>•</span>
+          <span>👥 {{ trip()?.num_travelers }} người</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sub-Tabs Switcher Bar -->
+  <section class="sub-tabs-bar">
+    <button [class.active]="activeSubTab() === 'itinerary'" (click)="switchSubTab('itinerary')" class="sub-tab-btn">
+      🗓️ Lịch trình & Trợ lý AI
+    </button>
+    <button [class.active]="activeSubTab() === 'budget'" (click)="switchSubTab('budget')" class="sub-tab-btn">
+      💰 Quản lý Chi tiêu
+    </button>
+    <button [class.active]="activeSubTab() === 'explore'" (click)="switchSubTab('explore')" class="sub-tab-btn">
+      🔍 Khám phá Địa điểm
+    </button>
+    <button [class.active]="activeSubTab() === 'settings'" (click)="switchSubTab('settings')" class="sub-tab-btn">
+      ⚙️ Cài đặt
+    </button>
+  </section>
+
+  <!-- Main 2-Column Itinerary Grid -->
+  <div class="detail-grid" *ngIf="activeSubTab() === 'itinerary'">
+    <!-- Left Column: Itinerary / Day Plans -->
+    <div class="itinerary-column">
+      <div class="itinerary-header">
+        <h2>Lịch trình chi tiết</h2>
+        <button 
+          *ngIf="days().length === 0" 
+          class="btn-generate-ai" 
+          (click)="onGenerateItinerary()"
+          [disabled]="isGenerating()"
+        >
+          <span *ngIf="isGenerating()" class="spinner-small"></span>
+          {{ isGenerating() ? 'Đang tạo...' : '🪄 Tự động lập lịch trình (AI)' }}
+        </button>
+      </div>
+
+      <!-- Empty Day Plans State -->
+      <div class="empty-itinerary" *ngIf="!isLoadingDays() && days().length === 0">
+        <div class="empty-icon">📅</div>
+        <h3>Chưa có lịch trình được lập</h3>
+        <p>Nhấp vào nút "Tự động lập lịch trình (AI)" để AI tự động lên lịch trình hấp dẫn cho bạn, hoặc tự thêm hoạt động thủ công.</p>
+        <button class="btn-create-activity-primary" (click)="onGenerateItinerary()" [disabled]="isGenerating()">
+          Lập lịch trình bằng AI ngay
+        </button>
+      </div>
+
+      <!-- Loaded Itinerary View -->
+      <div class="itinerary-container" *ngIf="days().length > 0">
+        <!-- Day Tabs Strip -->
+        <div class="day-tabs">
+          <button 
+            *ngFor="let day of days(); let idx = index" 
+            [class.active]="activeDayIndex() === idx"
+            (click)="selectDayTab(idx)" 
+            class="day-tab-pill"
+          >
+            Ngày {{ day.day_number }}
+          </button>
+        </div>
+
+        <!-- Selected Day Activities Timeline -->
+        <div class="day-plan-details" *ngFor="let day of days(); let idx = index" [class.hidden]="activeDayIndex() !== idx">
+          <div class="day-date-title">
+            <h3>Hành trình Ngày {{ day.day_number }} ({{ day.date | date:'dd/MM/yyyy' }})</h3>
+            <button class="btn-add-activity-inline" (click)="openActivityModal(day.id)">
+              + Thêm hoạt động
+            </button>
+          </div>
+
+          <!-- Empty Activities for this day -->
+          <div class="empty-day-activities" *ngIf="day.activities.length === 0">
+            <p>Không có hoạt động nào được lên lịch cho ngày này.</p>
+            <button class="btn-add-activity-dashed" (click)="openActivityModal(day.id)">
+              + Thêm hoạt động đầu tiên
+            </button>
+          </div>
+
+          <!-- Activities Vertical Timeline -->
+          <div class="timeline" *ngIf="day.activities.length > 0">
+            <div class="timeline-item" *ngFor="let activity of day.activities">
+              <div class="timeline-marker">
+                <span class="marker-icon">{{ getActivityIcon(activity.type) }}</span>
+              </div>
+              
+              <div class="timeline-content">
+                <div class="activity-card-header">
+                  <div>
+                    <span class="activity-time" *ngIf="activity.start_time">
+                      {{ activity.start_time }} {{ activity.end_time ? ' - ' + activity.end_time : '' }}
+                    </span>
+                    <span class="activity-type-badge">{{ getActivityTypeLabel(activity.type) }}</span>
+                  </div>
+                  <button class="btn-delete-activity" (click)="onDeleteActivity(activity.id)" title="Xóa hoạt động">✕</button>
+                </div>
+                
+                <h4 class="activity-title">{{ activity.title }}</h4>
+                <p class="activity-desc" *ngIf="activity.description">{{ activity.description }}</p>
+                <p class="activity-notes" *ngIf="activity.notes">📝 <em>Ghi chú: {{ activity.notes }}</em></p>
+                
+                <div class="activity-card-footer" *ngIf="activity.estimated_cost">
+                  <span class="activity-cost">Chi phí ước tính: <strong>{{ formatCurrency(activity.estimated_cost) }}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: AI Assistant Chat Sidebar -->
+    <div class="ai-chat-column">
+      <div class="ai-card">
+        <div class="ai-card-header">
+          <div class="ai-bot-avatar">🤖</div>
+          <div>
+            <h3>Trợ lý AI Smart Travel</h3>
+            <span class="ai-status-indicator">● Trực tuyến</span>
+          </div>
+        </div>
+
+        <!-- Chat messages area -->
+        <div class="chat-body" id="chat-body">
+          <div class="chat-welcome-message">
+            <p>Xin chào! Tôi có thể giúp gì cho lịch trình đi <strong>{{ trip()?.destination }}</strong> của bạn? Hãy hỏi tôi về các quán ăn ngon, điểm vui chơi thú vị hoặc mẹo đi lại nhé!</p>
+          </div>
+          
+          <div *ngFor="let msg of chatHistory()" class="chat-bubble-row" [ngClass]="msg.role">
+            <div class="chat-bubble">
+              <p>{{ msg.message }}</p>
+              <span class="chat-time">{{ msg.created_at | date:'HH:mm' }}</span>
+            </div>
+          </div>
+          
+          <div class="chat-bubble-row assistant" *ngIf="isSendingMessage()">
+            <div class="chat-bubble loading">
+              <span class="dot-spin"></span>
+              <span class="dot-spin"></span>
+              <span class="dot-spin"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggestion Shelf inside Sidebar -->
+        <div class="suggestion-shelf" *ngIf="activeSuggestions().length > 0">
+          <div class="shelf-title">💡 Gợi ý điểm đi từ AI:</div>
+          <div class="shelf-scroll">
+            <div class="suggestion-item-card" *ngFor="let sug of activeSuggestions()">
+              <div class="sug-card-body">
+                <h5>{{ sug.content_json?.title || 'Gợi ý du lịch' }}</h5>
+                <p>{{ sug.content_json?.description }}</p>
+                <div class="sug-meta" *ngIf="sug.content_json?.estimated_cost">
+                  Chi phí: {{ formatCurrency(sug.content_json.estimated_cost) }}
+                </div>
+              </div>
+              <div class="sug-card-actions">
+                <button class="btn-sug-reject" (click)="onRejectSuggestion(sug.id)">Bỏ qua</button>
+                <button class="btn-sug-accept" (click)="onAcceptSuggestion(sug.id)">Thêm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat input bar -->
+        <div class="chat-footer">
+          <input 
+            type="text" 
+            placeholder="Hỏi AI tư vấn hành trình..." 
+            [value]="chatInput()"
+            (input)="chatInput.set($any($event.target).value)"
+            (keyup.enter)="onSendChatMessage()"
+            [disabled]="isSendingMessage()"
+          />
+          <button 
+            class="btn-send-message" 
+            (click)="onSendChatMessage()" 
+            [disabled]="!chatInput().trim() || isSendingMessage()"
+          >
+            Gửi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Budget Layout Section -->
+  <div class="budget-layout-container animate-fade-in" *ngIf="activeSubTab() === 'budget'">
+    <!-- Progress & Overview Cards Row -->
+    <div class="budget-summary-panel" *ngIf="budgetSummary()">
+      <div class="budget-progress-card">
+        <div class="progress-details">
+          <h4>Ngân sách đã dùng</h4>
+          <div class="progress-circle-wrap">
+            <span class="percent-large">{{ getBudgetUsedPercent() }}%</span>
+          </div>
+          <p class="utilization-label" [class.overspent]="budgetSummary()?.overspent">
+            {{ budgetSummary()?.overspent ? '⚠️ Bạn đã chi tiêu quá tay!' : 'Chi tiêu đang nằm trong mức an toàn.' }}
+          </p>
+        </div>
+      </div>
+      
+      <div class="budget-stat-box">
+        <div class="stat-item">
+          <span class="stat-label">Tổng ngân sách tối đa:</span>
+          <span class="stat-value">{{ formatCurrency(budgetSummary()?.budget_total || 0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Chi phí theo lịch trình:</span>
+          <span class="stat-value itinerary">{{ formatCurrency(budgetSummary()?.budget_itinerary_planned || 0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Dự kiến kế hoạch:</span>
+          <span class="stat-value planned">{{ formatCurrency(budgetSummary()?.budget_planned || 0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Đã chi thực tế:</span>
+          <span class="stat-value actual">{{ formatCurrency(budgetSummary()?.budget_actual || 0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Số dư còn lại:</span>
+          <span class="stat-value balance" [class.negative]="(budgetSummary()?.budget_remaining || 0) < 0">
+            {{ formatCurrency(budgetSummary()?.budget_remaining || 0) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="isLoadingBudget()">
+      <div class="spinner"></div>
+      <p>Đang tải dữ liệu chi tiêu...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-banner" *ngIf="budgetError() && !isLoadingBudget()">
+      <p>{{ budgetError() }}</p>
+      <button (click)="loadBudgetData()" class="btn-retry">Thử lại</button>
+    </div>
+
+    <div *ngIf="!isLoadingBudget() && !budgetError()">
+      <!-- Category Grid -->
+      <section class="category-grid" *ngIf="budgetSummary()?.categories">
+        <div class="category-card" *ngFor="let cat of budgetSummary()?.categories">
+          <div class="cat-header">
+            <span class="cat-icon">{{ getBudgetCategoryIcon(cat.category) }}</span>
+            <h4>{{ getBudgetCategoryLabel(cat.category) }}</h4>
+          </div>
+          <div class="cat-body">
+            <div class="cat-metric">
+              <span class="label">Từ lịch trình:</span>
+              <span class="val itinerary-val">{{ formatCurrency(cat.itinerary_planned) }}</span>
+            </div>
+            <div class="cat-metric">
+              <span class="label">Dự kiến:</span>
+              <span class="val">{{ formatCurrency(cat.planned) }}</span>
+            </div>
+            <div class="cat-metric">
+              <span class="label">Thực tế:</span>
+              <span class="val bold">{{ formatCurrency(cat.actual) }}</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="cat-progress-container" *ngIf="cat.itinerary_planned > 0 || cat.planned > 0">
+              <div class="cat-progress-bar">
+                <div class="cat-progress-fill" [style.width.%]="getCategoryUsedPercent(cat)"></div>
+              </div>
+              <span class="cat-progress-percent">{{ getCategoryUsedPercent(cat) }}%</span>
+            </div>
+          </div>
+          <div class="cat-footer">
+            <span>{{ cat.items_count }} khoản ghi</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Transactions section -->
+      <section class="transactions-section">
+        <div class="section-header-row">
+          <h3>Chi tiết các khoản chi tiêu</h3>
+          <button class="btn-add-budget-item" (click)="openBudgetModal()">+ Thêm khoản chi</button>
+        </div>
+
+        <div class="empty-transactions" *ngIf="budgetItems().length === 0">
+          <p>Chưa có khoản chi tiêu nào được thiết lập.</p>
+          <button class="btn-add-dashed" (click)="openBudgetModal()">+ Thêm khoản đầu tiên</button>
+        </div>
+
+        <div class="table-responsive" *ngIf="budgetItems().length > 0">
+          <table class="budget-table">
+            <thead>
+              <tr>
+                <th>Danh mục</th>
+                <th>Nội dung chi tiêu</th>
+                <th>Dự kiến (Kế hoạch)</th>
+                <th>Thực tế (Thực chi)</th>
+                <th>Ngày chi</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of budgetItems()">
+                <td>
+                  <span class="tbl-cat-badge">
+                    {{ getBudgetCategoryIcon(item.category) }} {{ getBudgetCategoryLabel(item.category) }}
+                  </span>
+                </td>
+                <td class="item-label-cell"><strong>{{ item.label }}</strong></td>
+                <td class="amount-planned">{{ formatCurrency(item.planned_amount) }}</td>
+                <td class="amount-actual">{{ formatCurrency(item.actual_amount) }}</td>
+                <td class="item-date">{{ item.date ? (item.date | date:'dd/MM/yyyy') : 'N/A' }}</td>
+                <td class="actions-cell">
+                  <button class="btn-tbl-edit" (click)="openBudgetModal(item)" title="Sửa">✏️</button>
+                  <button class="btn-tbl-delete" (click)="onDeleteBudgetItem(item.id)" title="Xóa">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Destination Explorer Section -->
+  <div class="explore-layout-container animate-fade-in" [class.hidden-tab]="activeSubTab() !== 'explore'">
+    <!-- Left Pane: List side -->
+    <div class="explore-list-side">
+      <!-- Search Bar -->
+      <div class="explore-search-bar">
+        <input 
+          type="text" 
+          placeholder="Tìm kiếm địa điểm du lịch, nhà hàng, quán ăn..." 
+          [value]="exploreQuery()"
+          (input)="exploreQuery.set($any($event.target).value)"
+          (keyup.enter)="onExploreSearch()"
+        />
+        <button class="btn-explore-search" (click)="onExploreSearch()">Tìm kiếm</button>
+      </div>
+
+      <!-- Category Pill Filter Strip -->
+      <section class="explore-category-strip">
+        <button 
+          [class.active]="activeExploreCategory() === 'attraction'" 
+          (click)="onExploreCategoryChange('attraction')" 
+          class="explore-pill"
+        >
+          🏛️ Tham quan
+        </button>
+        <button 
+          [class.active]="activeExploreCategory() === 'meal'" 
+          (click)="onExploreCategoryChange('meal')" 
+          class="explore-pill"
+        >
+          🍽️ Ăn uống
+        </button>
+        <button 
+          [class.active]="activeExploreCategory() === 'hotel'" 
+          (click)="onExploreCategoryChange('hotel')" 
+          class="explore-pill"
+        >
+          🏨 Lưu trú
+        </button>
+        <button 
+          [class.active]="activeExploreCategory() === 'cafe'" 
+          (click)="onExploreCategoryChange('cafe')" 
+          class="explore-pill"
+        >
+          ☕ Cà phê
+        </button>
+      </section>
+
+      <!-- Loading State -->
+      <div class="loading-container" *ngIf="isLoadingExplore()">
+        <div class="spinner"></div>
+        <p>Đang tải địa điểm tại {{ trip()?.destination }}...</p>
+      </div>
+
+      <!-- Error State -->
+      <div class="error-banner" *ngIf="exploreError() && !isLoadingExplore()">
+        <p>{{ exploreError() }}</p>
+        <button (click)="loadExploreData()" class="btn-retry">Thử lại</button>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-explore" *ngIf="!isLoadingExplore() && !exploreError() && exploreLocations().length === 0">
+        <div class="empty-icon">🔍</div>
+        <h3>Không tìm thấy địa điểm nào</h3>
+        <p>Thử tìm kiếm với từ khóa khác như "công viên", "phở", "bãi biển"...</p>
+      </div>
+
+      <!-- Explore Locations Grid -->
+      <div class="explore-grid" *ngIf="!isLoadingExplore() && !exploreError() && exploreLocations().length > 0">
+        <div class="explore-card" *ngFor="let loc of exploreLocations()">
+          <div class="explore-image-wrapper">
+            <img 
+              [src]="loc.photo_url || getTripImage(loc.name)" 
+              [alt]="loc.name" 
+              class="explore-card-image" 
+            />
+            <span class="explore-rating" *ngIf="loc.rating">
+              ★ {{ loc.rating | number:'1.1-1' }}
+            </span>
+          </div>
+          
+          <div class="explore-card-meta">
+            <h4 class="explore-card-title" [title]="loc.name">{{ loc.name }}</h4>
+            <p class="explore-card-address" *ngIf="loc.address" [title]="loc.address">📍 {{ loc.address }}</p>
+            <button class="btn-add-to-itinerary" (click)="openAddActivityFromExplore(loc)">
+              Thêm vào lịch trình
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Pane: Map side -->
+    <div class="explore-map-side">
+      <div id="explore-map"></div>
+    </div>
+  </div>
+
+  <!-- Settings Tab View -->
+  <div class="settings-tab-container" *ngIf="activeSubTab() === 'settings'">
+    <div class="settings-card-wrapper">
+      <div class="settings-form-header">
+        <h2>Cài đặt & Quản lý chuyến đi</h2>
+        <p>Cập nhật thông tin chi tiết hoặc trạng thái chuyến đi của bạn.</p>
+      </div>
+
+      <div class="success-banner-settings" *ngIf="settingsSuccessMsg()">
+        <span>✓</span> {{ settingsSuccessMsg() }}
+      </div>
+      <div class="error-banner-settings" *ngIf="settingsErrorMsg()">
+        <span>⚠️</span> {{ settingsErrorMsg() }}
+      </div>
+
+      <form [formGroup]="settingsForm" (ngSubmit)="onSaveSettings()" class="settings-form-body">
+        <div class="form-grid-row">
+          <div class="settings-form-group full-width">
+            <label for="trip-title" class="settings-label">Tên chuyến đi du lịch *</label>
+            <input type="text" id="trip-title" formControlName="title" class="settings-input" placeholder="Nhập tên chuyến đi" />
+            <div class="settings-validation-error" *ngIf="settingsForm.get('title')?.invalid && settingsForm.get('title')?.touched">
+              Tên chuyến đi là bắt buộc.
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid-row">
+          <div class="settings-form-group full-width">
+            <label for="trip-dest" class="settings-label">Điểm đến của bạn *</label>
+            <input type="text" id="trip-dest" formControlName="destination" class="settings-input" placeholder="VD: Đà Nẵng, Tokyo, Paris..." />
+            <div class="settings-validation-error" *ngIf="settingsForm.get('destination')?.invalid && settingsForm.get('destination')?.touched">
+              Điểm đến là bắt buộc.
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid-row two-cols">
+          <div class="settings-form-group">
+            <label for="trip-start" class="settings-label">Ngày bắt đầu *</label>
+            <input type="date" id="trip-start" formControlName="start_date" class="settings-input" />
+          </div>
+          <div class="settings-form-group">
+            <label for="trip-end" class="settings-label">Ngày kết thúc *</label>
+            <input type="date" id="trip-end" formControlName="end_date" class="settings-input" />
+          </div>
+        </div>
+
+        <div class="form-grid-row two-cols">
+          <div class="settings-form-group">
+            <label for="trip-budget" class="settings-label">Ngân sách dự kiến (VND)</label>
+            <input type="number" id="trip-budget" formControlName="budget" class="settings-input" placeholder="VD: 10000000" />
+          </div>
+          <div class="settings-form-group">
+            <label for="trip-travelers" class="settings-label">Số người tham gia *</label>
+            <input type="number" id="trip-travelers" formControlName="num_travelers" class="settings-input" min="1" />
+          </div>
+        </div>
+
+        <div class="form-grid-row">
+          <div class="settings-form-group full-width">
+            <label class="settings-label">Trạng thái chuyến đi</label>
+            <div class="status-selection-grid">
+              
+              <label class="status-radio-card" [class.selected]="settingsForm.get('status')?.value === 'draft'">
+                <input type="radio" value="draft" formControlName="status" class="hidden-radio" />
+                <div class="status-card-content">
+                  <span class="status-icon">📝</span>
+                  <div class="status-details">
+                    <span class="status-title">Nháp</span>
+                    <span class="status-desc">Chuyến đi đang lên kế hoạch, chưa bắt đầu.</span>
+                  </div>
+                </div>
+              </label>
+
+              <label class="status-radio-card" [class.selected]="settingsForm.get('status')?.value === 'active'">
+                <input type="radio" value="active" formControlName="status" class="hidden-radio" />
+                <div class="status-card-content">
+                  <span class="status-icon">✈️</span>
+                  <div class="status-details">
+                    <span class="status-title">Đang đi</span>
+                    <span class="status-desc">Chuyến đi hiện tại đang diễn ra.</span>
+                  </div>
+                </div>
+              </label>
+
+              <label class="status-radio-card" [class.selected]="settingsForm.get('status')?.value === 'completed'">
+                <input type="radio" value="completed" formControlName="status" class="hidden-radio" />
+                <div class="status-card-content">
+                  <span class="status-icon">🏆</span>
+                  <div class="status-details">
+                    <span class="status-title">Hoàn thành</span>
+                    <span class="status-desc">Hành trình du lịch đã khép lại thành công.</span>
+                  </div>
+                </div>
+              </label>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="danger-zone-settings-block">
+          <div class="danger-zone-header">
+            <h4>Khu vực nguy hiểm</h4>
+            <p>Xóa chuyến đi sẽ xóa vĩnh viễn toàn bộ lịch trình ngày, hoạt động và lịch sử trò chuyện AI. Hành động này không thể khôi phục.</p>
+          </div>
+          <button type="button" class="btn-delete-trip-danger" (click)="onOpenDeleteModal()">
+            Xóa chuyến đi này
+          </button>
+        </div>
+
+        <div class="settings-form-actions">
+          <button type="button" class="btn-reset-settings" (click)="onResetSettings()" [disabled]="isSavingSettings()">
+            Hủy & Khôi phục
+          </button>
+          <button type="submit" class="btn-submit-settings" [disabled]="settingsForm.invalid || isSavingSettings()">
+            <span class="btn-spinner" *ngIf="isSavingSettings()"></span>
+            {{ isSavingSettings() ? 'Đang lưu...' : 'Lưu tất cả thay đổi' }}
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</main>
+
+<!-- Add Activity Modal Dialog -->
+<div class="modal-scrim" *ngIf="isActivityModalOpen()" (click)="closeActivityModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <button class="btn-close" (click)="closeActivityModal()">✕</button>
+      <h2>Thêm hoạt động mới vào lịch trình</h2>
+    </div>
+
+    <form [formGroup]="activityForm" (ngSubmit)="onSubmitActivity()" class="modal-form">
+      <div class="modal-error" *ngIf="activityError()">
+        <p>{{ activityError() }}</p>
+      </div>
+
+      <div class="form-group">
+        <label for="act-title">Tên hoạt động *</label>
+        <input 
+          id="act-title" 
+          type="text" 
+          formControlName="title" 
+          placeholder="VD: Đi tham quan Dinh Độc Lập" 
+          [class.invalid]="isFieldInvalid('title')"
+        />
+        <span class="validation-error" *ngIf="isFieldInvalid('title')">Tên hoạt động là bắt buộc.</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="act-type">Phân loại *</label>
+          <select id="act-type" formControlName="type" [class.invalid]="isFieldInvalid('type')">
+            <option value="attraction">🏛️ Tham quan / Vui chơi</option>
+            <option value="meal">🍽️ Ăn uống / Ẩm thực</option>
+            <option value="hotel">🏨 Khách sạn / Lưu trú</option>
+            <option value="transport">🚗 Di chuyển / Xe cộ</option>
+            <option value="other">📍 Khác</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="act-cost">Chi phí dự tính (VNĐ)</label>
+          <input 
+            id="act-cost" 
+            type="number" 
+            formControlName="estimated_cost" 
+            placeholder="Tùy chọn. VD: 150000"
+            [class.invalid]="isFieldInvalid('estimated_cost')"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="act-start">Thời gian bắt đầu (HH:MM)</label>
+          <input 
+            id="act-start" 
+            type="text" 
+            formControlName="start_time" 
+            placeholder="VD: 08:30"
+            [class.invalid]="isFieldInvalid('start_time')"
+          />
+          <span class="validation-error" *ngIf="isFieldInvalid('start_time')">Định dạng HH:MM bắt buộc.</span>
+        </div>
+        <div class="form-group">
+          <label for="act-end">Thời gian kết thúc (HH:MM)</label>
+          <input 
+            id="act-end" 
+            type="text" 
+            formControlName="end_time" 
+            placeholder="VD: 11:30"
+            [class.invalid]="isFieldInvalid('end_time')"
+          />
+          <span class="validation-error" *ngIf="isFieldInvalid('end_time')">Định dạng HH:MM bắt buộc.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="act-desc">Mô tả chi tiết</label>
+        <textarea 
+          id="act-desc" 
+          formControlName="description" 
+          rows="2" 
+          placeholder="Thông tin thêm về địa điểm, cách di chuyển..."
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="act-notes">Ghi chú cá nhân</label>
+        <input 
+          id="act-notes" 
+          type="text" 
+          formControlName="notes" 
+          placeholder="Vé mua trước, chuẩn bị máy ảnh, mang mũ..."
+        />
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeActivityModal()" [disabled]="isSubmittingActivity()">Hủy</button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmittingActivity()">
+          <span *ngIf="isSubmittingActivity()" class="spinner-small"></span>
+          {{ isSubmittingActivity() ? 'Đang thêm...' : 'Lưu hoạt động' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add/Edit Budget Item Modal Dialog -->
+<div class="modal-scrim" *ngIf="isBudgetModalOpen()" (click)="closeBudgetModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <button class="btn-close" (click)="closeBudgetModal()">✕</button>
+      <h2>{{ selectedBudgetItem() ? 'Cập nhật khoản chi' : 'Thêm khoản chi tiêu mới' }}</h2>
+    </div>
+
+    <form [formGroup]="budgetForm" (ngSubmit)="onSubmitBudgetItem()" class="modal-form">
+      <div class="modal-error" *ngIf="budgetError()">
+        <p>{{ budgetError() }}</p>
+      </div>
+
+      <div class="form-group">
+        <label for="bud-label">Tên khoản chi / Nội dung *</label>
+        <input 
+          id="bud-label" 
+          type="text" 
+          formControlName="label" 
+          placeholder="VD: Thuê khách sạn, Ăn trưa ngày 1..." 
+          [class.invalid]="isFieldInvalid('label')"
+        />
+        <span class="validation-error" *ngIf="isFieldInvalid('label')">Tên nội dung chi là bắt buộc.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="bud-category">Phân loại danh mục *</label>
+        <select id="bud-category" formControlName="category">
+          <option value="hotel">🏨 Lưu trú / Khách sạn</option>
+          <option value="food">🍽️ Ăn uống / Ẩm thực</option>
+          <option value="transport">🚗 Di chuyển / Vé xe</option>
+          <option value="activity">🏛️ Hoạt động vui chơi</option>
+          <option value="other">💵 Khác / Phát sinh</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="bud-planned">Ngân sách dự kiến (Kế hoạch)</label>
+          <input 
+            id="bud-planned" 
+            type="number" 
+            formControlName="planned_amount" 
+            placeholder="0"
+          />
+        </div>
+        <div class="form-group">
+          <label for="bud-actual">Chi phí thực tế (Thực chi)</label>
+          <input 
+            id="bud-actual" 
+            type="number" 
+            formControlName="actual_amount" 
+            placeholder="0"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bud-date">Ngày giao dịch</label>
+        <input 
+          id="bud-date" 
+          type="date" 
+          formControlName="date"
+        />
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeBudgetModal()" [disabled]="isSubmittingBudget()">Hủy</button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmittingBudget()">
+          <span *ngIf="isSubmittingBudget()" class="spinner-small"></span>
+          {{ isSubmittingBudget() ? 'Đang lưu...' : (selectedBudgetItem() ? 'Cập nhật' : 'Lưu chi tiêu') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Day Selector Modal Dialog from Explore -->
+<div class="modal-scrim" *ngIf="isAddActivityFromExploreOpen()" (click)="closeAddActivityFromExplore()">
+  <div class="modal-card day-selector-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <button class="btn-close" (click)="closeAddActivityFromExplore()">✕</button>
+      <h2>Thêm vào ngày lịch trình</h2>
+    </div>
+    
+    <div class="modal-body day-selector-body" style="padding: 24px;">
+      <p style="color: #6a6a6a; margin-bottom: 20px; font-size: 14px;">Chọn ngày bạn muốn lên kế hoạch ghé thăm địa điểm <strong>{{ selectedExploreLocation()?.name }}</strong>:</p>
+      
+      <div class="days-list-select" style="display: flex; flex-direction: column; gap: 12px;">
+        <button 
+          *ngFor="let day of days()" 
+          class="day-select-item-btn" 
+          (click)="confirmAddActivityFromExplore(day.id)"
+          [disabled]="isSubmittingExploreActivity()"
+          style="display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; padding: 14px 18px; border: 1px solid #ebebeb; border-radius: 8px; background-color: #ffffff; cursor: pointer; font-size: 15px; font-weight: 600; color: #222222; transition: all 0.2s ease;"
+        >
+          <div class="day-select-info">
+            <span class="day-title" style="margin-right: 8px;">Ngày {{ day.day_number }}</span>
+            <span class="day-date" style="font-weight: 400; color: #6a6a6a; font-size: 13px;">({{ day.date | date:'dd/MM/yyyy' }})</span>
+          </div>
+          <span class="btn-arrow" style="font-weight: bold; color: #ff385c;">→</span>
+        </button>
+      </div>
+
+      <div class="empty-days-warning" *ngIf="days().length === 0" style="text-align: center; color: #c13515; font-weight: 500; font-size: 14px;">
+        <p>⚠️ Chuyến đi chưa có lịch trình ngày nào. Vui lòng quay lại tab Lịch trình để bấm "Tự động lập lịch trình (AI)" trước khi thêm địa điểm.</p>
+        <button type="button" class="btn-primary" (click)="closeAddActivityFromExplore()" style="margin-top: 12px; background-color: #222222; color: #ffffff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Trip Confirmation Modal Dialog -->
+<div class="modal-scrim" *ngIf="isDeleteModalOpen()" (click)="onCloseDeleteModal()">
+  <div class="modal-card delete-trip-confirm-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <button class="btn-close" (click)="onCloseDeleteModal()">✕</button>
+      <h2>Xác nhận xóa chuyến đi</h2>
+    </div>
+    
+    <div class="modal-body delete-confirm-body" style="padding: 24px;">
+      <div class="warning-icon-large" style="font-size: 48px; text-align: center; margin-bottom: 16px;">⚠️</div>
+      <h3 style="text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #222222; margin-top: 0;">Bạn có chắc chắn muốn xóa chuyến đi?</h3>
+      <p style="color: #6a6a6a; text-align: center; font-size: 14px; line-height: 1.5; margin-bottom: 24px;">
+        Chuyến đi <strong>"{{ trip()?.title }}"</strong> tại <strong>{{ trip()?.destination }}</strong> cùng toàn bộ lịch trình chi tiết, ngân sách chi tiêu và cuộc hội thoại AI sẽ bị <strong>xóa vĩnh viễn khỏi hệ thống</strong>.
+      </p>
+      
+      <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-secondary" (click)="onCloseDeleteModal()" [disabled]="isDeleting()" style="padding: 10px 18px; border: 1px solid #222222; background-color: #ffffff; color: #222222; border-radius: 8px; cursor: pointer; font-weight: 600;">Hủy</button>
+        <button type="button" class="btn-primary btn-delete-confirm" (click)="onConfirmDeleteTrip()" [disabled]="isDeleting()" style="background-color: #ff385c; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+          <span class="btn-spinner" *ngIf="isDeleting()"></span>
+          {{ isDeleting() ? 'Đang xóa...' : 'Có, xóa chuyến đi' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

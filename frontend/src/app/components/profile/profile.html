@@ -1,0 +1,229 @@
+<header class="top-nav">
+  <div class="nav-container">
+    <div class="brand" (click)="goBack()">
+      <span class="logo-icon">✈</span>
+      <span class="logo-text">Smart Travel</span>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-back" (click)="goBack()">← Quay lại Dashboard</button>
+    </div>
+  </div>
+</header>
+
+<div class="profile-layout-container">
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isLoading()">
+    <div class="spinner"></div>
+    <p>Đang tải thông tin hồ sơ...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-banner" *ngIf="errorMessage() && !isLoading()">
+    <p>⚠️ {{ errorMessage() }}</p>
+    <button (click)="loadProfile()" class="btn-retry">Tải lại</button>
+  </div>
+
+  <!-- Form Success Banner -->
+  <div class="success-toast" *ngIf="successMessage()">
+    <span class="toast-icon">✓</span>
+    <p>{{ successMessage() }}</p>
+  </div>
+
+  <div class="profile-grid" *ngIf="!isLoading()">
+    <!-- Left Column: Visual Profile Card -->
+    <aside class="profile-card-sidebar">
+      <div class="profile-badge-card">
+        <div class="avatar-preview-container">
+          <img [src]="selectedAvatar() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'" 
+               alt="Avatar Preview" class="card-avatar-image" />
+        </div>
+        
+        <h2 class="card-user-name">{{ profile()?.full_name }}</h2>
+        <p class="card-user-email">{{ profile()?.email }}</p>
+        
+        <div class="card-divider"></div>
+        
+        <div class="member-since">
+          <span class="since-icon">📆</span>
+          <span class="since-text">Thành viên từ {{ profile()?.created_at | date:'dd/MM/yyyy' }}</span>
+        </div>
+
+        <!-- Custom badges dynamically calculated -->
+        <div class="preferences-badges">
+          <span class="badge-item style-badge" [ngClass]="profileForm.get('travel_style')?.value">
+            {{ getTravelStyleName(profileForm.get('travel_style')?.value) }}
+          </span>
+          <span class="badge-item budget-badge" [ngClass]="profileForm.get('budget_range')?.value">
+            Chi tiêu: {{ profileForm.get('budget_range')?.value === 'low' ? 'Thấp' : profileForm.get('budget_range')?.value === 'high' ? 'Cao' : 'Trung bình' }}
+          </span>
+        </div>
+        
+        <div class="interests-summary-list" *ngIf="selectedInterests().length > 0">
+          <p class="summary-title">Sở thích du lịch:</p>
+          <div class="summary-tags-container">
+            <span class="summary-tag" *ngFor="let item of selectedInterests()">
+              {{ getInterestEmojiAndName(item) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Settings Inputs Form -->
+    <main class="profile-settings-form">
+      <h1 class="settings-title">Cài đặt Hồ sơ & Cá nhân hóa</h1>
+      <p class="settings-subtitle">Thông tin này giúp trí tuệ nhân tạo (AI) điều chỉnh và gợi ý lịch trình phù hợp tối đa với phong cách của bạn.</p>
+
+      <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="form-container">
+        
+        <!-- Section 1: Basic Profile Details -->
+        <section class="form-section">
+          <h3 class="section-heading">1. Thông tin tài khoản</h3>
+          
+          <div class="form-group">
+            <label for="fullName" class="form-label">Họ tên của bạn <span class="required">*</span></label>
+            <input type="text" id="fullName" formControlName="full_name" class="text-input" 
+                   placeholder="Nhập họ và tên đầy đủ" />
+            <div class="field-error" *ngIf="profileForm.get('full_name')?.invalid && profileForm.get('full_name')?.touched">
+              Họ tên là bắt buộc và phải từ 2 đến 100 ký tự.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Địa chỉ Email (Không thể thay đổi)</label>
+            <input type="text" [value]="profile()?.email" class="text-input disabled" disabled />
+          </div>
+        </section>
+
+        <!-- Section 2: Avatar Selection -->
+        <section class="form-section">
+          <h3 class="section-heading">2. Ảnh đại diện tài khoản</h3>
+          <p class="section-subtext">Chọn một trong những ảnh đại diện du lịch bên dưới:</p>
+          
+          <div class="avatar-selection-grid">
+            <button type="button" *ngFor="let avatar of defaultAvatars" 
+                    class="avatar-option-btn" 
+                    [class.selected]="selectedAvatar() === avatar.url"
+                    (click)="selectAvatar(avatar.url)"
+                    [title]="avatar.name">
+              <img [src]="avatar.url" [alt]="avatar.name" class="avatar-option-image" />
+              <div class="selected-check" *ngIf="selectedAvatar() === avatar.url">✓</div>
+            </button>
+          </div>
+
+          <div class="form-group custom-avatar-group">
+            <label for="customAvatar" class="form-label">Hoặc nhập liên kết ảnh đại diện tùy chỉnh (URL)</label>
+            <input type="url" id="customAvatar" formControlName="avatar_url" class="text-input"
+                   placeholder="https://example.com/avatar.jpg" (input)="selectedAvatar.set(profileForm.get('avatar_url')?.value || '')" />
+          </div>
+        </section>
+
+        <!-- Section 3: Travel Styles & Budgets -->
+        <section class="form-section">
+          <h3 class="section-heading">3. Phong cách du lịch & Ngân sách</h3>
+          <p class="section-subtext">Trí tuệ nhân tạo sẽ chọn khách sạn và điểm ẩm thực tương xứng với cài đặt này.</p>
+          
+          <!-- Travel Style Radio Cards -->
+          <div class="form-group">
+            <label class="form-label">Phong cách di chuyển</label>
+            <div class="radio-cards-grid">
+              
+              <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'budget'">
+                <input type="radio" value="budget" formControlName="travel_style" class="hidden-radio" />
+                <div class="radio-card-content">
+                  <div class="radio-icon">🎒</div>
+                  <div class="radio-info">
+                    <span class="radio-title">Tiết kiệm</span>
+                    <span class="radio-desc">Ưu tiên trải nghiệm địa phương, homestay, phương tiện công cộng và ăn uống đường phố.</span>
+                  </div>
+                </div>
+              </label>
+
+              <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'mid-range'">
+                <input type="radio" value="mid-range" formControlName="travel_style" class="hidden-radio" />
+                <div class="radio-card-content">
+                  <div class="radio-icon">🚗</div>
+                  <div class="radio-info">
+                    <span class="radio-title">Tự túc / Tiện lợi</span>
+                    <span class="radio-desc">Cân bằng giữa chi phí và sự thoải mái. Ở khách sạn 3 sao, thưởng thức ẩm thực local chất lượng.</span>
+                  </div>
+                </div>
+              </label>
+
+              <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'luxury'">
+                <input type="radio" value="luxury" formControlName="travel_style" class="hidden-radio" />
+                <div class="radio-card-content">
+                  <div class="radio-icon">👑</div>
+                  <div class="radio-info">
+                    <span class="radio-title">Sang trọng</span>
+                    <span class="radio-desc">Tận hưởng dịch vụ cao cấp nhất, resort nghỉ dưỡng 5 sao, ẩm thực tinh tế và đưa đón riêng biệt.</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Budget Level Radio Cards -->
+          <div class="form-group margin-top-lg">
+            <label class="form-label">Mức chi tiêu mặc định</label>
+            <div class="radio-cards-grid text-cards">
+              
+              <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'low'">
+                <input type="radio" value="low" formControlName="budget_range" class="hidden-radio" />
+                <div class="radio-card-content dense">
+                  <div class="radio-title">Thấp ($)</div>
+                  <div class="radio-desc">Tối ưu chi phí tối đa, chú trọng điểm tham quan miễn phí hoặc giá rẻ.</div>
+                </div>
+              </label>
+
+              <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'medium'">
+                <input type="radio" value="medium" formControlName="budget_range" class="hidden-radio" />
+                <div class="radio-card-content dense">
+                  <div class="radio-title">Trung bình ($$)</div>
+                  <div class="radio-desc">Chi tiêu hợp lý, sẵn sàng trả thêm phí cho các hoạt động xứng đáng.</div>
+                </div>
+              </label>
+
+              <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'high'">
+                <input type="radio" value="high" formControlName="budget_range" class="hidden-radio" />
+                <div class="radio-card-content dense">
+                  <div class="radio-title">Thoải mái ($$$)</div>
+                  <div class="radio-desc">Thoải mái chi tiêu cho mua sắm, vui chơi và trải nghiệm dịch vụ đắt tiền.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4: Travel Interests -->
+        <section class="form-section">
+          <h3 class="section-heading">4. Sở thích du lịch của bạn</h3>
+          <p class="section-subtext">Lựa chọn các lĩnh vực bạn quan tâm khi du lịch (chọn nhiều mục):</p>
+          
+          <div class="interests-pills-container">
+            <button type="button" *ngFor="let item of availableInterests"
+                    class="interest-pill-btn"
+                    [class.active]="isInterestSelected(item.id)"
+                    (click)="toggleInterest(item.id)">
+              <span class="pill-emoji">{{ item.emoji }}</span>
+              <span class="pill-name">{{ item.name }}</span>
+              <span class="pill-check-indicator" *ngIf="isInterestSelected(item.id)">+</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Form Submission Button Actions -->
+        <footer class="form-actions-footer">
+          <button type="button" class="btn-cancel" (click)="onReset()" [disabled]="isSaving()">
+            Hủy & Khôi phục
+          </button>
+          <button type="submit" class="btn-submit" [disabled]="profileForm.invalid || isSaving()">
+            <span class="btn-spinner" *ngIf="isSaving()"></span>
+            {{ isSaving() ? 'Đang lưu...' : 'Lưu tất cả thay đổi' }}
+          </button>
+        </footer>
+
+      </form>
+    </main>
+  </div>
+</div>

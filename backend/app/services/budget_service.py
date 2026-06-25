@@ -28,7 +28,8 @@ async def get_budget_summary(db: AsyncSession, trip: Trip) -> dict:
             label=category_label(category),
             planned=brief.planned,
             actual=brief.actual,
-            items_count=summary["_items_count_by_category"][category],
+            itinerary_planned=brief.itinerary_planned,
+            items_count=summary["_items_count_by_category"].get(category, 0),
         )
         for category, brief in summary["by_category"].items()
     ]
@@ -39,9 +40,11 @@ async def get_budget_summary(db: AsyncSession, trip: Trip) -> dict:
         "budget_planned": summary["budget_planned"],
         "budget_actual": summary["budget_actual"],
         "budget_remaining": summary["budget_remaining"],
+        "budget_itinerary_planned": summary["budget_itinerary_planned"],
         "overspent": summary["overspent"],
         "categories": categories,
     }
+
 
 
 async def list_budget_items(db: AsyncSession, trip_id: uuid.UUID, category: str | None) -> list[BudgetItem]:

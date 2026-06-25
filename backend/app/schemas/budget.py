@@ -54,6 +54,7 @@ class CategoryBudgetSummary(BaseModel):
     label: str
     planned: int
     actual: int
+    itinerary_planned: int = 0
     items_count: int
 
 
@@ -63,8 +64,10 @@ class BudgetSummaryResponse(BaseModel):
     budget_planned: int
     budget_actual: int
     budget_remaining: int
+    budget_itinerary_planned: int = 0
     overspent: bool
     categories: list[CategoryBudgetSummary]
+
 
 
 def category_label(category: str) -> str:

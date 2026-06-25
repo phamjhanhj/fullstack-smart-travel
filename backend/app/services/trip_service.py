@@ -105,8 +105,8 @@ async def delete_trip(db: AsyncSession, trip: Trip) -> None:
 
 async def get_trip_summary(db: AsyncSession, trip: Trip) -> dict:
     """
-    Tinh tom tat: so ngay, so hoat dong, ngan sach planned/actual theo category.
-    Dung chung cho GET /trips/{id}/summary va GET /trips/{id}/budget.
+    Tính tóm tắt: số ngày, số hoạt động, ngân sách planned/actual theo category.
+    Đồng thời tính tổng chi phí ước tính từ lịch trình (estimated_cost của các activities).
     """
     total_days_result = await db.execute(
         select(func.count()).select_from(DayPlan).where(DayPlan.trip_id == trip.id)
@@ -121,6 +121,7 @@ async def get_trip_summary(db: AsyncSession, trip: Trip) -> dict:
     )
     total_activities = total_activities_result.scalar_one()
 
+    # 1. Tính chi phí thực tế & dự kiến thủ công từ bảng budget_items
     category_result = await db.execute(
         select(
             BudgetItem.category,
@@ -133,16 +134,64 @@ async def get_trip_summary(db: AsyncSession, trip: Trip) -> dict:
     )
     rows = category_result.all()
 
-    by_category: dict[str, CategoryBudgetBrief] = {}
+    # 2. Tính chi phí ước tính từ lịch trình (activities)
+    act_category_costs_result = await db.execute(
+        select(
+            Activity.type,
+            func.coalesce(func.sum(Activity.estimated_cost), 0)
+        )
+        .join(DayPlan, Activity.day_plan_id == DayPlan.id)
+        .where(DayPlan.trip_id == trip.id)
+        .group_by(Activity.type)
+    )
+    act_costs = dict(act_category_costs_result.all())
+
+    # Map activity types sang budget categories
+    def map_type_to_category(act_type: str | None) -> str:
+        if act_type == "meal":
+            return "food"
+        if act_type == "attraction":
+            return "activity"
+        if act_type in ["transport", "hotel", "other"]:
+            return act_type
+        return "other"
+
+    itinerary_category_costs: dict[str, int] = {
+        "food": 0,
+        "transport": 0,
+        "hotel": 0,
+        "activity": 0,
+        "other": 0
+    }
+    for act_type, cost in act_costs.items():
+        cat = map_type_to_category(act_type)
+        itinerary_category_costs[cat] += cost
+
+    budget_itinerary_planned = sum(itinerary_category_costs.values())
+
+    # Khởi tạo tất cả 5 categories mặc định để tránh thiếu trường ở Frontend
+    categories_list = ["food", "transport", "hotel", "activity", "other"]
+    by_category: dict[str, CategoryBudgetBrief] = {
+        cat: CategoryBudgetBrief(planned=0, actual=0, itinerary_planned=0)
+        for cat in categories_list
+    }
+    items_count_by_category: dict[str, int] = {cat: 0 for cat in categories_list}
+
     budget_planned = 0
     budget_actual = 0
-    items_count_by_category: dict[str, int] = {}
 
     for category, planned, actual, items_count in rows:
-        by_category[category] = CategoryBudgetBrief(planned=planned, actual=actual)
-        items_count_by_category[category] = items_count
-        budget_planned += planned
-        budget_actual += actual
+        if category in by_category:
+            by_category[category].planned = planned
+            by_category[category].actual = actual
+            items_count_by_category[category] = items_count
+            budget_planned += planned
+            budget_actual += actual
+
+    # Cập nhật chi phí ước tính từ lịch trình vào từng category
+    for cat, cost in itinerary_category_costs.items():
+        if cat in by_category:
+            by_category[cat].itinerary_planned = cost
 
     budget_total = trip.budget or 0
     budget_remaining = budget_total - budget_actual
@@ -156,8 +205,10 @@ async def get_trip_summary(db: AsyncSession, trip: Trip) -> dict:
         "budget_planned": budget_planned,
         "budget_actual": budget_actual,
         "budget_remaining": budget_remaining,
+        "budget_itinerary_planned": budget_itinerary_planned,
         "overspent": budget_actual > budget_total if budget_total > 0 else False,
         "budget_used_percent": budget_used_percent,
         "by_category": by_category,
-        "_items_count_by_category": items_count_by_category,  # dung noi bo cho budget_service
+        "_items_count_by_category": items_count_by_category,  # dùng nội bộ cho budget_service
     }
+

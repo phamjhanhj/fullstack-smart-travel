@@ -40,8 +40,8 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        // Successful login, navigate to home (or redirect path)
-        this.router.navigate(['/']);
+        // Successful login, navigate to dashboard
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.isLoading.set(false);

@@ -1,0 +1,660 @@
+/* Airbnb-inspired Layout & Page Design System */
+:host {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #222222;
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+/* Header style aligning to awesome-design-md (80px height, canvas #ffffff, hairline divider) */
+.top-nav {
+  height: 80px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dddddd;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-container {
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #ff385c; /* Rausch Red */
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff385c;
+  letter-spacing: -0.5px;
+}
+
+.btn-back {
+  background: transparent;
+  border: 1px solid #dddddd;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222222;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background-color: #f7f7f7;
+  border-color: #222222;
+}
+
+/* Page Container Layout */
+.profile-layout-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px 24px;
+  position: relative;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 64px;
+}
+
+/* Loader style */
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: #6a6a6a;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #ff385c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-banner {
+  background-color: #fff8f6;
+  border: 1px solid #ffccd3;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #c13515;
+}
+
+.btn-retry {
+  background-color: #c13515;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Success notification toast */
+.success-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: #222222;
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 32px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.toast-icon {
+  background-color: #008a05;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Sidebar Styling: Premium profile summary card */
+.profile-card-sidebar {
+  position: sticky;
+  top: 120px;
+  align-self: start;
+}
+
+.profile-badge-card {
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: rgba(0, 0, 0, 0.05) 0 4px 12px, rgba(0, 0, 0, 0.02) 0 0 0 1px;
+  text-align: center;
+}
+
+.avatar-preview-container {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 20px auto;
+  border: 4px solid #ffffff;
+  outline: 1px solid #dddddd;
+}
+
+.card-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-user-name {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #222222;
+}
+
+.card-user-email {
+  font-size: 14px;
+  color: #6a6a6a;
+  margin: 0;
+  word-break: break-all;
+}
+
+.card-divider {
+  height: 1px;
+  background-color: #ebebeb;
+  margin: 24px 0;
+}
+
+.member-since {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6a6a6a;
+  margin-bottom: 20px;
+}
+
+.preferences-badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.badge-item {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+.badge-item.style-badge.budget { background-color: #eaf5ff; color: #005bc1; }
+.badge-item.style-badge.mid-range { background-color: #f7f7f7; color: #222222; border: 1px solid #dddddd; }
+.badge-item.style-badge.luxury { background-color: #fceeff; color: #92174d; }
+
+.badge-item.budget-badge.low { background-color: #e6fcf5; color: #087f5b; }
+.badge-item.budget-badge.medium { background-color: #fff9db; color: #f08c00; }
+.badge-item.budget-badge.high { background-color: #fff0f6; color: #c2255c; }
+
+.interests-summary-list {
+  text-align: left;
+}
+
+.summary-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.summary-tag {
+  font-size: 12px;
+  background-color: #f7f7f7;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: #3f3f3f;
+}
+
+/* Settings Form Styling */
+.profile-settings-form {
+  background-color: #ffffff;
+}
+
+.settings-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px 0;
+}
+
+.settings-subtitle {
+  font-size: 16px;
+  color: #6a6a6a;
+  line-height: 1.5;
+  margin: 0 0 40px 0;
+}
+
+.form-section {
+  border-bottom: 1px solid #ebebeb;
+  padding-bottom: 32px;
+  margin-bottom: 32px;
+}
+
+.section-heading {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #222222;
+}
+
+.section-subtext {
+  font-size: 14px;
+  color: #6a6a6a;
+  margin: 0 0 20px 0;
+}
+
+/* Forms controls matching Airbnb rules */
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group.margin-top-lg {
+  margin-top: 24px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #ff385c;
+}
+
+/* Text Input: 56px height, rounded.sm 8px radius, focus switches to 2px solid #222222 outline */
+.text-input {
+  width: 100%;
+  height: 56px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  color: #222222;
+  border: 1px solid #c1c1c1;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.text-input:focus {
+  border: 2px solid #222222;
+  padding: 13px 15px; /* Adjust padding to keep height identical when border scales */
+}
+
+.text-input.disabled {
+  background-color: #f7f7f7;
+  color: #6a6a6a;
+  border-color: #dddddd;
+  cursor: not-allowed;
+}
+
+.field-error {
+  font-size: 13px;
+  color: #c13515;
+  margin-top: 6px;
+}
+
+/* Avatar Option Selection Grid */
+.avatar-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.avatar-option-btn {
+  background: transparent;
+  border: 2px solid transparent;
+  padding: 0;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.avatar-option-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.avatar-option-btn:hover .avatar-option-image {
+  transform: scale(1.08);
+}
+
+.avatar-option-btn.selected {
+  border-color: #222222;
+  box-shadow: 0 0 0 2px #ffffff inset;
+}
+
+.selected-check {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #222222;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid #ffffff;
+}
+
+.custom-avatar-group {
+  margin-top: 16px;
+}
+
+/* Radio Choice Cards */
+.radio-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.radio-card {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 16px;
+  display: block;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.radio-card:hover {
+  border-color: #222222;
+  background-color: #f7f7f7;
+}
+
+.radio-card.selected {
+  border: 2px solid #222222;
+  padding: 15px; /* Offset border expansion */
+  background-color: #ffffff;
+  box-shadow: rgba(0, 0, 0, 0.05) 0 4px 12px;
+}
+
+.hidden-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.radio-card-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.radio-icon {
+  font-size: 24px;
+  margin-top: 2px;
+}
+
+.radio-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.radio-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.radio-desc {
+  font-size: 13px;
+  color: #6a6a6a;
+  line-height: 1.4;
+}
+
+/* Dense styling for budget range cards */
+.radio-cards-grid.text-cards {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.radio-card-content.dense {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  align-items: center;
+  width: 100%;
+}
+
+.radio-card-content.dense .radio-title {
+  font-size: 14px;
+}
+
+.radio-card-content.dense .radio-desc {
+  font-size: 12px;
+}
+
+/* Travel Interests Pills */
+.interests-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.interest-pill-btn {
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 9999px; /* full pill */
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222222;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.interest-pill-btn:hover {
+  border-color: #222222;
+  background-color: #f7f7f7;
+}
+
+.interest-pill-btn.active {
+  border-color: #222222;
+  background-color: #222222;
+  color: #ffffff;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+}
+
+.pill-check-indicator {
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.interest-pill-btn.active .pill-check-indicator {
+  transform: rotate(45deg);
+  display: inline-block;
+}
+
+/* Footer buttons area */
+.form-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebebeb;
+}
+
+.btn-cancel {
+  background-color: #ffffff;
+  border: 1px solid #222222;
+  border-radius: 8px;
+  color: #222222;
+  height: 48px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-cancel:hover {
+  background-color: #f7f7f7;
+}
+
+.btn-submit {
+  background-color: #ff385c; /* Rausch primary */
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  height: 48px;
+  padding: 0 32px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: #e00b41;
+}
+
+.btn-submit:disabled, .btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Responsive configurations */
+@media (max-width: 900px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .profile-card-sidebar {
+    position: relative;
+    top: 0;
+  }
+
+  .radio-cards-grid.text-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-layout-container {
+    padding: 24px 16px 60px 16px;
+  }
+
+  .settings-title {
+    font-size: 24px;
+  }
+
+  .top-nav {
+    height: 70px;
+  }
+
+  .form-actions-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  
+  .btn-submit, .btn-cancel {
+    width: 100%;
+  }
+}

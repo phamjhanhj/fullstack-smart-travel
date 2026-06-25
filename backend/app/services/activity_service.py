@@ -113,9 +113,14 @@ async def reorder_activities(db: AsyncSession, user_id: uuid.UUID, payload: Reor
 
 async def generate_day_plans(db: AsyncSession, trip: Trip, overwrite: bool) -> list[DayPlan]:
     """
-    POST /trips/{id}/days/generate - tu sinh day_plans dua vao start_date/end_date.
-    overwrite=True: xoa toan bo day_plans cu (cascade activities) truoc khi tao lai.
+    POST /trips/{id}/days/generate - Tự động lập lịch trình bằng AI (Groq/Llama 3).
+    overwrite=True: xóa toàn bộ day_plans cũ trước khi tạo lại.
     """
+    # 1. Gọi AI lập lịch trình trước khi chỉnh sửa DB
+    from app.services.ai_service import generate_itinerary_with_ai
+    itinerary_data = await generate_itinerary_with_ai(trip)
+
+    # 2. Xử lý xóa lịch trình cũ nếu overwrite
     if overwrite:
         existing = await db.execute(select(DayPlan).where(DayPlan.trip_id == trip.id))
         for day in existing.scalars().all():
@@ -125,18 +130,90 @@ async def generate_day_plans(db: AsyncSession, trip: Trip, overwrite: bool) -> l
         existing_count = await db.execute(select(DayPlan).where(DayPlan.trip_id == trip.id))
         if existing_count.scalars().first() is not None:
             raise AppError(
-                "Chuyen di da co lich trinh, dung overwrite=true de tao lai", status_code=400
+                "Chuyến đi đã có lịch trình, dùng overwrite=true để tạo lại", status_code=400
             )
 
+    # 3. Tạo các ngày (day_plans) mới
     total_days = (trip.end_date - trip.start_date).days + 1
     new_days = [
         DayPlan(trip_id=trip.id, day_number=i, date=trip.start_date + timedelta(days=i - 1))
         for i in range(1, total_days + 1)
     ]
     db.add_all(new_days)
+    await db.flush()  # Lấy ID của các ngày để liên kết hoạt động
+
+    # Map số ngày sang object để gán hoạt động
+    day_map = {day.day_number: day for day in new_days}
+
+    # 4. Parse và lưu hoạt động do AI trả về
+    import re
+
+    def sanitize_time(time_str) -> str | None:
+        if not isinstance(time_str, str):
+            return None
+        time_str = time_str.strip()
+        if re.match(r"^([01]\d|2[0-3]):[0-5]\d$", time_str):
+            return time_str
+        if re.match(r"^\d:[0-5]\d$", time_str):
+            return f"0{time_str}"
+        return None
+
+    def sanitize_type(type_str) -> str:
+        if type_str in ["meal", "attraction", "hotel", "transport", "other"]:
+            return type_str
+        return "other"
+
+    def sanitize_cost(cost) -> int | None:
+        if cost is None:
+            return None
+        try:
+            val = int(cost)
+            return val if val >= 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    days_list = itinerary_data.get("days", [])
+    if not isinstance(days_list, list):
+        days_list = []
+
+    for ai_day in days_list:
+        if not isinstance(ai_day, dict):
+            continue
+        day_num = ai_day.get("day_number")
+        day_plan = day_map.get(day_num)
+        if not day_plan:
+            continue
+
+        activities_list = ai_day.get("activities", [])
+        if not isinstance(activities_list, list):
+            continue
+
+        for idx, act_data in enumerate(activities_list):
+            if not isinstance(act_data, dict):
+                continue
+
+            title = act_data.get("title", "Hoạt động").strip()
+            if not title:
+                title = "Hoạt động"
+            title = title[:200]
+
+            activity = Activity(
+                day_plan_id=day_plan.id,
+                title=title,
+                description=act_data.get("description"),
+                type=sanitize_type(act_data.get("type")),
+                start_time=sanitize_time(act_data.get("start_time")),
+                end_time=sanitize_time(act_data.get("end_time")),
+                estimated_cost=sanitize_cost(act_data.get("estimated_cost")),
+                notes=act_data.get("notes"),
+                order_index=idx,
+            )
+            db.add(activity)
+
     await db.commit()
 
     for day in new_days:
         await db.refresh(day)
 
     return new_days
+

@@ -95,6 +95,7 @@ class TripListResponse(BaseModel):
 class CategoryBudgetBrief(BaseModel):
     planned: int = 0
     actual: int = 0
+    itinerary_planned: int = 0
 
 
 class TripSummaryResponse(BaseModel):
@@ -105,6 +106,8 @@ class TripSummaryResponse(BaseModel):
     budget_planned: int
     budget_actual: int
     budget_remaining: int
+    budget_itinerary_planned: int = 0
     overspent: bool
     budget_used_percent: int
     by_category: dict[str, CategoryBudgetBrief]
+
