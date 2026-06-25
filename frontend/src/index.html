@@ -1,14 +1,125 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi" class="dark">
 <head>
   <meta charset="utf-8">
-  <title>Frontend</title>
+  <title>Aether Travel AI</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  
+  <!-- Tailwind CSS CDN with plugins -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Fonts and Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  
   <!-- Leaflet 1.9.4 Map Library CDN -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                "colors": {
+                    "inverse-surface": "#dfe2f1",
+                    "surface-container-lowest": "#0a0e18",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "inverse-primary": "#494bd6",
+                    "on-surface-variant": "#c7c4d7",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#313540",
+                    "on-background": "#dfe2f1",
+                    "tertiary": "#4edea3",
+                    "surface-dim": "#0f131d",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "primary": "#c0c1ff",
+                    "surface-container-low": "#171b26",
+                    "primary-fixed": "#e1e0ff",
+                    "surface-bright": "#353944",
+                    "status-warning": "#f43f5e",
+                    "on-secondary-fixed": "#23005c",
+                    "on-primary": "#1000a9",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "on-tertiary-fixed": "#002113",
+                    "on-secondary": "#3c0091",
+                    "border-glass": "rgba(255, 255, 255, 0.1)",
+                    "surface-tint": "#c0c1ff",
+                    "tertiary-fixed": "#6ffbbe",
+                    "background": "#0f131d",
+                    "bg-slate-light": "#111827",
+                    "surface-container-highest": "#313540",
+                    "on-primary-container": "#0d0096",
+                    "primary-container": "#8083ff",
+                    "on-error": "#690005",
+                    "on-primary-fixed": "#07006c",
+                    "secondary-fixed": "#e9ddff",
+                    "bg-slate-deep": "#0b0f19",
+                    "secondary-container": "#571bc1",
+                    "on-surface": "#dfe2f1",
+                    "on-tertiary-container": "#000703",
+                    "secondary": "#d0bcff",
+                    "activity-transport": "#14b8a6",
+                    "outline-variant": "#464554",
+                    "activity-attraction": "#3b82f6",
+                    "surface": "#0f131d",
+                    "on-error-container": "#ffdad6",
+                    "activity-meal": "#f59e0b",
+                    "on-tertiary": "#003824",
+                    "activity-hotel": "#a855f7",
+                    "surface-container-high": "#262a35",
+                    "tertiary-container": "#00885d",
+                    "surface-container": "#1c1f2a",
+                    "error-container": "#93000a",
+                    "status-success": "#10b981",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "outline": "#908fa0",
+                    "inverse-on-surface": "#2c303b",
+                    "on-secondary-container": "#c4abff"
+                },
+                "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+                },
+                "spacing": {
+                    "container-max": "1440px",
+                    "margin-desktop": "40px",
+                    "stack-sm": "8px",
+                    "stack-md": "16px",
+                    "stack-lg": "32px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px"
+                },
+                "fontFamily": {
+                    "headline-lg": ["Outfit"],
+                    "body-md": ["Inter"],
+                    "code-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Outfit"],
+                    "display-lg": ["Outfit"],
+                    "display-lg-mobile": ["Outfit"],
+                    "label-md": ["Inter"]
+                },
+                "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "code-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "display-lg-mobile": ["36px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                }
+            },
+        },
+    }
+  </script>
 </head>
 <body>
   <app-root></app-root>

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -11,7 +11,7 @@ import { AuthService } from '../../../services/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -25,6 +25,37 @@ export class LoginComponent {
   // State variables using Signals
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
+  
+  // Carousel and Password signals
+  readonly currentSlide = signal<number>(0);
+  readonly showPassword = signal<boolean>(false);
+  readonly totalSlides = 2;
+  private carouselInterval: any;
+
+  ngOnInit(): void {
+    // Auto transition slides every 8 seconds
+    this.carouselInterval = setInterval(() => {
+      this.nextSlide();
+    }, 8000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.carouselInterval) {
+      clearInterval(this.carouselInterval);
+    }
+  }
+
+  nextSlide(): void {
+    this.currentSlide.update(idx => (idx + 1) % this.totalSlides);
+  }
+
+  prevSlide(): void {
+    this.currentSlide.update(idx => (idx - 1 + this.totalSlides) % this.totalSlides);
+  }
+
+  togglePassword(): void {
+    this.showPassword.update(show => !show);
+  }
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
@@ -40,12 +71,10 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        // Successful login, navigate to dashboard
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.isLoading.set(false);
-        // Extract error message from API response envelope if available
         if (err.error && err.error.message) {
           this.errorMessage.set(err.error.message);
         } else {

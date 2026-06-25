@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -11,7 +11,7 @@ import { AuthService } from '../../../services/auth.service';
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -27,6 +27,37 @@ export class RegisterComponent {
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
+
+  // Carousel and Password signals
+  readonly currentSlide = signal<number>(0);
+  readonly showPassword = signal<boolean>(false);
+  readonly totalSlides = 2;
+  private carouselInterval: any;
+
+  ngOnInit(): void {
+    // Auto transition slides every 8 seconds
+    this.carouselInterval = setInterval(() => {
+      this.nextSlide();
+    }, 8000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.carouselInterval) {
+      clearInterval(this.carouselInterval);
+    }
+  }
+
+  nextSlide(): void {
+    this.currentSlide.update(idx => (idx + 1) % this.totalSlides);
+  }
+
+  prevSlide(): void {
+    this.currentSlide.update(idx => (idx - 1 + this.totalSlides) % this.totalSlides);
+  }
+
+  togglePassword(): void {
+    this.showPassword.update(show => !show);
+  }
 
   onSubmit(): void {
     if (this.registerForm.invalid) {
@@ -44,9 +75,7 @@ export class RegisterComponent {
       next: (res) => {
         this.isLoading.set(false);
         this.successMessage.set('Đăng ký tài khoản thành công! Đang chuyển hướng đến trang đăng nhập...');
-        // Disable form to prevent double submits
         this.registerForm.disable();
-        // Redirect after a brief delay
         setTimeout(() => {
           this.router.navigate(['/login']);
         }, 2000);

@@ -1,1 +1,108 @@
-<router-outlet></router-outlet>
+@if (isAuthenticated()) {
+  <header class="fixed top-0 left-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-border-glass px-10 h-16 flex items-center justify-between select-none">
+    <div class="flex items-center gap-2 cursor-pointer" routerLink="/dashboard" [queryParams]="{tab: 'explore'}">
+      <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">travel_explore</span>
+      <span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Aether Travel</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-8 h-16">
+      <a 
+        routerLink="/dashboard" 
+        [queryParams]="{tab: 'explore'}"
+        class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
+      >
+        <span>Dashboard</span>
+        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentTab('explore')"></div>
+      </a>
+      <a 
+        routerLink="/dashboard" 
+        [queryParams]="{tab: 'my-trips'}"
+        class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
+      >
+        <span>Trips</span>
+        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentTab('my-trips')"></div>
+      </a>
+      <a 
+        routerLink="/dashboard" 
+        [queryParams]="{tab: 'map'}"
+        class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
+      >
+        <span>Map</span>
+        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentTab('map')"></div>
+      </a>
+      <a 
+        routerLink="/profile" 
+        class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
+      >
+        <span>Profile</span>
+        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentPath('/profile')"></div>
+      </a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <button class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
+      <a routerLink="/profile" class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
+        <img
+          *ngIf="currentUser()?.avatar_url; else defaultAvatar"
+          [src]="currentUser()?.avatar_url"
+          class="w-8 h-8 rounded-full object-cover border border-primary/30"
+          alt="User"
+        />
+        <ng-template #defaultAvatar>
+          <span class="material-symbols-outlined text-[24px]">account_circle</span>
+        </ng-template>
+      </a>
+      <button (click)="logout()" class="material-symbols-outlined text-on-surface-variant hover:bg-white/10 hover:text-status-rose transition-all duration-300 p-2 rounded-full border-none bg-transparent cursor-pointer" title="Đăng xuất">
+        logout
+      </button>
+    </div>
+  </header>
+  <div class="noise-bg fixed inset-0 z-0"></div>
+
+  <!-- Bottom Navigation (Mobile Only) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface/80 backdrop-blur-xl border-t border-glass flex justify-around items-center px-4 z-50">
+    <button 
+      class="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer" 
+      [class.text-primary]="isCurrentTab('explore')"
+      [class.text-on-surface-variant]="!isCurrentTab('explore')"
+      routerLink="/dashboard" 
+      [queryParams]="{tab: 'explore'}"
+    >
+      <span class="material-symbols-outlined" [style.font-variation-settings]="isCurrentTab('explore') ? 'FILL 1' : 'FILL 0'">dashboard</span>
+      <span class="text-[10px] font-bold uppercase tracking-tighter">Dash</span>
+    </button>
+    <button 
+      class="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer"
+      [class.text-primary]="isCurrentTab('my-trips')"
+      [class.text-on-surface-variant]="!isCurrentTab('my-trips')"
+      routerLink="/dashboard" 
+      [queryParams]="{tab: 'my-trips'}"
+    >
+      <span class="material-symbols-outlined" [style.font-variation-settings]="isCurrentTab('my-trips') ? 'FILL 1' : 'FILL 0'">explore</span>
+      <span class="text-[10px] font-bold uppercase tracking-tighter">Trips</span>
+    </button>
+    <button 
+      class="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer"
+      [class.text-primary]="isCurrentTab('map')"
+      [class.text-on-surface-variant]="!isCurrentTab('map')"
+      routerLink="/dashboard" 
+      [queryParams]="{tab: 'map'}"
+    >
+      <span class="material-symbols-outlined" [style.font-variation-settings]="isCurrentTab('map') ? 'FILL 1' : 'FILL 0'">map</span>
+      <span class="text-[10px] font-bold uppercase tracking-tighter">Map</span>
+    </button>
+    <button 
+      class="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer"
+      [class.text-primary]="isCurrentPath('/profile')"
+      [class.text-on-surface-variant]="!isCurrentPath('/profile')"
+      routerLink="/profile"
+    >
+      <span class="material-symbols-outlined" [style.font-variation-settings]="isCurrentPath('/profile') ? 'FILL 1' : 'FILL 0'">person</span>
+      <span class="text-[10px] font-bold uppercase tracking-tighter">Profile</span>
+    </button>
+  </nav>
+}
+
+<div [class.pt-16]="isAuthenticated()" [class.pb-16]="isAuthenticated()" class="min-h-screen flex flex-col relative z-10 md:pb-0">
+  <router-outlet></router-outlet>
+</div>
