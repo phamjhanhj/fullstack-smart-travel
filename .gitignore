@@ -1,0 +1,20 @@
+# Python / Virtual Environment
+backend/venv/
+backend/.env
+backend/__pycache__/
+backend/**/*.pyc
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/tmp/
+frontend/out-tsc/
+
+# IDE / Editor folders
+.vscode/
+.idea/
+
+# Misc
+*.zip
+*.log
