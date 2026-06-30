@@ -2,9 +2,47 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
+  /* Core variables */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --color-primary: #ff385c;
   --color-primary-hover: #e00b41;
   --color-primary-disabled: #ffd1da;
+  
+  /* Primary Tint / Accents (Dark Mode) */
+  --color-primary-tint: #c0c1ff;
+  --color-primary-container: #8083ff;
+  --color-secondary: #d0bcff;
+  --color-tertiary: #4edea3;
+  --color-tertiary-container: #00885d;
+  
+  /* Surface colors */
+  --color-background: #0f131d;
+  --color-bg-slate-light: #111827;
+  --color-bg-slate-deep: #0b0f19;
+  
+  --color-surface: #0f131d;
+  --color-surface-container: #1c1f2a;
+  --color-surface-container-low: #171b26;
+  --color-surface-container-high: #262a35;
+  --color-surface-container-highest: #313540;
+  --color-surface-container-lowest: #0a0e18;
+  
+  /* Foreground colors */
+  --color-on-surface: #dfe2f1;
+  --color-on-surface-variant: #c7c4d7;
+  --color-outline: #908fa0;
+  --color-outline-variant: #464554;
+  --color-border-glass: rgba(255, 255, 255, 0.1);
+
+  /* Glassmorphism overrides */
+  --color-glass-card-bg: rgba(31, 41, 55, 0.4);
+  --color-glass-card-border: rgba(24, 18, 18, 0.08);
+  --color-glass-card-hover-border: rgba(192, 193, 255, 0.25);
+  --color-glass-panel-bg: rgba(17, 24, 39, 0.7);
+  --color-glass-panel-border: rgba(255, 255, 255, 0.1);
+  --color-hero-gradient: linear-gradient(rgba(11, 15, 25, 0.6), rgba(11, 15, 25, 0.8));
+  
+  /* Legacy styles.css variables mapped */
   --color-ink: #dfe2f1;
   --color-body: #c7c4d7;
   --color-muted: #908fa0;
@@ -17,8 +55,58 @@
   --color-error-bg: rgba(255, 180, 171, 0.1);
   --color-success-text: #10b981;
   --color-success-bg: rgba(16, 185, 129, 0.1);
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --shadow-tier: rgba(255, 255, 255, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.4) 0 4px 12px 0;
+}
+
+html.light {
+  /* Primary Tint / Accents (Ethereal Clarity overrides) */
+  --color-primary-tint: #4648d4;       /* primary */
+  --color-primary-container: #6063ee;  /* primary-container */
+  --color-secondary: #712ae2;          /* secondary */
+  --color-tertiary: #904900;           /* tertiary */
+  --color-tertiary-container: #b55d00;  /* tertiary-container */
+  
+  /* Surface colors */
+  --color-background: #fcf8ff;         /* background */
+  --color-bg-slate-light: #e4e1ed;     /* surface-variant */
+  --color-bg-slate-deep: #ffffff;      /* surface-container-lowest */
+  
+  --color-surface: #fcf8ff;            /* surface */
+  --color-surface-container: #efecf8;  /* surface-container */
+  --color-surface-container-low: #f5f2fe; /* surface-container-low */
+  --color-surface-container-high: #e9e6f3; /* surface-container-high */
+  --color-surface-container-highest: #e4e1ed; /* surface-container-highest */
+  --color-surface-container-lowest: #ffffff; /* surface-container-lowest */
+  
+  /* Foreground colors */
+  --color-on-surface: #1b1b23;         /* on-surface */
+  --color-on-surface-variant: #464554; /* on-surface-variant */
+  --color-outline: #767586;            /* outline */
+  --color-outline-variant: #c7c4d7;    /* outline-variant */
+  --color-border-glass: rgba(70, 72, 212, 0.08); /* light violet tinted transparent border */
+
+  /* Glassmorphism overrides */
+  --color-glass-card-bg: rgba(255, 255, 255, 0.8);
+  --color-glass-card-border: rgba(70, 72, 212, 0.08);
+  --color-glass-card-hover-border: rgba(70, 72, 212, 0.16);
+  --color-glass-panel-bg: rgba(255, 255, 255, 0.85);
+  --color-glass-panel-border: rgba(70, 72, 212, 0.08);
+  --color-hero-gradient: linear-gradient(rgba(252, 248, 255, 0.5), rgba(252, 248, 255, 0.85));
+  
+  /* Legacy styles.css variables mapped */
+  --color-ink: #1b1b23;
+  --color-body: #464554;
+  --color-muted: #767586;
+  --color-hairline: rgba(70, 72, 212, 0.08);
+  --color-border-strong: rgba(27, 27, 35, 0.12);
+  --color-canvas: #ffffff;
+  --color-surface-soft: #fcf8ff;
+  --color-surface-strong: #e9e6f3;
+  --color-error-text: #ba1a1a;         /* error */
+  --color-error-bg: rgba(186, 26, 26, 0.08);
+  --color-success-text: #0f9d58;
+  --color-success-bg: rgba(15, 157, 88, 0.08);
+  --shadow-tier: 0 10px 30px -10px rgba(70, 72, 212, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -282,4 +370,17 @@ body {
   .auth-form-panel {
     padding: 24px;
   }
+}
+
+/* Hero Banner color adaptivity based on active theme */
+html.light #explore-view section.group h1 {
+  color: var(--color-on-surface) !important;
+}
+
+html.light #explore-view section.group p {
+  color: var(--color-on-surface-variant) !important;
+}
+
+html.light #explore-view section.group div[style*="background"] {
+  background: var(--color-hero-gradient), url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2073&auto=format&fit=crop') !important;
 }

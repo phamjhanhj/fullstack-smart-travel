@@ -38,6 +38,10 @@
       </a>
     </nav>
     <div class="flex items-center gap-4">
+      <!-- Theme Switcher -->
+      <button (click)="toggleTheme()" class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer flex items-center justify-center" title="Đổi giao diện">
+        <span class="material-symbols-outlined">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</span>
+      </button>
       <button class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer">
         <span class="material-symbols-outlined">notifications</span>
       </button>

@@ -2,29 +2,29 @@
   display: block;
   width: 100%;
   min-height: 100vh;
-  background-color: #0b0f19;
-  color: #dfe2f1;
+  background-color: var(--color-bg-slate-deep);
+  color: var(--color-on-surface);
   font-family: 'Inter', sans-serif;
 }
 
 /* Glass Panels & Surfaces */
 .glass-panel {
-  background: rgba(17, 24, 39, 0.7);
+  background: var(--color-glass-panel-bg);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-glass-panel-border);
 }
 
 .glass-card {
-  background: rgba(31, 41, 55, 0.4);
+  background: var(--color-glass-card-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(24, 18, 18, 0.08);
+  border: 1px solid var(--color-glass-card-border);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(192, 193, 255, 0.25);
-  box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.25);
+  border-color: var(--color-glass-card-hover-border);
+  box-shadow: var(--shadow-tier);
 }
 
 /* Animations */
@@ -52,8 +52,8 @@
 .custom-map-pin {
   width: 36px;
   height: 36px;
-  background: rgba(17, 24, 39, 0.95);
-  border: 2px solid #c0c1ff;
+  background: var(--color-surface-container);
+  border: 2px solid var(--color-primary-tint);
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
   display: flex;
@@ -65,7 +65,7 @@
 
 .custom-map-pin:hover {
   transform: rotate(-45deg) scale(1.15);
-  border-color: #6366f1;
+  border-color: var(--color-primary-container);
 }
 
 .pin-emoji {
@@ -181,20 +181,20 @@ select {
 
 /* Map Popups custom overrides */
 .leaflet-popup-content-wrapper {
-  background: rgba(28, 31, 42, 0.95) !important;
+  background: var(--color-surface-container) !important;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-glass);
   border-radius: 12px !important;
-  color: #dfe2f1 !important;
+  color: var(--color-on-surface) !important;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
 .leaflet-popup-tip {
-  background: rgba(28, 31, 42, 0.95) !important;
+  background: var(--color-surface-container) !important;
 }
 
 .leaflet-container a.leaflet-popup-close-button {
-  color: #c7c4d7 !important;
+  color: var(--color-on-surface-variant) !important;
   padding: 8px !important;
 }
 
