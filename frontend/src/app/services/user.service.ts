@@ -31,27 +31,16 @@ export class UserService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:8000/api';
 
-  private getHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  }
-
   getUserProfile(): Observable<ResponseEnvelope<UserProfileResponse>> {
     return this.http.get<ResponseEnvelope<UserProfileResponse>>(
-      `${this.baseUrl}/users/me`,
-      this.getHeaders()
+      `${this.baseUrl}/users/me`
     );
   }
 
   updateUserProfile(payload: UpdateProfileRequest): Observable<ResponseEnvelope<UserProfileResponse>> {
     return this.http.patch<ResponseEnvelope<UserProfileResponse>>(
       `${this.baseUrl}/users/me`,
-      payload,
-      this.getHeaders()
+      payload
     );
   }
 }

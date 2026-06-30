@@ -98,13 +98,8 @@ export class AuthService {
   }
 
   fetchProfile(): Observable<UserInfo> {
-    const accessToken = localStorage.getItem('access_token');
     return this.http
-      .get<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
+      .get<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/me`)
       .pipe(
         map((response) => response.data),
         tap((user) => this.currentUser.set(user)),

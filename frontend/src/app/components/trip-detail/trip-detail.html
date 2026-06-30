@@ -239,8 +239,11 @@
             <div
               class="relative ml-6 pl-8 border-l-2 border-dashed border-glass space-y-6"
               *ngIf="day.activities.length > 0"
+              cdkDropList
+              [cdkDropListData]="day.activities"
+              (cdkDropListDropped)="onActivityDrop($event, day.id)"
             >
-              <div class="relative" *ngFor="let act of day.activities">
+              <div class="relative" *ngFor="let act of day.activities" cdkDrag>
                 <!-- Color-coded marker nodes -->
                 <div
                   class="absolute -left-[41px] top-4 w-4 h-4 rounded-full border-4 border-bg-slate-deep z-10"
@@ -265,7 +268,7 @@
                   >
                     <ng-container *ngIf="act.location?.photo_url; else fallbackIcon">
                       <img
-                        [src]="act.location?.photo_url"
+                        [src]="act.location!.photo_url"
                         class="w-full h-full object-cover"
                         [alt]="act.title"
                       />
@@ -281,13 +284,22 @@
                       <h3 class="font-bold text-lg text-white truncate" [title]="act.title">
                         {{ act.title }}
                       </h3>
-                      <button
-                        class="text-on-surface-variant hover:text-status-warning transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
-                        (click)="onDeleteActivity(act.id)"
-                        title="Xóa hoạt động"
-                      >
-                        <span class="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
+                      <div class="flex items-center gap-1.5 shrink-0">
+                        <button
+                          class="text-on-surface-variant hover:text-status-warning transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
+                          (click)="onDeleteActivity(act.id)"
+                          title="Xóa hoạt động"
+                        >
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                        <div
+                          class="text-on-surface-variant hover:text-white transition-colors cursor-grab active:cursor-grabbing flex items-center justify-center p-1"
+                          cdkDragHandle
+                          title="Kéo thả để sắp xếp"
+                        >
+                          <span class="material-symbols-outlined text-[20px]">drag_indicator</span>
+                        </div>
+                      </div>
                     </div>
 
                     <p

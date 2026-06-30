@@ -259,105 +259,95 @@ export class TripService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:8000/api';
 
-  private getHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  }
-
   listTrips(status?: string, page = 1, limit = 20): Observable<ResponseEnvelope<TripListResponse>> {
     let url = `${this.baseUrl}/trips?page=${page}&limit=${limit}`;
     if (status) {
       url += `&status=${status}`;
     }
-    return this.http.get<ResponseEnvelope<TripListResponse>>(url, this.getHeaders());
+    return this.http.get<ResponseEnvelope<TripListResponse>>(url);
   }
 
   createTrip(trip: CreateTripRequest): Observable<ResponseEnvelope<TripResponse>> {
     return this.http.post<ResponseEnvelope<TripResponse>>(
       `${this.baseUrl}/trips`,
-      trip,
-      this.getHeaders()
+      trip
     );
   }
 
   getTripDetail(tripId: string): Observable<ResponseEnvelope<TripResponse>> {
     return this.http.get<ResponseEnvelope<TripResponse>>(
-      `${this.baseUrl}/trips/${tripId}`,
-      this.getHeaders()
+      `${this.baseUrl}/trips/${tripId}`
     );
   }
 
   updateTrip(tripId: string, payload: UpdateTripRequest): Observable<ResponseEnvelope<TripResponse>> {
     return this.http.put<ResponseEnvelope<TripResponse>>(
       `${this.baseUrl}/trips/${tripId}`,
-      payload,
-      this.getHeaders()
+      payload
     );
   }
 
   deleteTrip(tripId: string): Observable<ResponseEnvelope<any>> {
     return this.http.delete<ResponseEnvelope<any>>(
-      `${this.baseUrl}/trips/${tripId}`,
-      this.getHeaders()
+      `${this.baseUrl}/trips/${tripId}`
     );
   }
 
   // Day plans & activities
   listDays(tripId: string): Observable<ResponseEnvelope<DayPlanResponse[]>> {
     return this.http.get<ResponseEnvelope<DayPlanResponse[]>>(
-      `${this.baseUrl}/trips/${tripId}/days`,
-      this.getHeaders()
+      `${this.baseUrl}/trips/${tripId}/days`
     );
   }
 
   generateDays(tripId: string, overwrite = false): Observable<ResponseEnvelope<DayPlanBrief[]>> {
     return this.http.post<ResponseEnvelope<DayPlanBrief[]>>(
       `${this.baseUrl}/trips/${tripId}/days/generate`,
-      { overwrite },
-      this.getHeaders()
+      { overwrite }
     );
   }
 
   addActivity(tripId: string, dayId: string, activity: CreateActivityRequest): Observable<ResponseEnvelope<ActivityResponse>> {
     return this.http.post<ResponseEnvelope<ActivityResponse>>(
       `${this.baseUrl}/trips/${tripId}/days/${dayId}/activities`,
-      activity,
-      this.getHeaders()
+      activity
     );
   }
 
   updateActivity(activityId: string, activity: UpdateActivityRequest): Observable<ResponseEnvelope<ActivityResponse>> {
     return this.http.put<ResponseEnvelope<ActivityResponse>>(
       `${this.baseUrl}/activities/${activityId}`,
-      activity,
-      this.getHeaders()
+      activity
     );
   }
 
   deleteActivity(activityId: string): Observable<ResponseEnvelope<any>> {
     return this.http.delete<ResponseEnvelope<any>>(
-      `${this.baseUrl}/activities/${activityId}`,
-      this.getHeaders()
+      `${this.baseUrl}/activities/${activityId}`
+    );
+  }
+
+  reorderActivities(
+    dayPlanId: string,
+    items: { id: string; order_index: number }[],
+  ): Observable<ResponseEnvelope<any>> {
+    return this.http.patch<ResponseEnvelope<any>>(
+      `${this.baseUrl}/activities/reorder`,
+      { day_plan_id: dayPlanId, items }
     );
   }
 
   // AI Chat & suggestions
   getChatHistory(tripId: string): Observable<ResponseEnvelope<ChatHistoryItem[]>> {
     return this.http.get<ResponseEnvelope<ChatHistoryItem[]>>(
-      `${this.baseUrl}/trips/${tripId}/chat/history`,
-      this.getHeaders()
+      `${this.baseUrl}/trips/${tripId}/chat/history`
     );
   }
 
   sendMessage(tripId: string, message: string): Observable<ResponseEnvelope<ChatMessageResponse>> {
     return this.http.post<ResponseEnvelope<ChatMessageResponse>>(
       `${this.baseUrl}/trips/${tripId}/chat`,
-      { message, stream: false },
-      this.getHeaders()
+      { message, stream: false }
     );
   }
 
@@ -366,22 +356,20 @@ export class TripService {
     if (status) {
       url += `?status=${status}`;
     }
-    return this.http.get<ResponseEnvelope<AiSuggestionResponse[]>>(url, this.getHeaders());
+    return this.http.get<ResponseEnvelope<AiSuggestionResponse[]>>(url);
   }
 
   updateSuggestionStatus(suggestionId: string, status: 'accepted' | 'rejected'): Observable<ResponseEnvelope<UpdateSuggestionStatusResponse>> {
     return this.http.patch<ResponseEnvelope<UpdateSuggestionStatusResponse>>(
       `${this.baseUrl}/suggestions/${suggestionId}/status`,
-      { status },
-      this.getHeaders()
+      { status }
     );
   }
 
   // Budget management
   getBudgetSummary(tripId: string): Observable<ResponseEnvelope<BudgetSummaryResponse>> {
     return this.http.get<ResponseEnvelope<BudgetSummaryResponse>>(
-      `${this.baseUrl}/trips/${tripId}/budget`,
-      this.getHeaders()
+      `${this.baseUrl}/trips/${tripId}/budget`
     );
   }
 
@@ -390,29 +378,26 @@ export class TripService {
     if (category) {
       url += `?category=${category}`;
     }
-    return this.http.get<ResponseEnvelope<BudgetItemResponse[]>>(url, this.getHeaders());
+    return this.http.get<ResponseEnvelope<BudgetItemResponse[]>>(url);
   }
 
   addBudgetItem(tripId: string, item: CreateBudgetItemRequest): Observable<ResponseEnvelope<BudgetItemResponse>> {
     return this.http.post<ResponseEnvelope<BudgetItemResponse>>(
       `${this.baseUrl}/trips/${tripId}/budget/items`,
-      item,
-      this.getHeaders()
+      item
     );
   }
 
   updateBudgetItem(itemId: string, item: UpdateBudgetItemRequest): Observable<ResponseEnvelope<BudgetItemResponse>> {
     return this.http.put<ResponseEnvelope<BudgetItemResponse>>(
       `${this.baseUrl}/budget/items/${itemId}`,
-      item,
-      this.getHeaders()
+      item
     );
   }
 
   deleteBudgetItem(itemId: string): Observable<ResponseEnvelope<any>> {
     return this.http.delete<ResponseEnvelope<any>>(
-      `${this.baseUrl}/budget/items/${itemId}`,
-      this.getHeaders()
+      `${this.baseUrl}/budget/items/${itemId}`
     );
   }
 
@@ -422,7 +407,7 @@ export class TripService {
     if (destination) {
       url += `&destination=${destination}`;
     }
-    return this.http.get<ResponseEnvelope<LocationResponse[]>>(url, this.getHeaders());
+    return this.http.get<ResponseEnvelope<LocationResponse[]>>(url);
   }
 
   searchNearby(lat: number, lng: number, category?: string, radius = 1000): Observable<ResponseEnvelope<NearbyLocationResponse[]>> {
@@ -430,15 +415,13 @@ export class TripService {
     if (category) {
       url += `&category=${category}`;
     }
-    return this.http.get<ResponseEnvelope<NearbyLocationResponse[]>>(url, this.getHeaders());
+    return this.http.get<ResponseEnvelope<NearbyLocationResponse[]>>(url);
   }
 
   upsertLocation(payload: UpsertLocationRequest): Observable<ResponseEnvelope<UpsertLocationResponse>> {
     return this.http.post<ResponseEnvelope<UpsertLocationResponse>>(
       `${this.baseUrl}/locations`,
-      payload,
-      this.getHeaders()
+      payload
     );
   }
 }
-

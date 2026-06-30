@@ -6,6 +6,8 @@ import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angu
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TripService, TripListItem, CreateTripRequest } from '../../services/trip.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,6 +39,7 @@ export class DashboardComponent implements OnInit {
   readonly isModalOpen = signal<boolean>(false);
   readonly modalErrorMessage = signal<string | null>(null);
   readonly submitProgressMessage = signal<string | null>(null);
+  readonly overBudgetTrips = signal<TripListItem[]>([]);
 
   // Airbnb Hub State
   readonly activeTab = signal<string>('explore'); // 'my-trips', 'explore', or 'map'
@@ -208,6 +211,7 @@ export class DashboardComponent implements OnInit {
         this.isLoading.set(false);
         if (res && res.data && res.data.items) {
           this.trips.set(res.data.items);
+          this.checkOverBudgetTrips();
           if (this.activeTab() === 'map') {
             this.initOrRefreshDashboardMap();
           }
@@ -221,6 +225,30 @@ export class DashboardComponent implements OnInit {
           this.errorMessage.set('Không thể tải danh sách chuyến đi. Vui lòng thử lại sau.');
         }
       },
+    });
+  }
+
+  checkOverBudgetTrips(): void {
+    const activeTrips = this.trips().filter(t => t.status === 'active');
+    if (activeTrips.length === 0) {
+      this.overBudgetTrips.set([]);
+      return;
+    }
+
+    const requests = activeTrips.map(trip =>
+      this.tripService.getBudgetSummary(trip.id).pipe(
+        catchError(() => of(null))
+      )
+    );
+
+    forkJoin(requests).subscribe((summaries) => {
+      const overspent: TripListItem[] = [];
+      summaries.forEach((summary, index) => {
+        if (summary && summary.data && summary.data.overspent) {
+          overspent.push(activeTrips[index]);
+        }
+      });
+      this.overBudgetTrips.set(overspent);
     });
   }
 

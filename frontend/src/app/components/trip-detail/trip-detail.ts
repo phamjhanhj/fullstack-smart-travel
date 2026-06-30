@@ -4,7 +4,9 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../../services/auth.service';
+import { AiStreamService } from '../../services/ai-stream.service';
 import {
   TripService,
   TripResponse,
@@ -24,7 +26,7 @@ import {
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, DragDropModule],
   templateUrl: './trip-detail.html',
   styleUrl: './trip-detail.css',
 })
@@ -32,6 +34,7 @@ export class TripDetailComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly tripService = inject(TripService);
+  private readonly aiStreamService = inject(AiStreamService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -256,25 +259,49 @@ export class TripDetailComponent implements OnInit {
   }
 
   private sendMessageToAi(messageText: string): void {
-    this.tripService.sendMessage(this.tripId, messageText).subscribe({
-      next: (res) => {
-        this.isSendingMessage.set(false);
-        if (res && res.data) {
-          const aiMsg: ChatHistoryItem = {
-            id: res.data.message_id,
-            role: 'assistant',
-            message: res.data.message,
-            created_at: res.data.created_at,
-          };
-          this.chatHistory.update((hist) => [...hist, aiMsg]);
-          this.scrollToBottom();
-          this.fetchChatAndSuggestions(); // Refresh suggestions queue
-        }
+    const tempAiId = 'temp-ai-' + Date.now();
+    const initialAiMsg: ChatHistoryItem = {
+      id: tempAiId,
+      role: 'assistant',
+      message: '',
+      created_at: new Date().toISOString(),
+    };
+    this.chatHistory.update((hist) => [...hist, initialAiMsg]);
+    this.scrollToBottom();
+
+    this.aiStreamService.streamMessage(
+      this.tripId,
+      messageText,
+      (delta) => {
+        this.chatHistory.update((hist) =>
+          hist.map((msg) =>
+            msg.id === tempAiId
+              ? { ...msg, message: msg.message + delta }
+              : msg
+          )
+        );
+        this.scrollToBottom();
       },
-      error: () => {
+      (messageId, suggestionId) => {
         this.isSendingMessage.set(false);
+        this.chatHistory.update((hist) =>
+          hist.map((msg) =>
+            msg.id === tempAiId ? { ...msg, id: messageId } : msg
+          )
+        );
+        this.fetchChatAndSuggestions(); // Refresh suggestions queue
       },
-    });
+      (err) => {
+        this.isSendingMessage.set(false);
+        this.chatHistory.update((hist) =>
+          hist.map((msg) =>
+            msg.id === tempAiId
+              ? { ...msg, message: 'Đã có lỗi xảy ra trong quá trình kết nối với AI.' }
+              : msg
+          )
+        );
+      }
+    );
   }
 
   // Accept / Reject AI Suggestion
@@ -295,6 +322,38 @@ export class TripDetailComponent implements OnInit {
     this.tripService.updateSuggestionStatus(suggestionId, 'rejected').subscribe({
       next: () => {
         this.activeSuggestions.update((list) => list.filter((s) => s.id !== suggestionId));
+      },
+    });
+  }
+
+  onActivityDrop(event: CdkDragDrop<ActivityResponse[]>, dayPlanId: string): void {
+    if (event.previousIndex === event.currentIndex) return;
+
+    const day = this.days().find((d) => d.id === dayPlanId);
+    if (!day) return;
+
+    const activities = [...day.activities];
+    moveItemInArray(activities, event.previousIndex, event.currentIndex);
+
+    // Optimistic state update
+    this.days.update((allDays) =>
+      allDays.map((d) => (d.id === dayPlanId ? { ...d, activities } : d))
+    );
+
+    // Build items payload for reordering
+    const payload = activities.map((act, idx) => ({
+      id: act.id,
+      order_index: idx,
+    }));
+
+    this.tripService.reorderActivities(dayPlanId, payload).subscribe({
+      next: () => {
+        // Success
+      },
+      error: (err) => {
+        console.error('Reorder failed, fetching original itinerary:', err);
+        this.fetchItinerary();
+        alert(err?.error?.message || 'Có lỗi xảy ra khi cập nhật thứ tự hoạt động.');
       },
     });
   }

@@ -1,4 +1,23 @@
 <main class="relative z-10">
+  <!-- Over-budget warnings banner -->
+  <div class="budget-warning-banner mx-[80px] mt-6 px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between shadow-lg select-none animate-fade-in" *ngIf="overBudgetTrips().length > 0">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-2xl text-rose-500">warning</span>
+      <div>
+        <h4 class="font-bold text-sm text-white">Cảnh báo chi tiêu vượt ngân sách!</h4>
+        <p class="text-xs text-on-surface-variant mt-0.5">
+          Bạn có chuyến đi đang vượt định mức ngân sách: 
+          <span class="font-bold text-rose-400" *ngFor="let trip of overBudgetTrips(); let last = last">
+            "{{ trip.title }}"{{ !last ? ', ' : '' }}
+          </span>. Hãy kiểm tra lại tab Quản lý chi tiêu của chuyến đi để tối ưu hóa.
+        </p>
+      </div>
+    </div>
+    <a [routerLink]="['/trip', overBudgetTrips()[0].id]" [queryParams]="{ tab: 'budget' }" class="px-4 py-2 bg-rose-500 text-white text-xs font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer no-underline shrink-0">
+      Xem chi tiết
+    </a>
+  </div>
+
   <!-- Active Tab: EXPLORE (Discovery Hub) -->
   <div id="explore-view" *ngIf="activeTab() === 'explore'" class="flex items-start">
     <!-- Pinned Left Sidebar: sticky part of flex flow -->
