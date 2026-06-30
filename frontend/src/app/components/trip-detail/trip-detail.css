@@ -1,8 +1,7 @@
 :host {
   display: block;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   background-color: #0b0f19;
   color: #dfe2f1;
   font-family: 'Inter', sans-serif;
@@ -18,7 +17,7 @@
 .glass-card {
   background: rgba(31, 41, 55, 0.4);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(24, 18, 18, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -112,10 +111,13 @@
 }
 
 @keyframes dotSpin {
-  0%, 80%, 100% { 
+  0%,
+  80%,
+  100% {
     transform: scale(0);
-  } 40% { 
-    transform: scale(1.0);
+  }
+  40% {
+    transform: scale(1);
   }
 }
 
@@ -149,13 +151,23 @@
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalScaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Custom form utilities */
@@ -174,7 +186,7 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px !important;
   color: #dfe2f1 !important;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
 .leaflet-popup-tip {
@@ -187,5 +199,5 @@ select {
 }
 
 .leaflet-container a.leaflet-popup-close-button:hover {
-  color: #white !important;
+  color: white !important;
 }

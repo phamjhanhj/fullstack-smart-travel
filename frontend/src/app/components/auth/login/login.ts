@@ -71,7 +71,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.authService.login(email, password).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/dashboard'], { queryParams: { tab: 'explore' } });
       },
       error: (err) => {
         this.isLoading.set(false);

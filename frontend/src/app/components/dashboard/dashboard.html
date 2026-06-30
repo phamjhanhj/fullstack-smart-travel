@@ -1,102 +1,199 @@
-
-<main class="max-w-container-max mx-auto px-margin-desktop py-stack-lg relative z-10">
+<main class="relative z-10">
   <!-- Active Tab: EXPLORE (Discovery Hub) -->
-  <div id="explore-view" *ngIf="activeTab() === 'explore'">
-    <!-- Category Navigation Strip -->
-    <div class="flex items-center gap-stack-lg overflow-x-auto pb-4 mb-stack-lg no-scrollbar border-b border-glass select-none">
-      <button 
+  <div id="explore-view" *ngIf="activeTab() === 'explore'" class="flex items-start">
+    <!-- Pinned Left Sidebar: sticky part of flex flow -->
+    <aside
+      class="hidden md:flex w-64 shrink-0 sticky top-16 h-[calc(100vh-64px)] bg-surface-container/60 backdrop-blur-lg border-r border-glass shadow-lg flex-col py-8 z-40 select-none overflow-y-auto"
+    >
+      <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-4 px-6">
+        Danh mục
+      </h3>
+      <nav class="flex-1 space-y-1">
+        <button
+          *ngFor="let cat of categories"
+          (click)="selectCategory(cat.id)"
+          class="flex items-center gap-3 px-4 py-3 w-full font-label-md text-sm cursor-pointer transition-all duration-200 bg-transparent border-none text-left"
+          [ngClass]="{
+            'bg-primary-container/20 text-primary border-r-4 border-primary':
+              selectedCategory() === cat.id,
+            'text-on-surface-variant hover:bg-white/5 hover:translate-x-1':
+              selectedCategory() !== cat.id,
+          }"
+        >
+          <span class="text-base">{{ cat.icon }}</span>
+          <span>{{ cat.name }}</span>
+        </button>
+      </nav>
+    </aside>
+    <!-- Mobile: horizontal scroll category bar -->
+    <div
+      class="md:hidden flex flex-row gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-glass px-4 pt-4 w-full absolute top-0 left-0"
+    >
+      <button
         *ngFor="let cat of categories"
         (click)="selectCategory(cat.id)"
-        class="flex items-center gap-2 px-4 py-2 whitespace-nowrap text-sm font-label-md rounded-full border-none bg-transparent cursor-pointer transition-colors"
-        [class.text-primary]="selectedCategory() === cat.id"
-        [class.tab-active]="selectedCategory() === cat.id"
-        [class.text-on-surface-variant]="selectedCategory() !== cat.id"
-        [class.hover:text-on-surface]="selectedCategory() !== cat.id"
+        class="flex items-center gap-2 px-4 py-2 whitespace-nowrap text-xs font-bold rounded-xl border cursor-pointer transition-all"
+        [ngClass]="{
+          'text-primary bg-primary/10 border-primary/20': selectedCategory() === cat.id,
+          'text-on-surface-variant border-glass/40 bg-transparent': selectedCategory() !== cat.id,
+        }"
       >
-        {{ cat.icon }} {{ cat.name }}
+        <span>{{ cat.icon }}</span>
+        <span>{{ cat.name }}</span>
       </button>
     </div>
 
-    <!-- Premium Hero Banner -->
-    <section class="relative rounded-3xl overflow-hidden mb-stack-lg min-h-[400px] flex items-center p-stack-lg group">
-      <div class="absolute inset-0 z-0 transition-transform duration-700 group-hover:scale-105" style="background: linear-gradient(rgba(11, 15, 25, 0.6), rgba(11, 15, 25, 0.8)), url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2073&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
-      <div class="relative z-10 max-w-2xl">
-        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider mb-6 backdrop-blur-md">
-          <span class="material-symbols-outlined text-sm">auto_awesome</span> ✨ Trợ lý Lịch trình AI cá nhân hóa
-        </span>
-        <h1 class="font-display-lg text-display-lg md:text-5xl text-white mb-6 leading-tight m-0">Khám Phá Thế Giới Theo Cách Của Riêng Bạn</h1>
-        <p class="font-body-lg text-body-lg text-on-surface-variant mb-8 leading-relaxed max-w-xl m-0">
-          Lập lịch trình chi tiết về quán ăn, giá cả, phương tiện di chuyển và khách sạn chỉ trong 10 giây cùng AI.
-        </p>
-        <button class="flex items-center gap-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold px-8 py-4 rounded-2xl hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all text-lg cursor-pointer border-none" (click)="openModal()">
-          Lập kế hoạch ngay 🚀
-        </button>
-      </div>
-    </section>
-
-    <!-- Trending Destinations Grid -->
-    <section>
-      <div class="flex justify-between items-end mb-stack-md">
-        <div>
-          <h2 class="font-headline-md text-headline-md text-on-surface m-0">Điểm đến thịnh hành đề xuất bởi AI</h2>
-          <p class="text-on-surface-variant text-sm mt-1 mb-0">Dựa trên sở thích của cộng đồng và xu hướng du lịch hiện tại.</p>
+    <!-- Main Discovery Content: flex-1 fills remaining space, same padding as Trips/Map -->
+    <div class="flex-1 min-w-0 px-[80px] py-stack-lg space-y-stack-lg">
+      <!-- Premium Hero Banner -->
+      <section
+        class="relative rounded-3xl overflow-hidden min-h-[380px] flex items-center p-stack-lg group"
+      >
+        <div
+          class="absolute inset-0 z-0 transition-transform duration-700 group-hover:scale-105"
+          style="
+            background:
+              linear-gradient(rgba(11, 15, 25, 0.6), rgba(11, 15, 25, 0.8)),
+              url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2073&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+          "
+        ></div>
+        <div class="relative z-10 max-w-2xl">
+          <span
+            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider mb-6 backdrop-blur-md"
+          >
+            <span class="material-symbols-outlined text-sm">auto_awesome</span> ✨ Trợ lý Lịch trình
+            AI cá nhân hóa
+          </span>
+          <h1 class="font-display-lg text-display-lg md:text-5xl text-white mb-6 leading-tight m-0">
+            Khám Phá Thế Giới Theo Cách Của Riêng Bạn
+          </h1>
+          <p
+            class="font-body-lg text-body-lg text-on-surface-variant mb-8 leading-relaxed max-w-xl m-0"
+          >
+            Lập lịch trình chi tiết về quán ăn, giá cả, phương tiện di chuyển và khách sạn chỉ trong
+            10 giây cùng AI.
+          </p>
+          <button
+            class="flex items-center gap-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold px-8 py-4 rounded-2xl hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all text-lg cursor-pointer border-none"
+            (click)="openModal()"
+          >
+            Lập kế hoạch ngay 🚀
+          </button>
         </div>
-        <button class="text-primary text-sm font-label-md hover:underline bg-transparent border-none cursor-pointer">Xem tất cả</button>
-      </div>
+      </section>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-        <div class="glass-card rounded-2xl overflow-hidden group transition-all duration-300 hover:translate-y-[-8px] hover:shadow-2xl hover:shadow-primary/10 border-glass cursor-pointer"
-             *ngFor="let dest of getFilteredTrending()"
-             (click)="planTrending(dest)">
-          <div class="h-64 w-full relative overflow-hidden">
-            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" [style.background-image]="'url(' + dest.image + ')'"></div>
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-              <button class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-xl border-none cursor-pointer">
-                🚀 Lập hành trình ngay
-              </button>
-            </div>
-            <div class="absolute top-4 left-4">
-              <span class="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg">Trending</span>
-            </div>
+      <!-- Trending Destinations Grid -->
+      <section>
+        <div class="flex justify-between items-end mb-stack-md">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-on-surface m-0">
+              Điểm đến thịnh hành đề xuất bởi AI
+            </h2>
+            <p class="text-on-surface-variant text-sm mt-1 mb-0">
+              Dựa trên sở thích của cộng đồng và xu hướng du lịch hiện tại.
+            </p>
           </div>
-          <div class="p-stack-md">
-            <div class="flex justify-between items-start mb-2">
-              <h4 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors m-0">{{ dest.name }}</h4>
-              <div class="flex items-center gap-1 text-primary">
-                <span class="material-symbols-outlined text-sm">stars</span>
-                <span class="text-xs font-bold">4.9</span>
+          <button
+            class="text-primary text-sm font-label-md hover:underline bg-transparent border-none cursor-pointer"
+          >
+            Xem tất cả
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+          <div
+            class="glass-card rounded-2xl overflow-hidden group transition-all duration-300 hover:translate-y-[-8px] hover:shadow-2xl hover:shadow-primary/10 border-glass cursor-pointer"
+            *ngFor="let dest of getFilteredTrending()"
+            (click)="planTrending(dest)"
+          >
+            <div class="h-64 w-full relative overflow-hidden">
+              <div
+                class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                [style.background-image]="'url(' + dest.image + ')'"
+              ></div>
+              <div
+                class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center"
+              >
+                <button
+                  class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-xl border-none cursor-pointer"
+                >
+                  🚀 Lập hành trình ngay
+                </button>
+              </div>
+              <div class="absolute top-4 left-4">
+                <span
+                  class="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg"
+                  >Trending</span
+                >
               </div>
             </div>
-            <div class="flex items-center gap-3 text-on-surface-variant text-xs mb-3">
-              <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">location_on</span> {{ getTrendingCountry(dest.name) }}</span>
-              <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> {{ dest.days }} ngày</span>
-            </div>
-            <p class="text-sm text-on-surface-variant line-clamp-2 mb-4 leading-relaxed m-0">{{ dest.description }}</p>
-            <div class="flex justify-between items-center pt-3 border-t border-glass">
-              <span class="text-xs text-on-surface-variant uppercase font-bold tracking-tighter">Dự kiến chi phí</span>
-              <span class="text-lg font-bold text-tertiary">~{{ formatCurrency(dest.budget) }}</span>
+            <div class="p-stack-md">
+              <div class="flex justify-between items-start mb-2">
+                <h4
+                  class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors m-0"
+                >
+                  {{ dest.name }}
+                </h4>
+                <div class="flex items-center gap-1 text-primary">
+                  <span class="material-symbols-outlined text-sm">stars</span>
+                  <span class="text-xs font-bold">4.9</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 text-on-surface-variant text-xs mb-3">
+                <span class="flex items-center gap-1"
+                  ><span class="material-symbols-outlined text-[14px]">location_on</span>
+                  {{ getTrendingCountry(dest.name) }}</span
+                >
+                <span class="flex items-center gap-1"
+                  ><span class="material-symbols-outlined text-[14px]">schedule</span>
+                  {{ dest.days }} ngày</span
+                >
+              </div>
+              <p class="text-sm text-on-surface-variant line-clamp-2 mb-4 leading-relaxed m-0">
+                {{ dest.description }}
+              </p>
+              <div class="flex justify-between items-center pt-3 border-t border-glass">
+                <span class="text-xs text-on-surface-variant uppercase font-bold tracking-tighter"
+                  >Dự kiến chi phí</span
+                >
+                <span class="text-lg font-bold text-tertiary"
+                  >~{{ formatCurrency(dest.budget) }}</span
+                >
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </div>
 
   <!-- Active Tab: MY TRIPS (Personal Trips List) -->
-  <div id="trips-view" *ngIf="activeTab() === 'my-trips'">
+  <div id="trips-view" *ngIf="activeTab() === 'my-trips'" class="px-[80px] py-stack-lg">
     <!-- Welcome Header -->
     <section class="mb-8">
-      <h1 class="font-display-lg text-3xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1 font-bold m-0">Chuyến đi của bạn</h1>
-      <p class="text-on-surface-variant m-0 mt-1">Quản lý các kế hoạch du lịch hiện tại và sắp tới của bạn.</p>
+      <h1
+        class="font-display-lg text-3xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1 font-bold m-0"
+      >
+        Chuyến đi của bạn
+      </h1>
+      <p class="text-on-surface-variant m-0 mt-1">
+        Quản lý các kế hoạch du lịch hiện tại và sắp tới của bạn.
+      </p>
     </section>
 
     <!-- Stats Grid -->
     <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="glass-card p-6 rounded-xl relative overflow-hidden group">
-        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <div
+          class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"
+        >
           <span class="material-symbols-outlined text-6xl text-primary">travel_explore</span>
         </div>
-        <p class="font-semibold text-xs text-on-surface-variant uppercase tracking-wider mb-2 m-0">Tổng số chuyến</p>
+        <p class="font-semibold text-xs text-on-surface-variant uppercase tracking-wider mb-2 m-0">
+          Tổng số chuyến
+        </p>
         <h2 class="text-3xl font-bold text-on-surface m-0">{{ trips().length }}</h2>
         <div class="mt-4 flex items-center text-status-success text-sm gap-1">
           <span class="material-symbols-outlined text-sm">trending_up</span>
@@ -104,20 +201,28 @@
         </div>
       </div>
       <div class="glass-card p-6 rounded-xl relative overflow-hidden group">
-        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <div
+          class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"
+        >
           <span class="material-symbols-outlined text-6xl text-tertiary">location_on</span>
         </div>
-        <p class="font-semibold text-xs text-on-surface-variant uppercase tracking-wider mb-2 m-0">Điểm đến</p>
+        <p class="font-semibold text-xs text-on-surface-variant uppercase tracking-wider mb-2 m-0">
+          Điểm đến
+        </p>
         <h2 class="text-3xl font-bold text-on-surface m-0">{{ getUniqueDestinationsCount() }}</h2>
         <div class="mt-4 flex items-center text-on-surface-variant text-sm">
           <span>{{ getUniqueDestinationsList() }}</span>
         </div>
       </div>
       <div class="glass-card p-6 rounded-xl relative overflow-hidden group">
-        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <div
+          class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"
+        >
           <span class="material-symbols-outlined text-6xl text-secondary">payments</span>
         </div>
-        <p class="font-semibold text-xs text-on-surface-variant uppercase tracking-wider mb-2 m-0">Tổng ngân sách</p>
+        <p class="font-semibold text-xs text-on-surface-variant uppercase tracking-wider mb-2 m-0">
+          Tổng ngân sách
+        </p>
         <h2 class="text-3xl font-bold text-on-surface m-0">{{ getMapStats().totalBudget }}</h2>
         <div class="mt-4 flex items-center text-status-warning text-sm gap-1">
           <span class="material-symbols-outlined text-sm">warning</span>
@@ -129,7 +234,10 @@
     <section>
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-bold text-on-surface m-0">Chuyến đi hiện tại & Dự thảo</h3>
-        <button class="flex items-center gap-2 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-bold text-sm px-6 py-3 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer" (click)="openModal()">
+        <button
+          class="flex items-center gap-2 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-bold text-sm px-6 py-3 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
+          (click)="openModal()"
+        >
           <span class="material-symbols-outlined">add</span>
           Tạo chuyến đi mới
         </button>
@@ -206,47 +314,82 @@
       >
         <div class="empty-illustration text-5xl mb-4">🗺️</div>
         <h2 class="text-xl font-bold text-on-surface">Chưa tìm thấy chuyến đi nào</h2>
-        <p class="text-on-surface-variant max-w-sm mb-6">Hãy bắt đầu lập kế hoạch bằng cách sử dụng thanh tìm kiếm hoặc tạo một chuyến đi mới.</p>
-        <button class="btn-create-trip bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold border-none cursor-pointer hover:scale-105 transition-transform" (click)="openModal()">
+        <p class="text-on-surface-variant max-w-sm mb-6">
+          Hãy bắt đầu lập kế hoạch bằng cách sử dụng thanh tìm kiếm hoặc tạo một chuyến đi mới.
+        </p>
+        <button
+          class="btn-create-trip bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold border-none cursor-pointer hover:scale-105 transition-transform"
+          (click)="openModal()"
+        >
           Bắt đầu tạo chuyến đi
         </button>
       </div>
 
       <!-- User Trips Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="!isLoading() && !errorMessage() && getFilteredTrips().length > 0">
-        <div class="glass-card rounded-xl overflow-hidden group transition-all duration-300 hover:translate-y-[-4px] hover:shadow-2xl border-glass cursor-pointer"
-             *ngFor="let trip of getFilteredTrips()"
-             (click)="goToTrip(trip.id)">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        *ngIf="!isLoading() && !errorMessage() && getFilteredTrips().length > 0"
+      >
+        <div
+          class="glass-card rounded-xl overflow-hidden group transition-all duration-300 hover:translate-y-[-4px] hover:shadow-2xl border-glass cursor-pointer"
+          *ngFor="let trip of getFilteredTrips()"
+          (click)="goToTrip(trip.id)"
+        >
           <div class="h-48 w-full relative">
-            <img [src]="getTripImage(trip.destination)" [alt]="trip.title" class="w-full h-full object-cover" />
+            <img
+              [src]="getTripImage(trip.destination)"
+              [alt]="trip.title"
+              class="w-full h-full object-cover"
+            />
             <div class="absolute top-4 left-4">
-              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-lg"
-                    [ngClass]="{
-                      'bg-status-success text-white': trip.status === 'active',
-                      'bg-status-warning text-white': trip.status === 'completed',
-                      'bg-surface-container-high/90 text-on-surface': trip.status === 'draft'
-                    }">
-                {{ trip.status === 'draft' ? 'Bản nháp' : trip.status === 'active' ? 'Đang đi' : 'Đã xong' }}
+              <span
+                class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-lg"
+                [ngClass]="{
+                  'bg-status-success text-white': trip.status === 'active',
+                  'bg-status-warning text-white': trip.status === 'completed',
+                  'bg-surface-container-high/90 text-on-surface': trip.status === 'draft',
+                }"
+              >
+                {{
+                  trip.status === 'draft'
+                    ? 'Bản nháp'
+                    : trip.status === 'active'
+                      ? 'Đang đi'
+                      : 'Đã xong'
+                }}
               </span>
             </div>
             <button class="btn-heart" title="Lưu chuyến đi" (click)="$event.stopPropagation()">
               <svg viewBox="0 0 32 32" class="heart-icon">
-                <path d="M16 28c7-4.73 14-10 14-17A6.89 6.89 0 0 0 23 4c-3.36 0-5.86 2.78-7 4-1.14-1.21-3.64-4-7-4a6.89 6.89 0 0 0-7 7c0 7 7 12.27 14 17z"></path>
+                <path
+                  d="M16 28c7-4.73 14-10 14-17A6.89 6.89 0 0 0 23 4c-3.36 0-5.86 2.78-7 4-1.14-1.21-3.64-4-7-4a6.89 6.89 0 0 0-7 7c0 7 7 12.27 14 17z"
+                ></path>
               </svg>
             </button>
           </div>
 
           <div class="p-4">
-            <h4 class="font-bold text-lg text-on-surface group-hover:text-primary transition-colors m-0">{{ trip.title }}</h4>
+            <h4
+              class="font-bold text-lg text-on-surface group-hover:text-primary transition-colors m-0"
+            >
+              {{ trip.title }}
+            </h4>
             <p class="text-on-surface-variant text-sm m-0 mt-1">📍 {{ trip.destination }}</p>
             <div class="flex items-center gap-2 text-on-surface-variant text-xs mb-4 mt-2">
               <span class="material-symbols-outlined text-[16px]">calendar_month</span>
-              <span>{{ trip.start_date | date: 'dd/MM/yyyy' }} - {{ trip.end_date | date: 'dd/MM/yyyy' }}</span>
+              <span
+                >{{ trip.start_date | date: 'dd/MM/yyyy' }} -
+                {{ trip.end_date | date: 'dd/MM/yyyy' }}</span
+              >
             </div>
 
-            <div class="flex justify-between items-center pt-3 border-t border-glass text-xs font-semibold text-on-surface-variant">
+            <div
+              class="flex justify-between items-center pt-3 border-t border-glass text-xs font-semibold text-on-surface-variant"
+            >
               <span>👥 {{ trip.num_travelers }} người đi</span>
-              <span class="text-sm font-bold text-primary" *ngIf="trip.budget">💰 {{ formatCurrency(trip.budget) }}</span>
+              <span class="text-sm font-bold text-primary" *ngIf="trip.budget"
+                >💰 {{ formatCurrency(trip.budget) }}</span
+              >
             </div>
           </div>
         </div>
@@ -255,13 +398,14 @@
   </div>
 
   <!-- Active Tab: MAP (Interactive Travel Map) -->
-  <ng-container *ngIf="activeTab() === 'map'">
+  <div id="map-view" *ngIf="activeTab() === 'map'" class="px-[80px] py-stack-lg">
     <section class="bg-surface-dim relative overflow-hidden">
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
           <h1 class="text-2xl md:text-3xl font-bold text-on-surface">Bản đồ du lịch toàn cầu</h1>
           <p class="text-sm md:text-base text-on-surface-variant mt-1">
-            Khám phá tất cả các hành trình của bạn trên thế giới. Nhấp vào các ghim để xem lại kỷ niệm và chi tiết chuyến đi.
+            Khám phá tất cả các hành trình của bạn trên thế giới. Nhấp vào các ghim để xem lại kỷ
+            niệm và chi tiết chuyến đi.
           </p>
         </div>
         <!-- Map Legend -->
@@ -282,14 +426,21 @@
       </div>
 
       <!-- Map Container -->
-      <div class="glass-card rounded-2xl overflow-hidden shadow-2xl border border-primary/20 relative">
+      <div
+        class="glass-card rounded-2xl overflow-hidden shadow-2xl border border-primary/20 relative"
+      >
         <div class="relative z-0 w-full min-h-[600px]" id="dashboard-map"></div>
         <!-- Floating Map Tools -->
         <div class="absolute bottom-6 left-6 z-[1000] flex flex-col gap-2">
-          <button (click)="initOrRefreshDashboardMap()" class="glass-card p-2 rounded-lg hover:bg-primary/20 transition-colors text-primary material-symbols-outlined border-none cursor-pointer">
+          <button
+            (click)="initOrRefreshDashboardMap()"
+            class="glass-card p-2 rounded-lg hover:bg-primary/20 transition-colors text-primary material-symbols-outlined border-none cursor-pointer"
+          >
             my_location
           </button>
-          <button class="glass-card p-2 rounded-lg hover:bg-primary/20 transition-colors text-primary material-symbols-outlined border-none cursor-pointer">
+          <button
+            class="glass-card p-2 rounded-lg hover:bg-primary/20 transition-colors text-primary material-symbols-outlined border-none cursor-pointer"
+          >
             layers
           </button>
         </div>
@@ -303,7 +454,9 @@
         </div>
         <div class="glass-card p-6 rounded-xl">
           <p class="text-on-surface-variant text-sm font-medium">Điểm đến yêu thích</p>
-          <p class="text-2xl font-bold text-primary mt-1">{{ getMapStats().favoriteDestination }}</p>
+          <p class="text-2xl font-bold text-primary mt-1">
+            {{ getMapStats().favoriteDestination }}
+          </p>
         </div>
         <div class="glass-card p-6 rounded-xl border-l-4 border-status-rose">
           <p class="text-on-surface-variant text-sm font-medium">Tổng ngân sách dự chi</p>
@@ -311,28 +464,45 @@
         </div>
       </div>
     </section>
-  </ng-container>
+  </div>
 </main>
 
 <!-- Create Trip Modal Dialog -->
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300" *ngIf="isModalOpen()" (click)="closeModal()">
-  <div class="glass-card w-full max-w-lg rounded-2xl p-stack-lg shadow-2xl relative translate-y-0 transition-transform duration-300" (click)="$event.stopPropagation()">
-    <button class="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer" (click)="closeModal()">
+<div
+  class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+  *ngIf="isModalOpen()"
+  (click)="closeModal()"
+>
+  <div
+    class="glass-card w-full max-w-lg rounded-2xl p-stack-lg shadow-2xl relative translate-y-0 transition-transform duration-300"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      class="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer"
+      (click)="closeModal()"
+    >
       <span class="material-symbols-outlined">close</span>
     </button>
-    <h2 class="font-headline-md text-headline-md text-on-surface mb-stack-md flex items-center gap-2 m-0">
+    <h2
+      class="font-headline-md text-headline-md text-on-surface mb-stack-md flex items-center gap-2 m-0"
+    >
       <span class="material-symbols-outlined text-primary">auto_awesome</span>
       Plan Your Next Adventure
     </h2>
 
     <form [formGroup]="createForm" (ngSubmit)="onSubmitTrip()" class="space-y-stack-md">
-      <div class="bg-error/10 border border-error/20 rounded-xl p-3 text-error text-xs text-center" *ngIf="modalErrorMessage()">
+      <div
+        class="bg-error/10 border border-error/20 rounded-xl p-3 text-error text-xs text-center"
+        *ngIf="modalErrorMessage()"
+      >
         <p class="m-0">{{ modalErrorMessage() }}</p>
       </div>
 
       <!-- Title Input (Required implicitly behind scenes) -->
       <div>
-        <label for="title" class="block font-label-md text-label-md text-on-surface-variant mb-1">Trip Name</label>
+        <label for="title" class="block font-label-md text-label-md text-on-surface-variant mb-1"
+          >Trip Name</label
+        >
         <input
           id="title"
           type="text"
@@ -348,7 +518,11 @@
 
       <!-- Destination Input -->
       <div>
-        <label for="destination" class="block font-label-md text-label-md text-on-surface-variant mb-1">Destination</label>
+        <label
+          for="destination"
+          class="block font-label-md text-label-md text-on-surface-variant mb-1"
+          >Destination</label
+        >
         <input
           id="destination"
           type="text"
@@ -357,7 +531,10 @@
           placeholder="Where to?"
           [class.border-error]="isFieldInvalid('destination')"
         />
-        <span class="text-[10px] text-error font-medium block mt-1" *ngIf="isFieldInvalid('destination')">
+        <span
+          class="text-[10px] text-error font-medium block mt-1"
+          *ngIf="isFieldInvalid('destination')"
+        >
           Destination cannot be empty.
         </span>
       </div>
@@ -365,7 +542,11 @@
       <!-- Start & End Date Inputs -->
       <div class="grid grid-cols-2 gap-stack-md">
         <div>
-          <label for="start_date" class="block font-label-md text-label-md text-on-surface-variant mb-1">Start Date</label>
+          <label
+            for="start_date"
+            class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            >Start Date</label
+          >
           <input
             id="start_date"
             type="date"
@@ -373,12 +554,19 @@
             class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
             [class.border-error]="isFieldInvalid('start_date')"
           />
-          <span class="text-[10px] text-error font-medium block mt-1" *ngIf="isFieldInvalid('start_date')">
+          <span
+            class="text-[10px] text-error font-medium block mt-1"
+            *ngIf="isFieldInvalid('start_date')"
+          >
             Please choose a start date.
           </span>
         </div>
         <div>
-          <label for="end_date" class="block font-label-md text-label-md text-on-surface-variant mb-1">End Date</label>
+          <label
+            for="end_date"
+            class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            >End Date</label
+          >
           <input
             id="end_date"
             type="date"
@@ -386,7 +574,10 @@
             class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
             [class.border-error]="isFieldInvalid('end_date')"
           />
-          <span class="text-[10px] text-error font-medium block mt-1" *ngIf="isFieldInvalid('end_date')">
+          <span
+            class="text-[10px] text-error font-medium block mt-1"
+            *ngIf="isFieldInvalid('end_date')"
+          >
             Please choose an end date.
           </span>
         </div>
@@ -395,7 +586,9 @@
       <!-- Budget & Travelers Inputs -->
       <div class="grid grid-cols-2 gap-stack-md">
         <div>
-          <label for="budget" class="block font-label-md text-label-md text-on-surface-variant mb-1">Total Budget</label>
+          <label for="budget" class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            >Total Budget</label
+          >
           <div class="relative">
             <span class="absolute left-4 top-3 text-on-surface-variant select-none">$</span>
             <input
@@ -408,7 +601,11 @@
           </div>
         </div>
         <div>
-          <label for="num_travelers" class="block font-label-md text-label-md text-on-surface-variant mb-1">Travelers</label>
+          <label
+            for="num_travelers"
+            class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            >Travelers</label
+          >
           <input
             id="num_travelers"
             type="number"
@@ -417,7 +614,10 @@
             [class.border-error]="isFieldInvalid('num_travelers')"
             min="1"
           />
-          <span class="text-[10px] text-error font-medium block mt-1" *ngIf="isFieldInvalid('num_travelers')">
+          <span
+            class="text-[10px] text-error font-medium block mt-1"
+            *ngIf="isFieldInvalid('num_travelers')"
+          >
             Min travelers count is 1.
           </span>
         </div>
@@ -425,7 +625,11 @@
 
       <!-- Preferences Input -->
       <div>
-        <label for="preferences" class="block font-label-md text-label-md text-on-surface-variant mb-1">Preferences & AI Notes</label>
+        <label
+          for="preferences"
+          class="block font-label-md text-label-md text-on-surface-variant mb-1"
+          >Preferences & AI Notes</label
+        >
         <textarea
           id="preferences"
           formControlName="preferences"
@@ -435,23 +639,33 @@
         ></textarea>
       </div>
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         class="w-full bg-primary-container text-on-primary py-4 rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 mt-4 cursor-pointer border-none"
         [disabled]="isSubmitting()"
       >
         <span *ngIf="isSubmitting()" class="spinner-small"></span>
         <span class="material-symbols-outlined" *ngIf="!isSubmitting()">rocket_launch</span>
-        <span>{{ isSubmitting() ? 'Generating Itinerary...' : 'Generate AI Itinerary' }}</span>
+        <span>{{
+          isSubmitting() ? submitProgressMessage() || 'Đang xử lý...' : '🚀 Tạo lịch trình AI'
+        }}</span>
       </button>
     </form>
   </div>
 </div>
 
 <!-- Floating AI Prompt -->
-<button class="fixed bottom-margin-desktop right-margin-desktop w-16 h-16 bg-gradient-to-tr from-primary to-secondary rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 active:scale-90 transition-all z-40 group border-none cursor-pointer" (click)="openModal()" title="Start New Plan">
-  <span class="material-symbols-outlined text-3xl group-hover:rotate-12 transition-transform">add</span>
-  <span class="absolute right-20 bg-surface-container-high px-4 py-2 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-glass">
+<button
+  class="fixed bottom-margin-desktop right-margin-desktop w-16 h-16 bg-gradient-to-tr from-primary to-secondary rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 active:scale-90 transition-all z-40 group border-none cursor-pointer"
+  (click)="openModal()"
+  title="Start New Plan"
+>
+  <span class="material-symbols-outlined text-3xl group-hover:rotate-12 transition-transform"
+    >add</span
+  >
+  <span
+    class="absolute right-20 bg-surface-container-high px-4 py-2 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-glass"
+  >
     Start New Plan
   </span>
 </button>

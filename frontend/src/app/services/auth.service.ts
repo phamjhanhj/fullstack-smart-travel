@@ -53,7 +53,11 @@ export class AuthService {
             this.currentUser.set(profile);
             localStorage.setItem('user_info', JSON.stringify(profile));
           },
-          error: () => this.logout(),
+          error: () => {
+            // Don't logout on profile refresh failure - keep session alive
+            // The token might still be valid (e.g., backend temporarily unreachable)
+            console.warn('Profile refresh failed, keeping existing session.');
+          },
         });
       } catch (e) {
         this.logout();

@@ -36,9 +36,10 @@ export class DashboardComponent implements OnInit {
   readonly filterStatus = signal<string>('all');
   readonly isModalOpen = signal<boolean>(false);
   readonly modalErrorMessage = signal<string | null>(null);
+  readonly submitProgressMessage = signal<string | null>(null);
 
   // Airbnb Hub State
-  readonly activeTab = signal<string>('my-trips'); // 'my-trips', 'explore', or 'map'
+  readonly activeTab = signal<string>('explore'); // 'my-trips', 'explore', or 'map'
   readonly selectedCategory = signal<string>('all');
   
   // A local database of coordinates for popular destinations
@@ -343,6 +344,7 @@ export class DashboardComponent implements OnInit {
 
     this.isSubmitting.set(true);
     this.modalErrorMessage.set(null);
+    this.submitProgressMessage.set('Đang tạo chuyến đi...');
 
     const formValue = this.createForm.getRawValue();
     const payload: CreateTripRequest = {
@@ -356,13 +358,49 @@ export class DashboardComponent implements OnInit {
     };
 
     this.tripService.createTrip(payload).subscribe({
-      next: () => {
-        this.isSubmitting.set(false);
-        this.closeModal();
-        this.fetchTrips(); // Refresh trip list
+      next: (res) => {
+        const tripId = res?.data?.id;
+        if (!tripId) {
+          this.isSubmitting.set(false);
+          this.submitProgressMessage.set(null);
+          this.modalErrorMessage.set('Không thể tạo chuyến đi. Vui lòng thử lại.');
+          return;
+        }
+
+        // Step 2: Auto-generate AI itinerary
+        this.submitProgressMessage.set('🤖 AI đang lập lịch trình...');
+        this.tripService.generateDays(tripId, true).subscribe({
+          next: () => {
+            // Step 3: Ask AI for summary then navigate
+            this.submitProgressMessage.set('✨ Hoàn tất! Đang chuyển hướng...');
+            this.tripService.sendMessage(tripId, 'Hãy tóm tắt lịch trình bạn vừa thiết kế cho chuyến đi của tôi.').subscribe({
+              next: () => {
+                this.isSubmitting.set(false);
+                this.submitProgressMessage.set(null);
+                this.closeModal();
+                this.router.navigate(['/trip', tripId]);
+              },
+              error: () => {
+                // AI summary failed but itinerary was generated - still navigate
+                this.isSubmitting.set(false);
+                this.submitProgressMessage.set(null);
+                this.closeModal();
+                this.router.navigate(['/trip', tripId]);
+              }
+            });
+          },
+          error: (err) => {
+            // AI generation failed - still navigate to trip detail
+            this.isSubmitting.set(false);
+            this.submitProgressMessage.set(null);
+            this.closeModal();
+            this.router.navigate(['/trip', tripId]);
+          },
+        });
       },
       error: (err) => {
         this.isSubmitting.set(false);
+        this.submitProgressMessage.set(null);
         if (err.error && err.error.message) {
           this.modalErrorMessage.set(err.error.message);
         } else {
