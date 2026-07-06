@@ -17,8 +17,9 @@
           >
             {{ trip()?.title }}
           </p>
-          <p class="font-label-md text-[11px] text-on-surface-variant truncate">
-            📍 {{ trip()?.destination }}
+          <p class="font-label-md text-[11px] text-on-surface-variant truncate flex items-center gap-1">
+            <span class="material-symbols-outlined text-[12px] text-primary">location_on</span>
+            <span>{{ trip()?.destination }}</span>
           </p>
         </div>
       </div>
@@ -160,7 +161,7 @@
           <div
             class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl"
           >
-            🗓️
+            <span class="material-symbols-outlined text-2xl">calendar_today</span>
           </div>
           <h3 class="text-lg font-bold text-white">Chưa có lịch trình ngày nào</h3>
           <p class="text-sm text-on-surface-variant max-w-md">
@@ -271,10 +272,13 @@
                         [src]="act.location!.photo_url"
                         class="w-full h-full object-cover"
                         [alt]="act.title"
+                        loading="lazy"
+                        decoding="async"
+                        (error)="handleImgError($event)"
                       />
                     </ng-container>
                     <ng-template #fallbackIcon>
-                      <span>{{ getActivityIcon(act.type) }}</span>
+                      <span class="material-symbols-outlined text-primary text-xl">{{ getActivityIcon(act.type) }}</span>
                     </ng-template>
                   </div>
 
@@ -308,8 +312,9 @@
                     >
                       {{ act.description }}
                     </p>
-                    <p class="text-xs text-primary/80 mb-3" *ngIf="act.notes">
-                      📝 <em>Lưu ý: {{ act.notes }}</em>
+                    <p class="text-xs text-primary/80 mb-3 flex items-center gap-1" *ngIf="act.notes">
+                      <span class="material-symbols-outlined text-[14px]">info</span>
+                      <em>Lưu ý: {{ act.notes }}</em>
                     </p>
 
                     <div
@@ -408,13 +413,14 @@
             </div>
 
             <span
-              class="text-xs font-semibold"
+              class="text-xs font-semibold flex items-center gap-1.5"
               [class.text-status-warning]="budgetSummary()?.overspent"
               [class.text-status-success]="!budgetSummary()?.overspent"
             >
+              <span class="material-symbols-outlined text-[16px]" *ngIf="budgetSummary()?.overspent">warning</span>
               {{
                 budgetSummary()?.overspent
-                  ? '⚠️ Chi tiêu đã vượt hạn mức!'
+                  ? 'Chi tiêu đã vượt hạn mức!'
                   : 'Chi tiêu đang nằm trong tầm kiểm soát'
               }}
             </span>
@@ -485,7 +491,7 @@
               *ngFor="let cat of budgetSummary()?.categories"
             >
               <div class="flex items-center gap-2 mb-3">
-                <span class="text-lg">{{ getBudgetCategoryIcon(cat.category) }}</span>
+                <span class="material-symbols-outlined text-primary text-lg">{{ getBudgetCategoryIcon(cat.category) }}</span>
                 <h4 class="font-bold text-white">{{ getBudgetCategoryLabel(cat.category) }}</h4>
               </div>
 
@@ -620,8 +626,8 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[500px]">
-          <!-- Left side: filters & list of results -->
+        <div class="space-y-6 min-h-[500px]">
+          <!-- Filters & list of results -->
           <div class="space-y-6 flex flex-col justify-start">
             <!-- Search bar -->
             <div class="relative flex items-center">
@@ -656,7 +662,7 @@
                 "
               >
                 <span class="flex items-center gap-1">
-                  <span>{{ getExploreCategoryEmoji(cat) }}</span>
+                  <span class="material-symbols-outlined text-[16px]">{{ getExploreCategoryIcon(cat) }}</span>
                   <span>{{
                     cat === 'attraction'
                       ? 'Tham quan'
@@ -691,9 +697,21 @@
               <p class="text-sm">Hãy thử tìm kiếm với từ khóa khác hoặc lọc danh mục khác.</p>
             </div>
 
+            <!-- Result count -->
+            <div
+              class="flex items-center gap-2 text-sm text-on-surface-variant"
+              *ngIf="!isLoadingExplore() && !exploreError() && exploreLocations().length > 0"
+            >
+              <span class="material-symbols-outlined text-base text-primary">pin_drop</span>
+              <span
+                >Tìm thấy <strong class="text-primary">{{ exploreLocations().length }}</strong> địa
+                điểm</span
+              >
+            </div>
+
             <!-- Results grid list -->
             <div
-              class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2"
+              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[700px] overflow-y-auto pr-2"
               *ngIf="!isLoadingExplore() && !exploreError() && exploreLocations().length > 0"
             >
               <div
@@ -701,26 +719,36 @@
                 *ngFor="let loc of exploreLocations()"
               >
                 <div
-                  class="h-32 relative bg-surface-container-low flex items-center justify-center select-none"
+                  class="h-40 relative bg-surface-container-low flex items-center justify-center select-none"
                 >
-                  <ng-container *ngIf="loc.photo_url; else locFallbackImg">
-                    <img
-                      [src]="loc.photo_url"
-                      class="w-full h-full object-cover"
-                      [alt]="loc.name"
-                    />
-                  </ng-container>
-                  <ng-template #locFallbackImg>
-                    <span class="text-3xl opacity-40">{{
-                      getExploreCategoryEmoji(loc.category)
-                    }}</span>
-                  </ng-template>
+                  <img
+                    [src]="loc.photo_url || defaultPlaceholderUrl"
+                    (error)="handleImgError($event)"
+                    class="w-full h-full object-cover"
+                    [alt]="loc.name"
+                    loading="lazy"
+                  />
 
                   <span
-                    class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] bg-black/80 text-primary font-bold border border-primary/20"
+                    class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] bg-black/80 text-primary font-bold border border-primary/20 flex items-center gap-0.5"
                     *ngIf="loc.rating"
                   >
-                    ★ {{ loc.rating | number: '1.1-1' }}
+                    <span class="material-symbols-outlined text-[10px] text-primary">star</span>
+                    <span>{{ loc.rating | number: '1.1-1' }}</span>
+                  </span>
+                  <span
+                    class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] bg-primary/20 text-primary font-semibold backdrop-blur-sm"
+                    *ngIf="loc.category && loc.category !== 'other'"
+                  >
+                    {{
+                      loc.category === 'restaurant'
+                        ? 'Ăn uống'
+                        : loc.category === 'cafe'
+                          ? 'Cafe'
+                          : loc.category === 'hotel'
+                            ? 'Lưu trú'
+                            : 'Tham quan'
+                    }}
                   </span>
                 </div>
                 <div
@@ -731,19 +759,76 @@
                       {{ loc.name }}
                     </h4>
                     <p
-                      class="text-xs text-on-surface-variant line-clamp-2"
+                      class="text-xs text-on-surface-variant line-clamp-2 flex items-center gap-1"
                       *ngIf="loc.address"
                       [title]="loc.address"
                     >
-                      📍 {{ loc.address }}
+                      <span class="material-symbols-outlined text-[12px] text-primary">location_on</span>
+                      <span>{{ loc.address }}</span>
                     </p>
                   </div>
-                  <button
-                    class="w-full py-2 bg-white/5 border border-glass hover:bg-primary hover:text-on-primary text-xs font-bold rounded-xl transition-all cursor-pointer"
-                    (click)="openAddActivityFromExplore(loc)"
+                  <div class="flex gap-2">
+                    <button
+                      class="flex-1 py-2 bg-white/5 border border-glass hover:bg-primary hover:text-on-primary text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      (click)="openAddActivityFromExplore(loc)"
+                    >
+                      + Lịch trình
+                    </button>
+                    <button
+                      class="px-3 py-2 bg-white/5 border border-glass hover:bg-indigo-600 hover:text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1"
+                      (click)="focusOnMap(loc.lat, loc.lng, loc.name)"
+                      title="Xem trên bản đồ"
+                    >
+                      <span class="material-symbols-outlined text-sm">map</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gợi ý tốt nhất Section (C2) -->
+            <div class="space-y-4 border-t border-glass pt-6" *ngIf="bestRatedPlaces().length > 0">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px] text-indigo-400">recommend</span>
+                <span>Gợi ý tốt nhất từ Foursquare</span>
+              </h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
+                <div
+                  class="glass-card rounded-2xl overflow-hidden border border-glass flex flex-col justify-between"
+                  *ngFor="let place of bestRatedPlaces()"
+                >
+                  <div
+                    class="h-32 relative bg-surface-container-low flex items-center justify-center select-none"
                   >
-                    Thêm vào lịch trình
-                  </button>
+                    <img
+                      [src]="place.photo_url || defaultPlaceholderUrl"
+                      (error)="handleImgError($event)"
+                      class="w-full h-full object-cover"
+                      [alt]="place.name"
+                    />
+                    <span
+                      class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] bg-indigo-600 text-white font-bold border border-indigo-400/20 flex items-center gap-0.5"
+                    >
+                      <span class="material-symbols-outlined text-[10px] text-white">star</span>
+                      <span>{{ place.rating }}/10</span>
+                    </span>
+                  </div>
+                  <div
+                    class="p-4 bg-surface-container-high/40 flex-1 flex flex-col justify-between gap-3"
+                  >
+                    <div>
+                      <h4 class="font-bold text-white text-sm line-clamp-1" [title]="place.name">
+                        {{ place.name }}
+                      </h4>
+                    </div>
+                    <button
+                      class="w-full py-2 bg-white/5 border border-glass hover:bg-primary hover:text-on-primary text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      (click)="searchForBestRatedPlace(place.name)"
+                    >
+                      Tìm trên bản đồ
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -771,7 +856,7 @@
 
         <div class="glass-card rounded-2xl p-6 border border-glass max-w-2xl mx-auto space-y-6">
           <div class="border-b border-glass/40 pb-4">
-            <h3 class="text-lg font-bold text-white">Thông tin cơ bản</h3>
+            <h3 class="text-lg font-bold text-on-surface">Thông tin cơ bản</h3>
           </div>
 
           <div
@@ -799,7 +884,7 @@
                 type="text"
                 id="trip-title"
                 formControlName="title"
-                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
                 placeholder="Nhập tên chuyến đi"
               />
               <div
@@ -819,7 +904,7 @@
                 type="text"
                 id="trip-dest"
                 formControlName="destination"
-                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
                 placeholder="VD: Nha Trang, Đà Lạt..."
               />
               <div
@@ -839,23 +924,59 @@
                 <label for="trip-start" class="text-sm font-semibold text-on-surface-variant block"
                   >Ngày đi *</label
                 >
-                <input
-                  type="date"
-                  id="trip-start"
-                  formControlName="start_date"
-                  class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
-                />
+                <div class="relative flex items-center">
+                  <input
+                    id="trip-start"
+                    type="text"
+                    formControlName="start_date"
+                    (input)="onDateInputChange($event, 'start_date')"
+                    placeholder="dd/mm/yyyy"
+                    class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-4 pr-10 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
+                  />
+                  <button
+                    type="button"
+                    (click)="openDatePicker(startDatePicker)"
+                    class="absolute right-3 bg-transparent border-none text-on-surface-variant hover:text-primary cursor-pointer flex items-center justify-center p-0"
+                  >
+                    <span class="material-symbols-outlined text-xl">calendar_month</span>
+                  </button>
+                  <input
+                    #startDatePicker
+                    type="date"
+                    (change)="onNativeDateChange($event, 'start_date')"
+                    class="absolute opacity-0 pointer-events-none"
+                    style="position: absolute; right: 12px; bottom: -8px; width: 24px; height: 24px;"
+                  />
+                </div>
               </div>
               <div class="space-y-2">
                 <label for="trip-end" class="text-sm font-semibold text-on-surface-variant block"
                   >Ngày về *</label
                 >
-                <input
-                  type="date"
-                  id="trip-end"
-                  formControlName="end_date"
-                  class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
-                />
+                <div class="relative flex items-center">
+                  <input
+                    id="trip-end"
+                    type="text"
+                    formControlName="end_date"
+                    (input)="onDateInputChange($event, 'end_date')"
+                    placeholder="dd/mm/yyyy"
+                    class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-4 pr-10 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
+                  />
+                  <button
+                    type="button"
+                    (click)="openDatePicker(endDatePicker)"
+                    class="absolute right-3 bg-transparent border-none text-on-surface-variant hover:text-primary cursor-pointer flex items-center justify-center p-0"
+                  >
+                    <span class="material-symbols-outlined text-xl">calendar_month</span>
+                  </button>
+                  <input
+                    #endDatePicker
+                    type="date"
+                    (change)="onNativeDateChange($event, 'end_date')"
+                    class="absolute opacity-0 pointer-events-none"
+                    style="position: absolute; right: 12px; bottom: -8px; width: 24px; height: 24px;"
+                  />
+                </div>
               </div>
             </div>
 
@@ -863,15 +984,19 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-2">
                 <label for="trip-budget" class="text-sm font-semibold text-on-surface-variant block"
-                  >Tổng ngân sách tối đa (VND)</label
+                  >Tổng ngân sách tối đa</label
                 >
-                <input
-                  type="number"
-                  id="trip-budget"
-                  formControlName="budget"
-                  class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
-                  placeholder="Không bắt buộc"
-                />
+                <div class="relative flex items-center">
+                  <input
+                    type="text"
+                    id="trip-budget"
+                    formControlName="budget"
+                    (input)="onBudgetInputChange($event)"
+                    class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-4 pr-14 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
+                    placeholder="Không bắt buộc (ví dụ: 5.000.000)"
+                  />
+                  <span class="absolute right-4 text-primary select-none font-bold text-xs pointer-events-none">VNĐ</span>
+                </div>
               </div>
               <div class="space-y-2">
                 <label
@@ -883,7 +1008,7 @@
                   type="number"
                   id="trip-travelers"
                   formControlName="num_travelers"
-                  class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
+                  class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
                   min="1"
                 />
               </div>
@@ -901,9 +1026,9 @@
                   [class.border-primary]="settingsForm.get('status')?.value === 'draft'"
                 >
                   <input type="radio" value="draft" formControlName="status" class="hidden" />
-                  <span class="text-xl">📝</span>
+                  <span class="material-symbols-outlined text-primary text-xl">edit_note</span>
                   <div>
-                    <p class="text-sm font-bold text-white leading-none mb-1">Nháp</p>
+                    <p class="text-sm font-bold text-on-surface leading-none mb-1">Nháp</p>
                     <span class="text-[10px] text-on-surface-variant">Lên kế hoạch</span>
                   </div>
                 </label>
@@ -914,9 +1039,9 @@
                   [class.border-primary]="settingsForm.get('status')?.value === 'active'"
                 >
                   <input type="radio" value="active" formControlName="status" class="hidden" />
-                  <span class="text-xl">✈️</span>
+                  <span class="material-symbols-outlined text-primary text-xl">flight_takeoff</span>
                   <div>
-                    <p class="text-sm font-bold text-white leading-none mb-1">Đang đi</p>
+                    <p class="text-sm font-bold text-on-surface leading-none mb-1">Đang đi</p>
                     <span class="text-[10px] text-on-surface-variant">Đang diễn ra</span>
                   </div>
                 </label>
@@ -927,9 +1052,9 @@
                   [class.border-primary]="settingsForm.get('status')?.value === 'completed'"
                 >
                   <input type="radio" value="completed" formControlName="status" class="hidden" />
-                  <span class="text-xl">🏆</span>
+                  <span class="material-symbols-outlined text-primary text-xl">emoji_events</span>
                   <div>
-                    <p class="text-sm font-bold text-white leading-none mb-1">Xong</p>
+                    <p class="text-sm font-bold text-on-surface leading-none mb-1">Xong</p>
                     <span class="text-[10px] text-on-surface-variant">Đã hoàn thành</span>
                   </div>
                 </label>
@@ -1081,7 +1206,7 @@
             />
           </ng-container>
           <ng-template #sugFallbackImg>
-            <span class="text-3xl opacity-30">💡</span>
+              <span class="material-symbols-outlined text-3xl opacity-30">lightbulb</span>
           </ng-template>
           <div
             class="absolute top-2 right-2 bg-activity-meal text-black text-[9px] font-black px-2 py-0.5 rounded tracking-wide"
@@ -1243,11 +1368,11 @@
             formControlName="type"
             class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
           >
-            <option value="attraction">🏛️ Tham quan / Giải trí</option>
-            <option value="meal">🍽️ Ăn uống / Ẩm thực</option>
-            <option value="hotel">🏨 Khách sạn / Lưu trú</option>
-            <option value="transport">🚗 Di chuyển / Vé tàu xe</option>
-            <option value="other">📍 Hạng mục khác</option>
+            <option value="attraction">Tham quan / Giải trí</option>
+            <option value="meal">Ăn uống / Ẩm thực</option>
+            <option value="hotel">Khách sạn / Lưu trú</option>
+            <option value="transport">Di chuyển / Vé tàu xe</option>
+            <option value="other">Hạng mục khác</option>
           </select>
         </div>
 
@@ -1407,11 +1532,11 @@
           formControlName="category"
           class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
         >
-          <option value="hotel">🏨 Phòng lưu trú / Khách sạn</option>
-          <option value="food">🍽️ Ăn uống / Nhà hàng</option>
-          <option value="transport">🚗 Phương tiện di chuyển</option>
-          <option value="activity">🏛️ Vé vui chơi / Tham quan</option>
-          <option value="other">💵 Chi phí khác</option>
+          <option value="hotel">Phòng lưu trú / Khách sạn</option>
+          <option value="food">Ăn uống / Nhà hàng</option>
+          <option value="transport">Phương tiện di chuyển</option>
+          <option value="activity">Vé vui chơi / Tham quan</option>
+          <option value="other">Chi phí khác</option>
         </select>
       </div>
 
@@ -1521,7 +1646,10 @@
         class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 text-center text-status-warning text-sm space-y-3"
         *ngIf="days().length === 0"
       >
-        <p>⚠️ Chuyến đi chưa được lên kế hoạch lịch trình ngày nào.</p>
+        <p class="flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-status-warning">warning</span>
+            <span>Chuyến đi chưa được lên kế hoạch lịch trình ngày nào.</span>
+        </p>
         <p class="text-xs text-on-surface-variant">
           Vui lòng chọn tab "Lịch trình" và tạo các ngày du lịch trước.
         </p>

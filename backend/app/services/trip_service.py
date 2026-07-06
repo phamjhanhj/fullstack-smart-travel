@@ -41,6 +41,15 @@ async def list_trips(
 
 async def create_trip(db: AsyncSession, user: User, payload: CreateTripRequest) -> Trip:
     """Tao chuyen di moi voi status mac dinh = draft."""
+    cover_image_url = None
+    try:
+        from app.services.destination_photo_service import get_destination_photos
+        photo_result = await get_destination_photos(db, payload.destination, 1)
+        photos = photo_result.get("photos") or []
+        cover_image_url = photos[0] if photos else None
+    except Exception:
+        cover_image_url = None
+
     trip = Trip(
         user_id=user.id,
         title=payload.title,
@@ -51,6 +60,7 @@ async def create_trip(db: AsyncSession, user: User, payload: CreateTripRequest) 
         num_travelers=payload.num_travelers,
         preferences=payload.preferences,
         status="draft",
+        cover_image_url=cover_image_url,
     )
     db.add(trip)
     await db.commit()
@@ -86,8 +96,19 @@ async def get_trip_with_days(db: AsyncSession, trip_id: uuid.UUID) -> Trip:
 async def update_trip(db: AsyncSession, trip: Trip, payload: UpdateTripRequest) -> Trip:
     """Cap nhat tung field duoc gui len (PUT nhung semantics giong PATCH theo spec)."""
     update_data = payload.model_dump(exclude_unset=True)
+    destination_changed = "destination" in update_data and update_data["destination"] != trip.destination
     for field, value in update_data.items():
         setattr(trip, field, value)
+
+    if destination_changed and not trip.cover_image_url:
+        try:
+            from app.services.destination_photo_service import get_destination_photos
+            photo_result = await get_destination_photos(db, trip.destination, 1)
+            photos = photo_result.get("photos") or []
+            if photos:
+                trip.cover_image_url = photos[0]
+        except Exception:
+            pass
 
     await db.commit()
     await db.refresh(trip)
@@ -211,4 +232,3 @@ async def get_trip_summary(db: AsyncSession, trip: Trip) -> dict:
         "by_category": by_category,
         "_items_count_by_category": items_count_by_category,  # dùng nội bộ cho budget_service
     }
-

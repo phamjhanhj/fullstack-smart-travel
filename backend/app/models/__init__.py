@@ -8,6 +8,8 @@ from app.models.activity import Activity
 from app.models.location import Location
 from app.models.chat import ChatMessage, AiSuggestion
 from app.models.budget import BudgetItem
+from app.models.destination_photo import DestinationPhoto
+from app.models.refresh_token import RefreshToken
 
 __all__ = [
     "User",
@@ -18,4 +20,6 @@ __all__ = [
     "ChatMessage",
     "AiSuggestion",
     "BudgetItem",
+    "DestinationPhoto",
+    "RefreshToken",
 ]

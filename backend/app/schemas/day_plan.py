@@ -5,7 +5,7 @@ import uuid
 import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ActivityType = Literal["meal", "attraction", "hotel", "transport", "other"]
 
@@ -38,6 +38,13 @@ class ActivityResponse(BaseModel):
     order_index: int
     booking_url: str | None = None
     notes: str | None = None
+
+    @field_validator("booking_url")
+    @classmethod
+    def validate_booking_url(cls, value: str | None) -> str | None:
+        if value is None or value.startswith(("http://", "https://")):
+            return value
+        raise ValueError("booking_url must be an http or https URL")
     location_id: uuid.UUID | None = None
     location: LocationBrief | None = None
     updated_at: dt.datetime | None = None
@@ -64,6 +71,13 @@ class CreateActivityRequest(BaseModel):
     order_index: int = 0
     booking_url: str | None = None
     notes: str | None = None
+
+    @field_validator("booking_url")
+    @classmethod
+    def validate_booking_url(cls, value: str | None) -> str | None:
+        if value is None or value.startswith(("http://", "https://")):
+            return value
+        raise ValueError("booking_url must be an http or https URL")
 
 
 class UpdateActivityRequest(BaseModel):

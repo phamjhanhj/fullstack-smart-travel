@@ -11,6 +11,7 @@ from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import ForbiddenError, NotFoundError, UnauthorizedError
 from app.core.security import decode_token
 from app.db.session import get_db
@@ -72,3 +73,10 @@ async def get_owned_trip(
         raise ForbiddenError("Ban khong co quyen truy cap chuyen di nay")
 
     return trip
+
+
+async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    admin_emails = settings.admin_email_set
+    if not admin_emails or current_user.email.lower() not in admin_emails:
+        raise ForbiddenError("Ban khong co quyen truy cap chuc nang quan tri")
+    return current_user

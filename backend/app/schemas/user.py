@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UserPreferences(BaseModel):
@@ -23,6 +23,24 @@ class UserProfileResponse(BaseModel):
     full_name: str
     avatar_url: str | None = None
     preferences_json: UserPreferences | None = None
+
+    @field_validator("preferences_json", mode="before")
+    @classmethod
+    def validate_preferences_json(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            import json
+            try:
+                return json.loads(value)
+            except Exception:
+                return None
+        return value
+
+    @field_validator("avatar_url")
+    @classmethod
+    def validate_avatar_url(cls, value: str | None) -> str | None:
+        if value is None or value.startswith(("http://", "https://", "/default-avatars/")):
+            return value
+        raise ValueError("avatar_url must be an http, https, or default avatar URL")
     created_at: datetime
 
 
@@ -31,3 +49,14 @@ class UpdateProfileRequest(BaseModel):
     full_name: str | None = Field(default=None, min_length=2, max_length=100)
     avatar_url: str | None = None
     preferences_json: UserPreferences | None = None
+
+    @field_validator("preferences_json", mode="before")
+    @classmethod
+    def validate_preferences_json(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            import json
+            try:
+                return json.loads(value)
+            except Exception:
+                return None
+        return value

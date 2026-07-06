@@ -4,7 +4,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.schemas.user import UserPreferences
 
@@ -53,6 +55,7 @@ class RefreshRequest(BaseModel):
 
 class RefreshResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
 
@@ -65,4 +68,15 @@ class MeResponse(BaseModel):
     full_name: str
     avatar_url: str | None = None
     preferences_json: UserPreferences | None = None
+
+    @field_validator("preferences_json", mode="before")
+    @classmethod
+    def validate_preferences_json(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            import json
+            try:
+                return json.loads(value)
+            except Exception:
+                return None
+        return value
     created_at: datetime

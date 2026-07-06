@@ -98,15 +98,21 @@ export class AuthService {
   }
 
   fetchProfile(): Observable<UserInfo> {
-    return this.http
-      .get<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/me`)
-      .pipe(
-        map((response) => response.data),
-        tap((user) => this.currentUser.set(user)),
-      );
+    return this.http.get<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/me`).pipe(
+      map((response) => response.data),
+      tap((user) => this.currentUser.set(user)),
+    );
   }
 
   logout(): void {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (refreshToken) {
+      this.http.post(`${this.baseUrl}/auth/logout`, { refresh_token: refreshToken }).subscribe({
+        error: () => {
+          // Local logout should still complete even if the server is unreachable.
+        },
+      });
+    }
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_info');

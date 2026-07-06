@@ -402,10 +402,10 @@ export class TripService {
   }
 
   // Location discovery
-  searchLocations(q: string, destination?: string, limit = 10): Observable<ResponseEnvelope<LocationResponse[]>> {
-    let url = `${this.baseUrl}/locations/search?q=${q}&limit=${limit}`;
+  searchLocations(q: string, destination?: string, limit = 15): Observable<ResponseEnvelope<LocationResponse[]>> {
+    let url = `${this.baseUrl}/locations/search?q=${encodeURIComponent(q)}&limit=${limit}`;
     if (destination) {
-      url += `&destination=${destination}`;
+      url += `&destination=${encodeURIComponent(destination)}`;
     }
     return this.http.get<ResponseEnvelope<LocationResponse[]>>(url);
   }

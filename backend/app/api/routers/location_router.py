@@ -6,7 +6,9 @@ import uuid
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limit
 from app.core.response import envelope, envelope_created
 from app.db.session import get_db
 from app.models.user import User
@@ -22,11 +24,11 @@ from app.services import location_service
 router = APIRouter(prefix="/locations", tags=["Locations"])
 
 
-@router.get("/search")
+@router.get("/search", dependencies=[Depends(rate_limit("location_search", settings.RATE_LIMIT_SEARCH_PER_MINUTE))])
 async def search_locations(
     q: str = Query(min_length=1),
     destination: str | None = Query(default=None),
-    limit: int = Query(default=5, ge=1, le=20),
+    limit: int = Query(default=15, ge=1, le=30),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -34,7 +36,7 @@ async def search_locations(
     return envelope(data=[LocationResponse.model_validate(loc) for loc in locations])
 
 
-@router.get("/nearby")
+@router.get("/nearby", dependencies=[Depends(rate_limit("location_nearby", settings.RATE_LIMIT_SEARCH_PER_MINUTE))])
 async def search_nearby(
     lat: float = Query(ge=-90, le=90),
     lng: float = Query(ge=-180, le=180),

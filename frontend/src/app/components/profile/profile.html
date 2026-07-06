@@ -1,5 +1,13 @@
 
 <div class="profile-layout-container">
+  <!-- Breadcrumb / Back Nav -->
+  <div class="profile-breadcrumb">
+    <a class="btn-back" routerLink="/dashboard">
+      <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+      Quay lại trang chủ
+    </a>
+  </div>
+
   <!-- Loading State -->
   <div class="loading-overlay" *ngIf="isLoading()">
     <div class="spinner"></div>
@@ -8,13 +16,16 @@
 
   <!-- Error State -->
   <div class="error-banner" *ngIf="errorMessage() && !isLoading()">
-    <p>⚠️ {{ errorMessage() }}</p>
+    <p class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+      {{ errorMessage() }}
+    </p>
     <button (click)="loadProfile()" class="btn-retry">Tải lại</button>
   </div>
 
-  <!-- Form Success Banner -->
+  <!-- Form Success Toast -->
   <div class="success-toast" *ngIf="successMessage()">
-    <span class="toast-icon">✓</span>
+    <span class="toast-icon material-symbols-outlined" style="font-size: 14px;">check</span>
     <p>{{ successMessage() }}</p>
   </div>
 
@@ -23,7 +34,7 @@
     <aside class="profile-card-sidebar">
       <div class="profile-badge-card">
         <div class="avatar-preview-container">
-          <img [src]="selectedAvatar() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'" 
+          <img [src]="selectedAvatar() || fallbackAvatarUrl" 
                alt="Avatar Preview" class="card-avatar-image" />
         </div>
         
@@ -33,11 +44,11 @@
         <div class="card-divider"></div>
         
         <div class="member-since">
-          <span class="since-icon">📆</span>
-          <span class="since-text">Thành viên từ {{ profile()?.created_at | date:'dd/MM/yyyy' }}</span>
+          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--color-primary-tint);">calendar_month</span>
+          <span>Thành viên từ {{ profile()?.created_at | date:'dd/MM/yyyy' }}</span>
         </div>
 
-        <!-- Custom badges dynamically calculated -->
+        <!-- Dynamic preference badges -->
         <div class="preferences-badges">
           <span class="badge-item style-badge" [ngClass]="profileForm.get('travel_style')?.value">
             {{ getTravelStyleName(profileForm.get('travel_style')?.value) }}
@@ -48,10 +59,10 @@
         </div>
         
         <div class="interests-summary-list" *ngIf="selectedInterests().length > 0">
-          <p class="summary-title">Sở thích du lịch:</p>
+          <p class="summary-title">Sở thích du lịch</p>
           <div class="summary-tags-container">
             <span class="summary-tag" *ngFor="let item of selectedInterests()">
-              {{ getInterestEmojiAndName(item) }}
+              {{ getInterestName(item) }}
             </span>
           </div>
         </div>
@@ -74,6 +85,7 @@
             <input type="text" id="fullName" formControlName="full_name" class="text-input" 
                    placeholder="Nhập họ và tên đầy đủ" />
             <div class="field-error" *ngIf="profileForm.get('full_name')?.invalid && profileForm.get('full_name')?.touched">
+              <span class="material-symbols-outlined" style="font-size: 14px;">error</span>
               Họ tên là bắt buộc và phải từ 2 đến 100 ký tự.
             </div>
           </div>
@@ -87,7 +99,7 @@
         <!-- Section 2: Avatar Selection -->
         <section class="form-section">
           <h3 class="section-heading">2. Ảnh đại diện tài khoản</h3>
-          <p class="section-subtext">Chọn một trong những ảnh đại diện du lịch bên dưới:</p>
+          <p class="section-subtext">Chọn một trong những ảnh đại diện bên dưới:</p>
           
           <div class="avatar-selection-grid">
             <button type="button" *ngFor="let avatar of defaultAvatars" 
@@ -96,7 +108,9 @@
                     (click)="selectAvatar(avatar.url)"
                     [title]="avatar.name">
               <img [src]="avatar.url" [alt]="avatar.name" class="avatar-option-image" />
-              <div class="selected-check" *ngIf="selectedAvatar() === avatar.url">✓</div>
+              <div class="selected-check" *ngIf="selectedAvatar() === avatar.url">
+                <span class="material-symbols-outlined" style="font-size: 14px;">check</span>
+              </div>
             </button>
           </div>
 
@@ -120,7 +134,7 @@
               <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'budget'">
                 <input type="radio" value="budget" formControlName="travel_style" class="hidden-radio" />
                 <div class="radio-card-content">
-                  <div class="radio-icon">🎒</div>
+                  <div class="radio-icon"><span class="material-symbols-outlined">backpack</span></div>
                   <div class="radio-info">
                     <span class="radio-title">Tiết kiệm</span>
                     <span class="radio-desc">Ưu tiên trải nghiệm địa phương, homestay, phương tiện công cộng và ăn uống đường phố.</span>
@@ -131,7 +145,7 @@
               <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'mid-range'">
                 <input type="radio" value="mid-range" formControlName="travel_style" class="hidden-radio" />
                 <div class="radio-card-content">
-                  <div class="radio-icon">🚗</div>
+                  <div class="radio-icon"><span class="material-symbols-outlined">directions_car</span></div>
                   <div class="radio-info">
                     <span class="radio-title">Tự túc / Tiện lợi</span>
                     <span class="radio-desc">Cân bằng giữa chi phí và sự thoải mái. Ở khách sạn 3 sao, thưởng thức ẩm thực local chất lượng.</span>
@@ -142,7 +156,7 @@
               <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'luxury'">
                 <input type="radio" value="luxury" formControlName="travel_style" class="hidden-radio" />
                 <div class="radio-card-content">
-                  <div class="radio-icon">👑</div>
+                  <div class="radio-icon"><span class="material-symbols-outlined">workspace_premium</span></div>
                   <div class="radio-info">
                     <span class="radio-title">Sang trọng</span>
                     <span class="radio-desc">Tận hưởng dịch vụ cao cấp nhất, resort nghỉ dưỡng 5 sao, ẩm thực tinh tế và đưa đón riêng biệt.</span>
@@ -160,7 +174,7 @@
               <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'low'">
                 <input type="radio" value="low" formControlName="budget_range" class="hidden-radio" />
                 <div class="radio-card-content dense">
-                  <div class="radio-title">Thấp ($)</div>
+                  <div class="radio-title">Thấp</div>
                   <div class="radio-desc">Tối ưu chi phí tối đa, chú trọng điểm tham quan miễn phí hoặc giá rẻ.</div>
                 </div>
               </label>
@@ -168,7 +182,7 @@
               <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'medium'">
                 <input type="radio" value="medium" formControlName="budget_range" class="hidden-radio" />
                 <div class="radio-card-content dense">
-                  <div class="radio-title">Trung bình ($$)</div>
+                  <div class="radio-title">Trung bình</div>
                   <div class="radio-desc">Chi tiêu hợp lý, sẵn sàng trả thêm phí cho các hoạt động xứng đáng.</div>
                 </div>
               </label>
@@ -176,7 +190,7 @@
               <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'high'">
                 <input type="radio" value="high" formControlName="budget_range" class="hidden-radio" />
                 <div class="radio-card-content dense">
-                  <div class="radio-title">Thoải mái ($$$)</div>
+                  <div class="radio-title">Thoải mái</div>
                   <div class="radio-desc">Thoải mái chi tiêu cho mua sắm, vui chơi và trải nghiệm dịch vụ đắt tiền.</div>
                 </div>
               </label>
@@ -194,9 +208,8 @@
                     class="interest-pill-btn"
                     [class.active]="isInterestSelected(item.id)"
                     (click)="toggleInterest(item.id)">
-              <span class="pill-emoji">{{ item.emoji }}</span>
               <span class="pill-name">{{ item.name }}</span>
-              <span class="pill-check-indicator" *ngIf="isInterestSelected(item.id)">+</span>
+              <span class="pill-check-indicator material-symbols-outlined" style="font-size: 16px;" *ngIf="isInterestSelected(item.id)">check</span>
             </button>
           </div>
         </section>

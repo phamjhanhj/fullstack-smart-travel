@@ -1,19 +1,29 @@
 <main class="relative z-10">
   <!-- Over-budget warnings banner -->
-  <div class="budget-warning-banner mx-[80px] mt-6 px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between shadow-lg select-none animate-fade-in" *ngIf="overBudgetTrips().length > 0">
+  <div
+    class="budget-warning-banner mx-[80px] mt-6 px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between shadow-lg select-none animate-fade-in"
+    *ngIf="overBudgetTrips().length > 0"
+  >
     <div class="flex items-center gap-3">
       <span class="material-symbols-outlined text-2xl text-rose-500">warning</span>
       <div>
         <h4 class="font-bold text-sm text-white">Cảnh báo chi tiêu vượt ngân sách!</h4>
         <p class="text-xs text-on-surface-variant mt-0.5">
-          Bạn có chuyến đi đang vượt định mức ngân sách: 
-          <span class="font-bold text-rose-400" *ngFor="let trip of overBudgetTrips(); let last = last">
-            "{{ trip.title }}"{{ !last ? ', ' : '' }}
-          </span>. Hãy kiểm tra lại tab Quản lý chi tiêu của chuyến đi để tối ưu hóa.
+          Bạn có chuyến đi đang vượt định mức ngân sách:
+          <span
+            class="font-bold text-rose-400"
+            *ngFor="let trip of overBudgetTrips(); let last = last"
+          >
+            "{{ trip.title }}"{{ !last ? ', ' : '' }} </span
+          >. Hãy kiểm tra lại tab Quản lý chi tiêu của chuyến đi để tối ưu hóa.
         </p>
       </div>
     </div>
-    <a [routerLink]="['/trip', overBudgetTrips()[0].id]" [queryParams]="{ tab: 'budget' }" class="px-4 py-2 bg-rose-500 text-white text-xs font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer no-underline shrink-0">
+    <a
+      [routerLink]="['/trip', overBudgetTrips()[0].id]"
+      [queryParams]="{ tab: 'budget' }"
+      class="px-4 py-2 bg-rose-500 text-white text-xs font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer no-underline shrink-0"
+    >
       Xem chi tiết
     </a>
   </div>
@@ -39,7 +49,6 @@
               selectedCategory() !== cat.id,
           }"
         >
-          <span class="text-base">{{ cat.icon }}</span>
           <span>{{ cat.name }}</span>
         </button>
       </nav>
@@ -57,7 +66,6 @@
           'text-on-surface-variant border-glass/40 bg-transparent': selectedCategory() !== cat.id,
         }"
       >
-        <span>{{ cat.icon }}</span>
         <span>{{ cat.name }}</span>
       </button>
     </div>
@@ -82,7 +90,7 @@
           <span
             class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider mb-6 backdrop-blur-md"
           >
-            <span class="material-symbols-outlined text-sm">auto_awesome</span> ✨ Trợ lý Lịch trình
+            <span class="material-symbols-outlined text-sm">auto_awesome</span> Trợ lý Lịch trình
             AI cá nhân hóa
           </span>
           <h1 class="font-display-lg text-display-lg md:text-5xl text-white mb-6 leading-tight m-0">
@@ -98,7 +106,7 @@
             class="flex items-center gap-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold px-8 py-4 rounded-2xl hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all text-lg cursor-pointer border-none"
             (click)="openModal()"
           >
-            Lập kế hoạch ngay 🚀
+            Lập kế hoạch ngay
           </button>
         </div>
       </section>
@@ -128,17 +136,21 @@
             (click)="planTrending(dest)"
           >
             <div class="h-64 w-full relative overflow-hidden">
-              <div
-                class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                [style.background-image]="'url(' + dest.image + ')'"
-              ></div>
+              <img
+                [src]="getTripImage(dest.name)"
+                (error)="handleImgError($event)"
+                loading="lazy"
+                decoding="async"
+                class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                [alt]="dest.name"
+              />
               <div
                 class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center"
               >
                 <button
                   class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-xl border-none cursor-pointer"
                 >
-                  🚀 Lập hành trình ngay
+                  Lập hành trình ngay
                 </button>
               </div>
               <div class="absolute top-4 left-4">
@@ -331,7 +343,7 @@
         class="empty-state py-12 flex flex-col items-center justify-center text-center"
         *ngIf="!isLoading() && !errorMessage() && getFilteredTrips().length === 0"
       >
-        <div class="empty-illustration text-5xl mb-4">🗺️</div>
+        <span class="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-4 block">map</span>
         <h2 class="text-xl font-bold text-on-surface">Chưa tìm thấy chuyến đi nào</h2>
         <p class="text-on-surface-variant max-w-sm mb-6">
           Hãy bắt đầu lập kế hoạch bằng cách sử dụng thanh tìm kiếm hoặc tạo một chuyến đi mới.
@@ -356,8 +368,11 @@
         >
           <div class="h-48 w-full relative">
             <img
-              [src]="getTripImage(trip.destination)"
+              [src]="trip.cover_image_url || getTripImage(trip.destination)"
               [alt]="trip.title"
+              loading="lazy"
+              decoding="async"
+              (error)="handleImgError($event)"
               class="w-full h-full object-cover"
             />
             <div class="absolute top-4 left-4">
@@ -393,7 +408,10 @@
             >
               {{ trip.title }}
             </h4>
-            <p class="text-on-surface-variant text-sm m-0 mt-1">📍 {{ trip.destination }}</p>
+            <p class="text-on-surface-variant text-sm m-0 mt-1 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+              <span>{{ trip.destination }}</span>
+            </p>
             <div class="flex items-center gap-2 text-on-surface-variant text-xs mb-4 mt-2">
               <span class="material-symbols-outlined text-[16px]">calendar_month</span>
               <span
@@ -405,10 +423,14 @@
             <div
               class="flex justify-between items-center pt-3 border-t border-glass text-xs font-semibold text-on-surface-variant"
             >
-              <span>👥 {{ trip.num_travelers }} người đi</span>
-              <span class="text-sm font-bold text-primary" *ngIf="trip.budget"
-                >💰 {{ formatCurrency(trip.budget) }}</span
-              >
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">group</span>
+                <span>{{ trip.num_travelers }} người đi</span>
+              </span>
+              <span class="text-sm font-bold text-primary flex items-center gap-1" *ngIf="trip.budget">
+                <span class="material-symbols-outlined text-[16px]">payments</span>
+                <span>{{ formatCurrency(trip.budget) }}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -430,15 +452,15 @@
         <!-- Map Legend -->
         <div class="glass-card px-4 py-2 rounded-xl flex items-center gap-4 text-sm w-fit">
           <span class="flex items-center gap-1.5">
-            <span class="text-lg">📝</span>
+            <span class="material-symbols-outlined text-primary text-lg">edit_note</span>
             <span class="text-on-surface-variant">Nháp</span>
           </span>
           <span class="flex items-center gap-1.5">
-            <span class="text-lg">🚗</span>
+            <span class="material-symbols-outlined text-primary text-lg">flight_takeoff</span>
             <span class="text-on-surface-variant">Đang đi</span>
           </span>
           <span class="flex items-center gap-1.5">
-            <span class="text-lg">✅</span>
+            <span class="material-symbols-outlined text-primary text-lg">emoji_events</span>
             <span class="text-on-surface-variant">Đã xong</span>
           </span>
         </div>
@@ -506,7 +528,7 @@
       class="font-headline-md text-headline-md text-on-surface mb-stack-md flex items-center gap-2 m-0"
     >
       <span class="material-symbols-outlined text-primary">auto_awesome</span>
-      Plan Your Next Adventure
+      Lên Kế Hoạch Chuyến Đi Mới
     </h2>
 
     <form [formGroup]="createForm" (ngSubmit)="onSubmitTrip()" class="space-y-stack-md">
@@ -520,18 +542,18 @@
       <!-- Title Input (Required implicitly behind scenes) -->
       <div>
         <label for="title" class="block font-label-md text-label-md text-on-surface-variant mb-1"
-          >Trip Name</label
+          >Tên chuyến đi</label
         >
         <input
           id="title"
           type="text"
           formControlName="title"
-          class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-          placeholder="e.g., Summer in Da Nang"
-          [class.border-error]="isFieldInvalid('title')"
+          class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+          placeholder="Ví dụ: Kỳ nghỉ hè ở Đà Nẵng"
+          [class.border-status-warning]="isFieldInvalid('title')"
         />
-        <span class="text-[10px] text-error font-medium block mt-1" *ngIf="isFieldInvalid('title')">
-          Trip Name cannot be empty.
+        <span class="text-status-warning text-xs font-semibold block mt-1" *ngIf="isFieldInvalid('title')">
+          Tên chuyến đi không được để trống.
         </span>
       </div>
 
@@ -540,21 +562,21 @@
         <label
           for="destination"
           class="block font-label-md text-label-md text-on-surface-variant mb-1"
-          >Destination</label
+          >Điểm đến</label
         >
         <input
           id="destination"
           type="text"
           formControlName="destination"
-          class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-          placeholder="Where to?"
-          [class.border-error]="isFieldInvalid('destination')"
+          class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+          placeholder="Bạn muốn đi đâu?"
+          [class.border-status-warning]="isFieldInvalid('destination')"
         />
         <span
-          class="text-[10px] text-error font-medium block mt-1"
+          class="text-status-warning text-xs font-semibold block mt-1"
           *ngIf="isFieldInvalid('destination')"
         >
-          Destination cannot be empty.
+          Điểm đến không được để trống.
         </span>
       </div>
 
@@ -564,80 +586,123 @@
           <label
             for="start_date"
             class="block font-label-md text-label-md text-on-surface-variant mb-1"
-            >Start Date</label
+            >Ngày đi</label
           >
-          <input
-            id="start_date"
-            type="date"
-            formControlName="start_date"
-            class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-            [class.border-error]="isFieldInvalid('start_date')"
-          />
+          <div class="relative flex items-center">
+            <input
+              id="start_date"
+              type="text"
+              formControlName="start_date"
+              (input)="onDateInputChange($event, 'start_date')"
+              placeholder="dd/mm/yyyy"
+              class="w-full bg-surface-container-low border border-glass rounded-xl pl-4 pr-10 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+              [class.border-status-warning]="isFieldInvalid('start_date')"
+            />
+            <button
+              type="button"
+              (click)="openDatePicker(startDatePicker)"
+              class="absolute right-3 bg-transparent border-none text-on-surface-variant hover:text-primary cursor-pointer flex items-center justify-center p-0"
+            >
+              <span class="material-symbols-outlined text-xl">calendar_month</span>
+            </button>
+            <input
+              #startDatePicker
+              type="date"
+              (change)="onNativeDateChange($event, 'start_date')"
+              class="absolute opacity-0 pointer-events-none"
+              style="position: absolute; right: 12px; bottom: -8px; width: 24px; height: 24px;"
+            />
+          </div>
           <span
-            class="text-[10px] text-error font-medium block mt-1"
+            class="text-status-warning text-xs font-semibold block mt-1"
             *ngIf="isFieldInvalid('start_date')"
           >
-            Please choose a start date.
+            Vui lòng chọn ngày bắt đầu.
           </span>
         </div>
         <div>
           <label
             for="end_date"
             class="block font-label-md text-label-md text-on-surface-variant mb-1"
-            >End Date</label
+            >Ngày về</label
           >
-          <input
-            id="end_date"
-            type="date"
-            formControlName="end_date"
-            class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-            [class.border-error]="isFieldInvalid('end_date')"
-          />
+          <div class="relative flex items-center">
+            <input
+              id="end_date"
+              type="text"
+              formControlName="end_date"
+              (input)="onDateInputChange($event, 'end_date')"
+              placeholder="dd/mm/yyyy"
+              class="w-full bg-surface-container-low border border-glass rounded-xl pl-4 pr-10 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+              [class.border-status-warning]="isFieldInvalid('end_date')"
+            />
+            <button
+              type="button"
+              (click)="openDatePicker(endDatePicker)"
+              class="absolute right-3 bg-transparent border-none text-on-surface-variant hover:text-primary cursor-pointer flex items-center justify-center p-0"
+            >
+              <span class="material-symbols-outlined text-xl">calendar_month</span>
+            </button>
+            <input
+              #endDatePicker
+              type="date"
+              (change)="onNativeDateChange($event, 'end_date')"
+              class="absolute opacity-0 pointer-events-none"
+              style="position: absolute; right: 12px; bottom: -8px; width: 24px; height: 24px;"
+            />
+          </div>
           <span
-            class="text-[10px] text-error font-medium block mt-1"
+            class="text-status-warning text-xs font-semibold block mt-1"
             *ngIf="isFieldInvalid('end_date')"
           >
-            Please choose an end date.
+            Vui lòng chọn ngày kết thúc.
           </span>
         </div>
+      </div>
+
+      <!-- Trip Duration Helper Badge -->
+      <div *ngIf="getTripDurationDays() as daysCount" class="bg-primary/10 border border-primary/20 text-primary-container rounded-xl p-3 text-xs flex items-center gap-2 font-medium">
+        <span class="material-symbols-outlined text-sm text-primary">calendar_today</span>
+        <span>Thời gian đi dự kiến: <strong class="text-primary">{{ daysCount }} ngày</strong></span>
       </div>
 
       <!-- Budget & Travelers Inputs -->
       <div class="grid grid-cols-2 gap-stack-md">
         <div>
           <label for="budget" class="block font-label-md text-label-md text-on-surface-variant mb-1"
-            >Total Budget</label
+            >Tổng ngân sách</label
           >
-          <div class="relative">
-            <span class="absolute left-4 top-3 text-on-surface-variant select-none">$</span>
+          <div class="relative flex items-center">
             <input
               id="budget"
-              type="number"
+              type="text"
               formControlName="budget"
-              class="w-full bg-black/30 border border-glass rounded-xl pl-8 pr-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-              placeholder="5000"
+              (input)="onBudgetInputChange($event)"
+              class="w-full bg-surface-container-low border border-glass rounded-xl pl-4 pr-14 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+              placeholder="Ví dụ: 5.000.000"
             />
+            <span class="absolute right-4 text-primary select-none font-bold text-xs pointer-events-none">VNĐ</span>
           </div>
         </div>
         <div>
           <label
             for="num_travelers"
             class="block font-label-md text-label-md text-on-surface-variant mb-1"
-            >Travelers</label
+            >Số người tham gia</label
           >
           <input
             id="num_travelers"
             type="number"
             formControlName="num_travelers"
-            class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-            [class.border-error]="isFieldInvalid('num_travelers')"
+            class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+            [class.border-status-warning]="isFieldInvalid('num_travelers')"
             min="1"
           />
           <span
-            class="text-[10px] text-error font-medium block mt-1"
+            class="text-status-warning text-xs font-semibold block mt-1"
             *ngIf="isFieldInvalid('num_travelers')"
           >
-            Min travelers count is 1.
+            Số người đi tối thiểu là 1.
           </span>
         </div>
       </div>
@@ -647,13 +712,13 @@
         <label
           for="preferences"
           class="block font-label-md text-label-md text-on-surface-variant mb-1"
-          >Preferences & AI Notes</label
+          >Sở thích & Ghi chú cho AI</label
         >
         <textarea
           id="preferences"
           formControlName="preferences"
-          class="w-full bg-black/30 border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none box-border"
-          placeholder="Tell our AI your vibe (e.g., 'Luxury stay, local seafood, minimal walking')..."
+          class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none box-border"
+          placeholder="Chia sẻ mong muốn của bạn với AI (ví dụ: 'Nghỉ dưỡng sang chảnh, ăn nhiều hải sản, ít đi bộ')..."
           rows="3"
         ></textarea>
       </div>
@@ -666,7 +731,7 @@
         <span *ngIf="isSubmitting()" class="spinner-small"></span>
         <span class="material-symbols-outlined" *ngIf="!isSubmitting()">rocket_launch</span>
         <span>{{
-          isSubmitting() ? submitProgressMessage() || 'Đang xử lý...' : '🚀 Tạo lịch trình AI'
+          isSubmitting() ? submitProgressMessage() || 'Đang xử lý...' : 'Tạo lịch trình AI'
         }}</span>
       </button>
     </form>

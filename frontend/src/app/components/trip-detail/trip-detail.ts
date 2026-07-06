@@ -23,6 +23,10 @@ import {
   LocationCategory,
 } from '../../services/trip.service';
 
+import { PlacePhotoService, BestRatedPlace } from '../../services/place-photo.service';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
@@ -34,9 +38,14 @@ export class TripDetailComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly tripService = inject(TripService);
+  private readonly placePhotoService = inject(PlacePhotoService);
   private readonly aiStreamService = inject(AiStreamService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  // Dynamic Destination Images Cache
+  readonly destinationImagesMap = signal<Map<string, string[]>>(new Map());
+  readonly defaultPlaceholderUrl = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
 
   // Leaflet Map instance & active markers
   private exploreMap: any = null;
@@ -80,6 +89,8 @@ export class TripDetailComponent implements OnInit {
   readonly activeExploreCategory = signal<'attraction' | 'meal' | 'hotel' | 'cafe'>('attraction');
   readonly isLoadingExplore = signal<boolean>(false);
   readonly exploreError = signal<string | null>(null);
+  readonly bestRatedPlaces = signal<BestRatedPlace[]>([]);
+  readonly isLoadingBestRated = signal<boolean>(false);
 
   // Day Selector from Explore State Signals
   readonly isAddActivityFromExploreOpen = signal<boolean>(false);
@@ -131,7 +142,7 @@ export class TripDetailComponent implements OnInit {
     destination: ['', [Validators.required, Validators.maxLength(200)]],
     start_date: ['', [Validators.required]],
     end_date: ['', [Validators.required]],
-    budget: [null as number | null, [Validators.min(0)]],
+    budget: ['' as any],
     num_travelers: [1, [Validators.required, Validators.min(1)]],
     status: ['draft' as 'draft' | 'active' | 'completed', [Validators.required]],
   });
@@ -165,12 +176,17 @@ export class TripDetailComponent implements OnInit {
           this.settingsForm.patchValue({
             title: t.title,
             destination: t.destination,
-            start_date: t.start_date,
-            end_date: t.end_date,
-            budget: t.budget,
+            start_date: this.formatIsoToDdMmYyyy(t.start_date),
+            end_date: this.formatIsoToDdMmYyyy(t.end_date),
+            budget: this.formatNumberWithDots(t.budget),
             num_travelers: t.num_travelers,
             status: t.status,
           });
+
+          // Fetch photo for active trip destination
+          if (t.destination) {
+            this.fetchDestinationImage(t.destination);
+          }
         }
       },
       error: (err) => {
@@ -181,6 +197,22 @@ export class TripDetailComponent implements OnInit {
 
     this.fetchItinerary();
     this.fetchChatAndSuggestions();
+  }
+
+  fetchDestinationImage(destination: string): void {
+    const dest = destination.trim();
+    if (!dest) return;
+    this.placePhotoService.getPhotos(dest, 3).subscribe({
+      next: (photos) => {
+        if (photos && photos.length > 0) {
+          this.destinationImagesMap.update((map) => {
+            const newMap = new Map(map);
+            newMap.set(dest.toLowerCase().trim(), photos);
+            return newMap;
+          });
+        }
+      },
+    });
   }
 
   fetchItinerary(): void {
@@ -440,11 +472,11 @@ export class TripDetailComponent implements OnInit {
 
   getActivityIcon(type: ActivityType | null): string {
     switch (type) {
-      case 'meal': return '🍽️';
-      case 'attraction': return '🏛️';
-      case 'hotel': return '🏨';
-      case 'transport': return '🚗';
-      default: return '📍';
+      case 'meal': return 'restaurant';
+      case 'attraction': return 'local_activity';
+      case 'hotel': return 'hotel';
+      case 'transport': return 'directions_car';
+      default: return 'location_on';
     }
   }
 
@@ -604,11 +636,11 @@ export class TripDetailComponent implements OnInit {
 
   getBudgetCategoryIcon(cat: string): string {
     switch (cat) {
-      case 'food': return '🍽️';
-      case 'transport': return '🚗';
-      case 'hotel': return '🏨';
-      case 'activity': return '🏛️';
-      default: return '💵';
+      case 'food': return 'restaurant';
+      case 'transport': return 'directions_car';
+      case 'hotel': return 'hotel';
+      case 'activity': return 'local_activity';
+      default: return 'payments';
     }
   }
 
@@ -672,6 +704,8 @@ export class TripDetailComponent implements OnInit {
         this.exploreError.set('Không thể tải danh sách đề xuất.');
       },
     });
+
+    this.loadBestRatedPlaces(term);
   }
 
   onExploreCategoryChange(category: 'attraction' | 'meal' | 'hotel' | 'cafe'): void {
@@ -704,6 +738,53 @@ export class TripDetailComponent implements OnInit {
         this.exploreError.set('Tìm kiếm thất bại. Vui lòng thử lại.');
       },
     });
+
+    this.loadBestRatedPlaces(q);
+  }
+
+  loadBestRatedPlaces(term: string): void {
+    const dest = this.trip()?.destination || '';
+    if (!dest) return;
+    const query = `${term} ${dest}`.trim();
+    this.isLoadingBestRated.set(true);
+    this.placePhotoService.getBestRatedPlaces(query, 5).subscribe({
+      next: (places) => {
+        this.isLoadingBestRated.set(false);
+        this.bestRatedPlaces.set(places);
+      },
+      error: () => {
+        this.isLoadingBestRated.set(false);
+        this.bestRatedPlaces.set([]);
+      }
+    });
+  }
+
+  searchForBestRatedPlace(name: string): void {
+    this.exploreQuery.set(name);
+    this.onExploreSearch();
+  }
+
+  focusOnMap(lat: number | null | undefined, lng: number | null | undefined, name: string): void {
+    if (!lat || !lng || !this.exploreMap) return;
+
+    // Pan and zoom to coordinates
+    this.exploreMap.setView([lat, lng], 17, { animate: true });
+
+    // Find and open popup for matching marker
+    const marker = this.mapMarkers.find(m => {
+      const pos = m.getLatLng();
+      return Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lng) < 0.0001;
+    });
+
+    if (marker) {
+      setTimeout(() => marker.openPopup(), 300);
+    }
+
+    // Scroll smoothly to map container
+    const container = document.getElementById('explore-map');
+    if (container) {
+      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 
   openAddActivityFromExplore(location: LocationResponse): void {
@@ -803,12 +884,15 @@ export class TripDetailComponent implements OnInit {
     this.settingsSuccessMsg.set(null);
     this.settingsErrorMsg.set(null);
 
+    const rawBudget = val.budget ? Number(val.budget.toString().replace(/\./g, '')) : null;
+    const startIso = this.formatDdMmYyyyToIso(val.start_date);
+    const endIso = this.formatDdMmYyyyToIso(val.end_date);
     const payload = {
       title: val.title,
       destination: val.destination,
-      start_date: val.start_date,
-      end_date: val.end_date,
-      budget: val.budget,
+      start_date: startIso,
+      end_date: endIso,
+      budget: isNaN(rawBudget as any) ? null : rawBudget,
       num_travelers: val.num_travelers,
       status: val.status,
     };
@@ -837,9 +921,9 @@ export class TripDetailComponent implements OnInit {
       this.settingsForm.patchValue({
         title: t.title,
         destination: t.destination,
-        start_date: t.start_date,
-        end_date: t.end_date,
-        budget: t.budget,
+        start_date: this.formatIsoToDdMmYyyy(t.start_date),
+        end_date: this.formatIsoToDdMmYyyy(t.end_date),
+        budget: this.formatNumberWithDots(t.budget),
         num_travelers: t.num_travelers,
         status: t.status,
       });
@@ -873,24 +957,38 @@ export class TripDetailComponent implements OnInit {
   }
 
   // Initialize or redraw Leaflet Map
-  initOrRefreshExploreMap(): void {
+  initOrRefreshExploreMap(retryCount = 0): void {
+    if (this.activeSubTab() !== 'explore') return;
+
     const container = document.getElementById('explore-map');
-    if (!container) return;
-
-    if (!this.exploreMap) {
-      // Find a center coordinate based on loaded explore list, otherwise default to city or Hanoi
-      let centerCoords: [number, number] = [21.0285, 105.8542];
-      const valid = this.exploreLocations().filter(loc => loc.lat !== null && loc.lng !== null);
-      if (valid.length > 0) {
-        centerCoords = [valid[0].lat as number, valid[0].lng as number];
+    if (!container) {
+      if (retryCount < 10) {
+        setTimeout(() => this.initOrRefreshExploreMap(retryCount + 1), 100);
       }
-
-      this.exploreMap = L.map('explore-map').setView(centerCoords, 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(this.exploreMap);
+      return;
     }
+
+    if (this.exploreMap) {
+      try {
+        this.exploreMap.remove();
+      } catch (e) {
+        console.warn('Error removing old explore map:', e);
+      }
+      this.exploreMap = null;
+    }
+
+    // Find a center coordinate based on loaded explore list, otherwise default to city or Hanoi
+    let centerCoords: [number, number] = [21.0285, 105.8542];
+    const valid = this.exploreLocations().filter(loc => loc.lat !== null && loc.lng !== null);
+    if (valid.length > 0) {
+      centerCoords = [valid[0].lat as number, valid[0].lng as number];
+    }
+
+    this.exploreMap = L.map('explore-map').setView(centerCoords, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(this.exploreMap);
 
     // Always delay size validation slightly to ensure CSS flexbox layout calculations are complete
     setTimeout(() => {
@@ -923,8 +1021,8 @@ export class TripDetailComponent implements OnInit {
       validCoords.push([lat, lng]);
 
       // Styled custom marker DivIcon
-      const emoji = this.getExploreCategoryEmoji(loc.category);
-      const html = `<div class="custom-map-pin" title="${loc.name}"><span class="pin-emoji">${emoji}</span></div>`;
+      const iconName = this.getExploreCategoryIcon(loc.category);
+      const html = `<div class="custom-map-pin" title="${loc.name}"><span class="material-symbols-outlined pin-emoji text-primary" style="font-size: 18px;">${iconName}</span></div>`;
       const customIcon = L.divIcon({
         html: html,
         className: 'custom-leaflet-pin',
@@ -964,39 +1062,121 @@ export class TripDetailComponent implements OnInit {
     }
   }
 
-  // Helper category mapping to emojis
-  getExploreCategoryEmoji(category: string | null | undefined): string {
-    if (!category) return '📍';
+  // Helper category mapping to icons
+  getExploreCategoryIcon(category: string | null | undefined): string {
+    if (!category) return 'location_on';
     const cat = category.toLowerCase().trim();
-    if (cat.includes('meal') || cat.includes('restaurant') || cat.includes('food') || cat.includes('dining')) return '🍜';
-    if (cat.includes('attraction') || cat.includes('sightseeing') || cat.includes('tourist')) return '🏛️';
-    if (cat.includes('hotel') || cat.includes('accommodation') || cat.includes('lodging') || cat.includes('resort')) return '🏖️';
-    if (cat.includes('cafe') || cat.includes('coffee') || cat.includes('tea')) return '☕';
-    return '📍';
+    if (cat.includes('meal') || cat.includes('restaurant') || cat.includes('food') || cat.includes('dining')) return 'restaurant';
+    if (cat.includes('attraction') || cat.includes('sightseeing') || cat.includes('tourist')) return 'local_activity';
+    if (cat.includes('hotel') || cat.includes('accommodation') || cat.includes('lodging') || cat.includes('resort')) return 'hotel';
+    if (cat.includes('cafe') || cat.includes('coffee') || cat.includes('tea')) return 'local_cafe';
+    return 'location_on';
+  }
+
+  onBudgetInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+    let raw = value.replace(/\D/g, '');
+    if (raw) {
+      const num = Number(raw);
+      const formatted = num.toLocaleString('vi-VN');
+      input.value = formatted;
+      this.settingsForm.get('budget')?.setValue(formatted, { emitEvent: false });
+    } else {
+      input.value = '';
+      this.settingsForm.get('budget')?.setValue('', { emitEvent: false });
+    }
+  }
+
+  formatNumberWithDots(val: number | string | null | undefined): string {
+    if (val === null || val === undefined || val === '') return '';
+    const clean = val.toString().replace(/\D/g, '');
+    if (!clean) return '';
+    return Number(clean).toLocaleString('vi-VN');
+  }
+
+  openDatePicker(input: HTMLInputElement): void {
+    try {
+      input.showPicker();
+    } catch (e) {
+      input.focus();
+    }
+  }
+
+  onDateInputChange(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2);
+    }
+    if (value.length > 4) {
+      value = value.slice(0, 5) + '/' + value.slice(5);
+    }
+    value = value.slice(0, 10);
+    input.value = value;
+    this.settingsForm.get(controlName)?.setValue(value, { emitEvent: false });
+  }
+
+  onNativeDateChange(event: Event, controlName: string): void {
+    const picker = event.target as HTMLInputElement;
+    const value = picker.value;
+    if (value) {
+      const formatted = this.formatIsoToDdMmYyyy(value);
+      this.settingsForm.get(controlName)?.setValue(formatted);
+    }
+  }
+
+  formatIsoToDdMmYyyy(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return iso;
+  }
+
+  formatDdMmYyyyToIso(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
   }
 
   // Helper to return beautiful covers matching Airbnb photo-first rule
   getTripImage(destination: string | undefined): string {
-    if (!destination) return 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
+    const FALLBACK_DEFAULT =
+      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
+
+    if (!destination) return FALLBACK_DEFAULT;
+
     const dest = destination.toLowerCase().trim();
-    if (dest.includes('bali')) {
-      return 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80';
+    const map = this.destinationImagesMap();
+    const list = map.get(dest);
+
+    if (!list || list.length === 0) return FALLBACK_DEFAULT;
+
+    if (this.tripId) {
+      let hash = 0;
+      for (let i = 0; i < this.tripId.length; i++) {
+        hash = this.tripId.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return list[Math.abs(hash) % list.length];
     }
-    if (dest.includes('tokyo') || dest.includes('nhật')) {
-      return 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80';
+
+    return list[0];
+  }
+
+  get svgFallback(): string {
+    const isLight = document.documentElement.classList.contains('light');
+    if (isLight) {
+      return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWZlY2Y4Ii8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw5MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjZTRlMWVkIiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiNkYmQ4ZTQiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiM0NjQ4ZDQiIG9wYWNpdHk9IjAuMTUiLz48L3N2Zz4=';
     }
-    if (dest.includes('paris') || dest.includes('pháp')) {
-      return 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('hà nội') || dest.includes('hanoi')) {
-      return 'https://images.unsplash.com/photo-1509060464153-4466739f78d0?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('đà nẵng') || dest.includes('da nang')) {
-      return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('phú quốc') || dest.includes('phu quoc')) {
-      return 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?auto=format&fit=crop&w=600&q=80';
-    }
-    return 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
+    return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWMxZjJhIi8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw1MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjMTcxYjI2IiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiMwYjBmMTkiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNjMGMxZmYiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==';
+  }
+
+  handleImgError(event: any): void {
+    event.target.src = this.svgFallback;
   }
 }

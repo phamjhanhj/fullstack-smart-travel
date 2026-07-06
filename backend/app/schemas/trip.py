@@ -5,7 +5,7 @@ import uuid
 import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 TripStatus = Literal["draft", "active", "completed"]
 
@@ -37,6 +37,13 @@ class UpdateTripRequest(BaseModel):
     preferences: str | None = None
     status: TripStatus | None = None
     cover_image_url: str | None = None
+
+    @field_validator("cover_image_url")
+    @classmethod
+    def validate_cover_image_url(cls, value: str | None) -> str | None:
+        if value is None or value.startswith(("http://", "https://")):
+            return value
+        raise ValueError("cover_image_url must be an http or https URL")
 
 
 class TripResponse(BaseModel):
@@ -110,4 +117,3 @@ class TripSummaryResponse(BaseModel):
     overspent: bool
     budget_used_percent: int
     by_category: dict[str, CategoryBudgetBrief]
-

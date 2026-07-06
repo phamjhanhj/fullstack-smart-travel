@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 LocationCategory = Literal["restaurant", "attraction", "hotel", "cafe", "other"]
 
@@ -39,6 +39,13 @@ class UpsertLocationRequest(BaseModel):
     google_place_id: str | None = None
     photo_url: str | None = None
     rating: float | None = Field(default=None, ge=0, le=5)
+
+    @field_validator("photo_url")
+    @classmethod
+    def validate_photo_url(cls, value: str | None) -> str | None:
+        if value is None or value.startswith(("http://", "https://")):
+            return value
+        raise ValueError("photo_url must be an http or https URL")
 
 
 class UpsertLocationResponse(BaseModel):

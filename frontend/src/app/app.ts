@@ -20,6 +20,7 @@ export class App {
   currentUrl = signal<string>('');
   currentTab = signal<string>('');
   readonly isDarkMode = signal<boolean>(true);
+  readonly fallbackAvatarUrl = '/default-avatars/avatar-01.svg';
 
   constructor() {
     // Load initial theme from localStorage
@@ -49,6 +50,11 @@ export class App {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  getUserAvatarUrl(): string {
+    const avatarUrl = this.currentUser()?.avatar_url || '';
+    return avatarUrl.startsWith('/default-avatars/') ? avatarUrl : this.fallbackAvatarUrl;
   }
 
   toggleTheme(): void {

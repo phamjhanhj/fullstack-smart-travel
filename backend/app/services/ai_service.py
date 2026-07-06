@@ -10,6 +10,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from groq import AsyncGroq
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,36 @@ from app.models.chat import AiSuggestion, ChatMessage
 from app.models.trip import DayPlan, Trip
 
 _groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+
+
+class AiActivityPayload(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    type: str = "other"
+    start_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    end_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    estimated_cost: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, value: str) -> str:
+        return value if value in {"meal", "attraction", "hotel", "transport", "other"} else "other"
+
+
+class AiDayPayload(BaseModel):
+    day_number: int = Field(ge=1, le=366)
+    activities: list[AiActivityPayload] = Field(default_factory=list, max_length=30)
+
+
+class AiItineraryPayload(BaseModel):
+    days: list[AiDayPayload] = Field(default_factory=list, max_length=366)
+
+
+class AiExtractedActivityPayload(BaseModel):
+    has_activity: bool
+    day_number: int = Field(default=1, ge=1, le=366)
+    activity: AiActivityPayload | None = None
 
 _SYSTEM_PROMPT_TEMPLATE = """Ban la tro ly du lich AI thong minh, am hieu Viet Nam.
 Thong tin chuyen di hien tai:
@@ -321,7 +352,14 @@ async def generate_itinerary_with_ai(trip: Trip) -> dict:
             response_format={"type": "json_object"},
         )
         content = completion.choices[0].message.content or ""
-        return json.loads(content)
+        parsed = AiItineraryPayload.model_validate(json.loads(content))
+        return parsed.model_dump()
+    except (json.JSONDecodeError, ValidationError) as e:
+        print(f"Invalid AI itinerary payload: {e}")
+        raise AppError(
+            "AI tra ve lich trinh khong dung dinh dang. Vui long thu lai sau.",
+            status_code=502,
+        )
     except Exception as e:
         print(f"Error in generate_itinerary_with_ai: {e}")
         raise AppError(
@@ -373,15 +411,14 @@ async def _extract_itinerary_suggestion(user_msg: str, ai_msg: str) -> dict | No
             ],
             response_format={"type": "json_object"},
         )
-        res = json.loads(completion.choices[0].message.content)
-        if res.get("has_activity") and res.get("activity"):
-            activity = res["activity"]
+        res = AiExtractedActivityPayload.model_validate(json.loads(completion.choices[0].message.content or "{}"))
+        if res.has_activity and res.activity:
+            activity = res.activity.model_dump()
             return {
-                "day_number": res.get("day_number", 1),
+                "day_number": res.day_number,
                 "activities": [activity]
             }
     except Exception as e:
         print(f"Error extracting activity suggestion: {e}")
     return None
-
 

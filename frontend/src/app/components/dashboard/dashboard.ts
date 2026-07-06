@@ -6,8 +6,9 @@ import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angu
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TripService, TripListItem, CreateTripRequest } from '../../services/trip.service';
+import { PlacePhotoService } from '../../services/place-photo.service';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,8 +21,12 @@ export class DashboardComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly tripService = inject(TripService);
+  private readonly placePhotoService = inject(PlacePhotoService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  // Dynamic Destination Images Cache
+  readonly destinationImagesMap = signal<Map<string, string[]>>(new Map());
 
   // Leaflet Map properties
   private dashboardMap: any = null;
@@ -44,38 +49,38 @@ export class DashboardComponent implements OnInit {
   // Airbnb Hub State
   readonly activeTab = signal<string>('explore'); // 'my-trips', 'explore', or 'map'
   readonly selectedCategory = signal<string>('all');
-  
+
   // A local database of coordinates for popular destinations
   readonly destinationCoordinates: { [key: string]: [number, number] } = {
     'phú quốc': [10.2181, 103.9607],
     'phu quoc': [10.2181, 103.9607],
     'đà nẵng': [16.0471, 108.2068],
     'da nang': [16.0471, 108.2068],
-    'sapa': [22.3364, 103.8438],
+    sapa: [22.3364, 103.8438],
     'hà giang': [22.8233, 104.9836],
     'ha giang': [22.8233, 104.9836],
     'hà nội': [21.0285, 105.8542],
-    'hanoi': [21.0285, 105.8542],
-    'hội an': [15.8801, 108.3380],
-    'hoi an': [15.8801, 108.3380],
+    hanoi: [21.0285, 105.8542],
+    'hội an': [15.8801, 108.338],
+    'hoi an': [15.8801, 108.338],
     'đà lạt': [11.9404, 108.4583],
     'da lat': [11.9404, 108.4583],
-    'tokyo': [35.6762, 139.6503],
-    'bali': [-8.4095, 115.1889],
+    tokyo: [35.6762, 139.6503],
+    bali: [-8.4095, 115.1889],
     'hồ chí minh': [10.8231, 106.6297],
     'ho chi minh': [10.8231, 106.6297],
     'nha trang': [12.2388, 109.1967],
-    'huế': [16.4637, 107.5909],
-    'hue': [16.4637, 107.5909],
+    huế: [16.4637, 107.5909],
+    hue: [16.4637, 107.5909],
     'sài gòn': [10.8231, 106.6297],
     'sai gon': [10.8231, 106.6297],
-    'bình thuận': [10.9333, 108.1000],
-    'vũng tàu': [10.3460, 107.0843],
-    'vung tau': [10.3460, 107.0843],
+    'bình thuận': [10.9333, 108.1],
+    'vũng tàu': [10.346, 107.0843],
+    'vung tau': [10.346, 107.0843],
     'hạ long': [20.9501, 107.0733],
     'ha long': [20.9501, 107.0733],
   };
-  
+
   // Search inputs
   readonly searchDest = signal<string>('');
   readonly searchStart = signal<string>('');
@@ -83,11 +88,11 @@ export class DashboardComponent implements OnInit {
   readonly searchGuests = signal<number>(1);
 
   readonly categories = [
-    { id: 'all', name: 'Tất cả', icon: '🌎' },
-    { id: 'beach', name: 'Biển đảo', icon: '🏖️' },
-    { id: 'mountain', name: 'Núi non', icon: '🏔️' },
-    { id: 'culture', name: 'Văn hóa', icon: '🏛️' },
-    { id: 'city', name: 'Thành phố', icon: '🏙️' }
+    { id: 'all', name: 'Tất cả', icon: '' },
+    { id: 'beach', name: 'Biển đảo', icon: '' },
+    { id: 'mountain', name: 'Núi non', icon: '' },
+    { id: 'culture', name: 'Văn hóa', icon: '' },
+    { id: 'city', name: 'Thành phố', icon: '' },
   ];
 
   readonly trendingDestinations = [
@@ -95,83 +100,101 @@ export class DashboardComponent implements OnInit {
       name: 'Phú Quốc',
       category: 'beach',
       description: 'Thiên đường nghỉ dưỡng với những bãi cát trắng mịn và hải sản tươi ngon.',
-      image: 'https://images.unsplash.com/photo-1589308454676-4259466e3437?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1589308454676-4259466e3437?q=80&w=600&auto=format&fit=crop',
       budget: 6000000,
       days: 4,
-      preferences: 'Nghỉ dưỡng resort ven biển, đi cáp treo Hòn Thơm, lặn ngắm san hô, thưởng thức hải sản và bún quậy.'
+      preferences:
+        'Nghỉ dưỡng resort ven biển, đi cáp treo Hòn Thơm, lặn ngắm san hô, thưởng thức hải sản và bún quậy.',
     },
     {
       name: 'Đà Nẵng',
       category: 'beach',
       description: 'Thành phố đáng sống nhất Việt Nam với sự kết hợp hoàn hảo giữa biển và núi.',
-      image: 'https://images.unsplash.com/photo-1559592443-7f87a79f6386?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1559592443-7f87a79f6386?q=80&w=600&auto=format&fit=crop',
       budget: 4500000,
       days: 3,
-      preferences: 'Tắm biển Mỹ Khê, check-in Cầu Vàng Bà Nà Hills, ăn bánh tráng cuốn thịt heo, mì Quảng thơm ngon.'
+      preferences:
+        'Tắm biển Mỹ Khê, check-in Cầu Vàng Bà Nà Hills, ăn bánh tráng cuốn thịt heo, mì Quảng thơm ngon.',
     },
     {
       name: 'Sapa',
       category: 'mountain',
       description: 'Vẻ đẹp hùng vĩ của những ruộng bậc thang trong sương mù mờ ảo.',
-      image: 'https://images.unsplash.com/photo-1504457047772-27fad174996b?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1504457047772-27fad174996b?q=80&w=600&auto=format&fit=crop',
       budget: 3500000,
       days: 3,
-      preferences: 'Chinh phục đỉnh Fansipan bằng cáp treo, leo núi Hàm Rồng, ghé thăm bản Cát Cát thanh bình, ăn lẩu cá hồi.'
+      preferences:
+        'Chinh phục đỉnh Fansipan bằng cáp treo, leo núi Hàm Rồng, ghé thăm bản Cát Cát thanh bình, ăn lẩu cá hồi.',
     },
     {
       name: 'Hà Giang',
       category: 'mountain',
       description: 'Cung đường hạnh phúc đầy thử thách với thiên nhiên hoang sơ.',
-      image: 'https://images.unsplash.com/photo-1627471203492-f04b2816911d?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1627471203492-f04b2816911d?q=80&w=600&auto=format&fit=crop',
       budget: 4000000,
       days: 4,
-      preferences: 'Khám phá đèo Mã Pí Lèng, chèo thuyền ngắm cảnh sông Nho Quế, check-in hoa tam giác mạch.'
+      preferences:
+        'Khám phá đèo Mã Pí Lèng, chèo thuyền ngắm cảnh sông Nho Quế, check-in hoa tam giác mạch.',
     },
     {
       name: 'Hà Nội',
       category: 'culture',
       description: 'Nét cổ kính ngàn năm văn hiến giữa nhịp sống thủ đô hiện đại.',
-      image: 'https://images.unsplash.com/photo-1509030450996-9352e043443f?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1509030450996-9352e043443f?q=80&w=600&auto=format&fit=crop',
       budget: 3000000,
       days: 3,
-      preferences: 'Dạo quanh Hồ Gươm, viếng lăng Bác, thưởng thức phở gánh cổ truyền, bún chả và cà phê trứng.'
+      preferences:
+        'Dạo quanh Hồ Gươm, viếng lăng Bác, thưởng thức phở gánh cổ truyền, bún chả và cà phê trứng.',
     },
     {
       name: 'Hội An',
       category: 'culture',
       description: 'Thương cảng cổ yên bình với những ánh đèn lồng rực rỡ sắc màu.',
-      image: 'https://images.unsplash.com/photo-1594917409241-d64e9a4f4094?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1594917409241-d64e9a4f4094?q=80&w=600&auto=format&fit=crop',
       budget: 3500000,
       days: 3,
-      preferences: 'Đi dạo phố cổ về đêm, đi thuyền thả hoa đăng trên sông Hoài, thưởng thức bánh mì Phượng và cơm gà.'
+      preferences:
+        'Đi dạo phố cổ về đêm, đi thuyền thả hoa đăng trên sông Hoài, thưởng thức bánh mì Phượng và cơm gà.',
     },
     {
       name: 'Đà Lạt',
       category: 'mountain',
       description: 'Thành phố mộng mơ với không khí se lạnh và những ngọn đồi thông.',
-      image: 'https://images.unsplash.com/photo-1563293816-7f4f6556e89f?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1563293816-7f4f6556e89f?q=80&w=600&auto=format&fit=crop',
       budget: 3800000,
       days: 3,
-      preferences: 'Check-in hồ Xuân Hương, săn mây đồi chè Cầu Đất, ăn bánh tráng nướng, uống sữa đậu nành nóng.'
+      preferences:
+        'Check-in hồ Xuân Hương, săn mây đồi chè Cầu Đất, ăn bánh tráng nướng, uống sữa đậu nành nóng.',
     },
     {
       name: 'Tokyo',
       category: 'city',
       description: 'Trải nghiệm sự giao thoa độc đáo giữa truyền thống và công nghệ tương lai.',
-      image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=600&auto=format&fit=crop',
       budget: 25000000,
       days: 5,
-      preferences: 'Tham quan ngã tư Shibuya đông đúc, đền Senso-ji cổ kính, tháp Tokyo, ăn sushi băng chuyền và ramen.'
+      preferences:
+        'Tham quan ngã tư Shibuya đông đúc, đền Senso-ji cổ kính, tháp Tokyo, ăn sushi băng chuyền và ramen.',
     },
     {
       name: 'Bali',
       category: 'beach',
       description: 'Đảo rồng với những đền đài tâm linh và bãi biển tuyệt đẹp.',
-      image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=600&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=600&auto=format&fit=crop',
       budget: 15000000,
       days: 5,
-      preferences: 'Tham quan đền Uluwatu bên bờ đá, ruộng bậc thang Tegallalang, chơi đu dây Bali Swing.'
-    }
+      preferences:
+        'Tham quan đền Uluwatu bên bờ đá, ruộng bậc thang Tegallalang, chơi đu dây Bali Swing.',
+    },
   ];
 
   // Create Trip Reactive Form
@@ -180,7 +203,7 @@ export class DashboardComponent implements OnInit {
     destination: ['', [Validators.required, Validators.maxLength(200)]],
     start_date: ['', [Validators.required]],
     end_date: ['', [Validators.required]],
-    budget: [null as number | null, [Validators.min(0)]],
+    budget: ['' as any],
     num_travelers: [1, [Validators.required, Validators.min(1)]],
     preferences: [''],
   });
@@ -193,12 +216,38 @@ export class DashboardComponent implements OnInit {
     }
     this.fetchTrips();
 
+    // Prefetch trending destinations immediately
+    const trendingNames = this.trendingDestinations.map((d) => d.name);
+    this.prefetchDestinationImages(trendingNames);
+
     // Sync tab with query params
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       const tab = params['tab'];
       if (tab === 'my-trips' || tab === 'explore' || tab === 'map') {
         this.setActiveTab(tab);
       }
+    });
+  }
+
+  prefetchDestinationImages(destinations: string[]): void {
+    const uniqueDests = Array.from(new Set(destinations.map((d) => d.trim()).filter(Boolean)));
+    const requests = uniqueDests.map((dest) =>
+      this.placePhotoService.getPhotos(dest, 3).pipe(
+        map((photos) => ({ dest, photos })),
+        catchError(() => of({ dest, photos: [] })),
+      ),
+    );
+
+    forkJoin(requests).subscribe((results) => {
+      this.destinationImagesMap.update((currentMap) => {
+        const newMap = new Map(currentMap);
+        results.forEach((res) => {
+          if (res.photos && res.photos.length > 0) {
+            newMap.set(res.dest.toLowerCase().trim(), res.photos);
+          }
+        });
+        return newMap;
+      });
     });
   }
 
@@ -210,8 +259,14 @@ export class DashboardComponent implements OnInit {
       next: (res) => {
         this.isLoading.set(false);
         if (res && res.data && res.data.items) {
-          this.trips.set(res.data.items);
+          const items = res.data.items;
+          this.trips.set(items);
           this.checkOverBudgetTrips();
+
+          // Prefetch user trip images
+          const tripDests = items.map((t) => t.destination);
+          this.prefetchDestinationImages(tripDests);
+
           if (this.activeTab() === 'map') {
             this.initOrRefreshDashboardMap();
           }
@@ -229,16 +284,14 @@ export class DashboardComponent implements OnInit {
   }
 
   checkOverBudgetTrips(): void {
-    const activeTrips = this.trips().filter(t => t.status === 'active');
+    const activeTrips = this.trips().filter((t) => t.status === 'active');
     if (activeTrips.length === 0) {
       this.overBudgetTrips.set([]);
       return;
     }
 
-    const requests = activeTrips.map(trip =>
-      this.tripService.getBudgetSummary(trip.id).pipe(
-        catchError(() => of(null))
-      )
+    const requests = activeTrips.map((trip) =>
+      this.tripService.getBudgetSummary(trip.id).pipe(catchError(() => of(null))),
     );
 
     forkJoin(requests).subscribe((summaries) => {
@@ -255,16 +308,17 @@ export class DashboardComponent implements OnInit {
   getFilteredTrips(): TripListItem[] {
     const currentFilter = this.filterStatus();
     let allTrips = this.trips();
-    
+
     if (currentFilter !== 'all') {
       allTrips = allTrips.filter((trip) => trip.status === currentFilter);
     }
 
     const query = this.searchDest().toLowerCase().trim();
     if (query) {
-      allTrips = allTrips.filter((trip) => 
-        trip.destination.toLowerCase().includes(query) ||
-        trip.title.toLowerCase().includes(query)
+      allTrips = allTrips.filter(
+        (trip) =>
+          trip.destination.toLowerCase().includes(query) ||
+          trip.title.toLowerCase().includes(query),
       );
     }
 
@@ -276,7 +330,7 @@ export class DashboardComponent implements OnInit {
     if (cat === 'all') {
       return this.trendingDestinations;
     }
-    return this.trendingDestinations.filter(d => d.category === cat);
+    return this.trendingDestinations.filter((d) => d.category === cat);
   }
 
   selectCategory(catId: string): void {
@@ -296,14 +350,16 @@ export class DashboardComponent implements OnInit {
     const startDate = this.getFutureDateString(1);
     const endDate = this.getFutureDateString(1 + dest.days);
 
+    const startDateStr = this.formatIsoToDdMmYyyy(startDate);
+    const endDateStr = this.formatIsoToDdMmYyyy(endDate);
     this.createForm.reset({
       title: `Khám phá ${dest.name} cùng AI`,
       destination: dest.name,
-      start_date: startDate,
-      end_date: endDate,
-      budget: dest.budget,
+      start_date: startDateStr,
+      end_date: endDateStr,
+      budget: this.formatNumberWithDots(dest.budget),
       num_travelers: 2,
-      preferences: dest.preferences
+      preferences: dest.preferences,
     });
 
     this.modalErrorMessage.set(null);
@@ -317,16 +373,20 @@ export class DashboardComponent implements OnInit {
       const endDate = this.searchEnd() || this.getFutureDateString(4);
       const guests = this.searchGuests() || 2;
 
-      const match = this.trendingDestinations.find(t => t.name.toLowerCase() === dest.toLowerCase());
+      const match = this.trendingDestinations.find(
+        (t) => t.name.toLowerCase() === dest.toLowerCase(),
+      );
 
+      const startDateStr = this.formatIsoToDdMmYyyy(startDate);
+      const endDateStr = this.formatIsoToDdMmYyyy(endDate);
       this.createForm.reset({
         title: `Hành trình khám phá ${dest}`,
         destination: dest,
-        start_date: startDate,
-        end_date: endDate,
-        budget: match ? match.budget : null,
+        start_date: startDateStr,
+        end_date: endDateStr,
+        budget: match ? this.formatNumberWithDots(match.budget) : '',
         num_travelers: guests,
-        preferences: match ? match.preferences : ''
+        preferences: match ? match.preferences : '',
       });
       this.modalErrorMessage.set(null);
       this.isModalOpen.set(true);
@@ -345,7 +405,7 @@ export class DashboardComponent implements OnInit {
       destination: '',
       start_date: '',
       end_date: '',
-      budget: null,
+      budget: '',
       num_travelers: 1,
       preferences: '',
     });
@@ -363,24 +423,30 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    const start = new Date(this.createForm.value.start_date || '');
-    const end = new Date(this.createForm.value.end_date || '');
+    const formValue = this.createForm.getRawValue();
+    const startIso = this.formatDdMmYyyyToIso(formValue.start_date);
+    const endIso = this.formatDdMmYyyyToIso(formValue.end_date);
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      this.modalErrorMessage.set('Ngày nhập vào không hợp lệ (định dạng dd/mm/yyyy).');
+      return;
+    }
     if (end < start) {
       this.modalErrorMessage.set('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.');
       return;
     }
-
     this.isSubmitting.set(true);
     this.modalErrorMessage.set(null);
     this.submitProgressMessage.set('Đang tạo chuyến đi...');
 
-    const formValue = this.createForm.getRawValue();
+    const rawBudget = formValue.budget ? Number(formValue.budget.toString().replace(/\./g, '')) : null;
     const payload: CreateTripRequest = {
       title: formValue.title,
       destination: formValue.destination,
-      start_date: formValue.start_date,
-      end_date: formValue.end_date,
-      budget: formValue.budget,
+      start_date: startIso,
+      end_date: endIso,
+      budget: isNaN(rawBudget as any) ? null : rawBudget,
       num_travelers: formValue.num_travelers,
       preferences: formValue.preferences || null,
     };
@@ -396,26 +462,28 @@ export class DashboardComponent implements OnInit {
         }
 
         // Step 2: Auto-generate AI itinerary
-        this.submitProgressMessage.set('🤖 AI đang lập lịch trình...');
+        this.submitProgressMessage.set('AI đang lập lịch trình...');
         this.tripService.generateDays(tripId, true).subscribe({
           next: () => {
             // Step 3: Ask AI for summary then navigate
-            this.submitProgressMessage.set('✨ Hoàn tất! Đang chuyển hướng...');
-            this.tripService.sendMessage(tripId, 'Hãy tóm tắt lịch trình bạn vừa thiết kế cho chuyến đi của tôi.').subscribe({
-              next: () => {
-                this.isSubmitting.set(false);
-                this.submitProgressMessage.set(null);
-                this.closeModal();
-                this.router.navigate(['/trip', tripId]);
-              },
-              error: () => {
-                // AI summary failed but itinerary was generated - still navigate
-                this.isSubmitting.set(false);
-                this.submitProgressMessage.set(null);
-                this.closeModal();
-                this.router.navigate(['/trip', tripId]);
-              }
-            });
+            this.submitProgressMessage.set('Hoàn tất! Đang chuyển hướng...');
+            this.tripService
+              .sendMessage(tripId, 'Hãy tóm tắt lịch trình bạn vừa thiết kế cho chuyến đi của tôi.')
+              .subscribe({
+                next: () => {
+                  this.isSubmitting.set(false);
+                  this.submitProgressMessage.set(null);
+                  this.closeModal();
+                  this.router.navigate(['/trip', tripId]);
+                },
+                error: () => {
+                  // AI summary failed but itinerary was generated - still navigate
+                  this.isSubmitting.set(false);
+                  this.submitProgressMessage.set(null);
+                  this.closeModal();
+                  this.router.navigate(['/trip', tripId]);
+                },
+              });
           },
           error: (err) => {
             // AI generation failed - still navigate to trip detail
@@ -448,38 +516,137 @@ export class DashboardComponent implements OnInit {
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  // Helper to return beautiful visual covers matching Airbnb photo-first rule
-  getTripImage(destination: string): string {
+  onBudgetInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+    let raw = value.replace(/\D/g, '');
+    if (raw) {
+      const num = Number(raw);
+      const formatted = num.toLocaleString('vi-VN');
+      input.value = formatted;
+      this.createForm.get('budget')?.setValue(formatted, { emitEvent: false });
+    } else {
+      input.value = '';
+      this.createForm.get('budget')?.setValue('', { emitEvent: false });
+    }
+  }
+
+  formatNumberWithDots(val: number | string | null | undefined): string {
+    if (val === null || val === undefined || val === '') return '';
+    const clean = val.toString().replace(/\D/g, '');
+    if (!clean) return '';
+    return Number(clean).toLocaleString('vi-VN');
+  }
+
+  openDatePicker(input: HTMLInputElement): void {
+    try {
+      input.showPicker();
+    } catch (e) {
+      input.focus();
+    }
+  }
+
+  getTripDurationDays(): number | null {
+    const startVal = this.createForm.get('start_date')?.value;
+    const endVal = this.createForm.get('end_date')?.value;
+    if (startVal && endVal) {
+      const startIso = this.formatDdMmYyyyToIso(startVal);
+      const endIso = this.formatDdMmYyyyToIso(endVal);
+      const start = new Date(startIso);
+      const end = new Date(endIso);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end >= start) {
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return diffDays;
+      }
+    }
+    return null;
+  }
+
+  onDateInputChange(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2);
+    }
+    if (value.length > 4) {
+      value = value.slice(0, 5) + '/' + value.slice(5);
+    }
+    value = value.slice(0, 10);
+    input.value = value;
+    this.createForm.get(controlName)?.setValue(value, { emitEvent: false });
+  }
+
+  onNativeDateChange(event: Event, controlName: string): void {
+    const picker = event.target as HTMLInputElement;
+    const value = picker.value;
+    if (value) {
+      const formatted = this.formatIsoToDdMmYyyy(value);
+      this.createForm.get(controlName)?.setValue(formatted);
+    }
+  }
+
+  formatIsoToDdMmYyyy(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return iso;
+  }
+
+  formatDdMmYyyyToIso(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  }
+
+  getTripImage(destination: string | undefined, tripId?: string): string {
+    const FALLBACK_DEFAULT =
+      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
+
+    if (!destination) return FALLBACK_DEFAULT;
+
     const dest = destination.toLowerCase().trim();
-    if (dest.includes('bali')) {
-      return 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80';
+    const map = this.destinationImagesMap();
+    const list = map.get(dest);
+
+    if (!list || list.length === 0) return FALLBACK_DEFAULT;
+
+    if (tripId) {
+      let hash = 0;
+      for (let i = 0; i < tripId.length; i++) {
+        hash = tripId.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return list[Math.abs(hash) % list.length];
     }
-    if (dest.includes('tokyo') || dest.includes('nhật')) {
-      return 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80';
+
+    return list[0];
+  }
+
+  get svgFallback(): string {
+    const isLight = document.documentElement.classList.contains('light');
+    if (isLight) {
+      return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWZlY2Y4Ii8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw5MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjZTRlMWVkIiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiNkYmQ4ZTQiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiM0NjQ4ZDQiIG9wYWNpdHk9IjAuMTUiLz48L3N2Zz4=';
     }
-    if (dest.includes('paris') || dest.includes('pháp')) {
-      return 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('hà nội') || dest.includes('hanoi')) {
-      return 'https://images.unsplash.com/photo-1509060464153-4466739f78d0?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('đà nẵng') || dest.includes('da nang')) {
-      return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('phú quốc') || dest.includes('phu quoc')) {
-      return 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?auto=format&fit=crop&w=600&q=80';
-    }
-    if (dest.includes('london') || dest.includes('anh')) {
-      return 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80';
-    }
-    // Default beautiful travel scenery
-    return 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
+    return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWMxZjJhIi8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw1MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjMTcxYjI2IiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiMwYjBmMTkiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNjMGMxZmYiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==';
+  }
+
+  handleImgError(event: any): void {
+    event.target.src = this.svgFallback;
   }
 
   // Format currency for budgets helper
   formatCurrency(value: number | null): string {
     if (value === null || value === undefined) return 'N/A';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0,
+    }).format(value);
   }
 
   goToTrip(tripId: string): void {
@@ -494,13 +661,13 @@ export class DashboardComponent implements OnInit {
   }
 
   getUniqueDestinationsCount(): number {
-    return new Set(this.trips().map(t => t.destination.trim().toLowerCase())).size;
+    return new Set(this.trips().map((t) => t.destination.trim().toLowerCase())).size;
   }
 
   getUniqueDestinationsList(): string {
     const list = this.trips();
     if (list.length === 0) return 'Chưa có điểm đến';
-    const dests = Array.from(new Set(list.map(t => t.destination.trim())));
+    const dests = Array.from(new Set(list.map((t) => t.destination.trim())));
     if (dests.length <= 3) {
       return dests.join(', ');
     }
@@ -513,18 +680,18 @@ export class DashboardComponent implements OnInit {
     const destCounts: { [key: string]: number } = {};
     let isInternational = false;
 
-    list.forEach(trip => {
+    list.forEach((trip) => {
       if (trip.budget) {
         totalBudget += trip.budget;
       }
       const dest = trip.destination.trim();
       destCounts[dest] = (destCounts[dest] || 0) + 1;
-      
+
       const destLower = dest.toLowerCase();
       if (
-        destLower.includes('tokyo') || 
-        destLower.includes('bali') || 
-        destLower.includes('japan') || 
+        destLower.includes('tokyo') ||
+        destLower.includes('bali') ||
+        destLower.includes('japan') ||
         destLower.includes('indonesia') ||
         destLower.includes('pháp') ||
         destLower.includes('paris') ||
@@ -554,12 +721,12 @@ export class DashboardComponent implements OnInit {
     return {
       totalBudget: this.formatCurrency(totalBudget),
       favoriteDestination: favDest,
-      activeRegion: region
+      activeRegion: region,
     };
   }
 
   // --- Map Integration Helpers ---
-  
+
   getCoordinatesForDestination(destination: string): [number, number] {
     const dest = destination.toLowerCase().trim();
     if (this.destinationCoordinates[dest]) {
@@ -585,23 +752,38 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  initOrRefreshDashboardMap(): void {
+  initOrRefreshDashboardMap(retryCount = 0): void {
+    if (this.activeTab() !== 'map') return;
+
     const container = document.getElementById('dashboard-map');
-    if (!container) return;
-
-    if (!this.dashboardMap) {
-      const centerCoords: [number, number] = [16.0471, 108.2068]; // Center of Vietnam (Da Nang)
-      this.dashboardMap = L.map('dashboard-map', { zoomControl: false }).setView(centerCoords, 6);
-      
-      // OpenStreetMap tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(this.dashboardMap);
-
-      // Add Zoom Control to Bottom Right
-      L.control.zoom({ position: 'bottomright' }).addTo(this.dashboardMap);
+    if (!container) {
+      if (retryCount < 10) {
+        setTimeout(() => this.initOrRefreshDashboardMap(retryCount + 1), 100);
+      }
+      return;
     }
+
+    if (this.dashboardMap) {
+      try {
+        this.dashboardMap.remove();
+      } catch (e) {
+        console.warn('Error removing old map:', e);
+      }
+      this.dashboardMap = null;
+    }
+
+    const centerCoords: [number, number] = [16.0471, 108.2068]; // Center of Vietnam (Da Nang)
+    this.dashboardMap = L.map('dashboard-map', { zoomControl: false }).setView(centerCoords, 6);
+
+    // Google Maps tile layer
+    L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps',
+    }).addTo(this.dashboardMap);
+
+    // Add Zoom Control to Bottom Right
+    L.control.zoom({ position: 'bottomright' }).addTo(this.dashboardMap);
 
     setTimeout(() => {
       if (this.dashboardMap) {
@@ -615,30 +797,30 @@ export class DashboardComponent implements OnInit {
     if (!this.dashboardMap) return;
 
     // Clear old markers
-    this.mapMarkers.forEach(m => m.remove());
+    this.mapMarkers.forEach((m) => m.remove());
     this.mapMarkers = [];
 
     const trips = this.getFilteredTrips();
     const validCoords: any[] = [];
 
-    trips.forEach(trip => {
+    trips.forEach((trip) => {
       const coords = this.getCoordinatesForDestination(trip.destination);
       validCoords.push(coords);
 
-      const statusEmoji = trip.status === 'draft' ? '📝' : trip.status === 'active' ? '🚗' : '✅';
-      
+      const statusIcon = trip.status === 'draft' ? 'edit_note' : trip.status === 'active' ? 'flight_takeoff' : 'emoji_events';
+
       const customIcon = L.divIcon({
         className: 'custom-div-icon',
-        html: `<div class="custom-emoji-marker w-10 h-10">${statusEmoji}</div>`,
+        html: `<div class="custom-emoji-marker w-10 h-10"><span class="material-symbols-outlined text-primary" style="font-size: 20px;">${statusIcon}</span></div>`,
         iconSize: [40, 40],
         iconAnchor: [20, 20],
-        popupAnchor: [0, -20]
+        popupAnchor: [0, -20],
       });
 
       const marker = L.marker(coords, { icon: customIcon }).addTo(this.dashboardMap);
       this.mapMarkers.push(marker);
 
-      const coverImg = this.getTripImage(trip.destination);
+      const coverImg = trip.cover_image_url || this.getTripImage(trip.destination);
       const formattedBudget = this.formatCurrency(trip.budget);
 
       const popupContent = document.createElement('div');

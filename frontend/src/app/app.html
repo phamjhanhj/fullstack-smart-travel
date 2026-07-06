@@ -47,14 +47,10 @@
       </button>
       <a routerLink="/profile" class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
         <img
-          *ngIf="currentUser()?.avatar_url; else defaultAvatar"
-          [src]="currentUser()?.avatar_url"
+          [src]="getUserAvatarUrl()"
           class="w-8 h-8 rounded-full object-cover border border-primary/30"
           alt="User"
         />
-        <ng-template #defaultAvatar>
-          <span class="material-symbols-outlined text-[24px]">account_circle</span>
-        </ng-template>
       </a>
       <button (click)="logout()" class="material-symbols-outlined text-on-surface-variant hover:bg-white/10 hover:text-status-rose transition-all duration-300 p-2 rounded-full border-none bg-transparent cursor-pointer" title="Đăng xuất">
         logout

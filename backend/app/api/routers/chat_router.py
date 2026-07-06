@@ -11,7 +11,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_owned_trip
+from app.core.rate_limit import rate_limit
 from app.core.response import envelope
 from app.db.session import get_db
 from app.models.trip import Trip
@@ -30,7 +32,7 @@ from app.services import ai_service
 chat_router = APIRouter(prefix="/trips/{trip_id}/chat", tags=["AI Chat"])
 
 
-@chat_router.post("")
+@chat_router.post("", dependencies=[Depends(rate_limit("ai_chat", settings.RATE_LIMIT_AI_PER_MINUTE))])
 async def send_message(
     payload: SendMessageRequest,
     trip: Trip = Depends(get_owned_trip),

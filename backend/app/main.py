@@ -19,6 +19,7 @@ from app.api.routers.activity_router import trip_days_router, activities_router
 from app.api.routers.location_router import router as location_router
 from app.api.routers.budget_router import trip_budget_router, budget_items_router
 from app.api.routers.chat_router import chat_router, suggestions_trip_router, suggestions_router
+from app.api.routers.destination_photo_router import router as destination_photo_router
 
 app = FastAPI(
     title="Smart Travel Planner API",
@@ -52,6 +53,7 @@ app.include_router(budget_items_router, prefix=API_PREFIX)
 app.include_router(chat_router, prefix=API_PREFIX)
 app.include_router(suggestions_trip_router, prefix=API_PREFIX)
 app.include_router(suggestions_router, prefix=API_PREFIX)
+app.include_router(destination_photo_router, prefix=API_PREFIX)
 
 
 @app.get("/")
