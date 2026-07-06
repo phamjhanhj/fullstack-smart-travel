@@ -7,6 +7,12 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TripService, TripListItem, CreateTripRequest } from '../../services/trip.service';
 import { PlacePhotoService } from '../../services/place-photo.service';
+import {
+  GENERIC_TRAVEL_FALLBACK_IMAGES,
+  getInlineScenicFallback,
+  resolveTravelFallbackImage,
+  resolveTravelCoverImage,
+} from '../../services/travel-cover-images';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
@@ -112,7 +118,7 @@ export class DashboardComponent implements OnInit {
       category: 'beach',
       description: 'Thành phố đáng sống nhất Việt Nam với sự kết hợp hoàn hảo giữa biển và núi.',
       image:
-        'https://images.unsplash.com/photo-1559592443-7f87a79f6386?q=80&w=600&auto=format&fit=crop',
+        'https://commons.wikimedia.org/wiki/Special:FilePath/Da%20Nang%20Dragon%20Bridge%202020%20IMG%204019.jpg?width=1200',
       budget: 4500000,
       days: 3,
       preferences:
@@ -461,8 +467,14 @@ export class DashboardComponent implements OnInit {
           return;
         }
 
-        // Step 2: Auto-generate AI itinerary
-        this.submitProgressMessage.set('AI đang lập lịch trình...');
+        // Step 2: Auto-generate grounded AI itinerary
+        this.submitProgressMessage.set('Dang tim dia diem phu hop...');
+        setTimeout(() => {
+          if (this.isSubmitting()) this.submitProgressMessage.set('Dang toi uu tuyen duong va khung gio...');
+        }, 1200);
+        setTimeout(() => {
+          if (this.isSubmitting()) this.submitProgressMessage.set('Dang kiem tra ngan sach...');
+        }, 2400);
         this.tripService.generateDays(tripId, true).subscribe({
           next: () => {
             // Step 3: Ask AI for summary then navigate
@@ -604,39 +616,36 @@ export class DashboardComponent implements OnInit {
     return dateStr;
   }
 
-  getTripImage(destination: string | undefined, tripId?: string): string {
-    const FALLBACK_DEFAULT =
-      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
-
-    if (!destination) return FALLBACK_DEFAULT;
-
-    const dest = destination.toLowerCase().trim();
-    const map = this.destinationImagesMap();
-    const list = map.get(dest);
-
-    if (!list || list.length === 0) return FALLBACK_DEFAULT;
-
-    if (tripId) {
-      let hash = 0;
-      for (let i = 0; i < tripId.length; i++) {
-        hash = tripId.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      return list[Math.abs(hash) % list.length];
-    }
-
-    return list[0];
+  getTripImage(
+    destination: string | undefined,
+    tripId?: string,
+    coverImageUrl?: string | null,
+  ): string {
+    const dest = destination?.toLowerCase().trim() || '';
+    const list = dest ? this.destinationImagesMap().get(dest) || [] : [];
+    return resolveTravelCoverImage(destination, tripId || destination, list, coverImageUrl);
   }
 
   get svgFallback(): string {
     const isLight = document.documentElement.classList.contains('light');
-    if (isLight) {
-      return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWZlY2Y4Ii8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw5MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjZTRlMWVkIiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiNkYmQ4ZTQiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiM0NjQ4ZDQiIG9wYWNpdHk9IjAuMTUiLz48L3N2Zz4=';
-    }
-    return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWMxZjJhIi8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw1MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjMTcxYjI2IiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiMwYjBmMTkiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNjMGMxZmYiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==';
+    return getInlineScenicFallback(isLight);
   }
 
   handleImgError(event: any): void {
-    event.target.src = this.svgFallback;
+    const img = event.target as HTMLImageElement;
+    const attempts = Number(img.dataset['fallbackAttempts'] || '0');
+
+    if (attempts < GENERIC_TRAVEL_FALLBACK_IMAGES.length) {
+      img.dataset['fallbackAttempts'] = String(attempts + 1);
+      img.src = resolveTravelFallbackImage(
+        img.dataset['fallbackSeed'] || img.alt || img.src,
+        attempts,
+      );
+      return;
+    }
+
+    img.onerror = null;
+    img.src = this.svgFallback;
   }
 
   // Format currency for budgets helper
@@ -820,7 +829,7 @@ export class DashboardComponent implements OnInit {
       const marker = L.marker(coords, { icon: customIcon }).addTo(this.dashboardMap);
       this.mapMarkers.push(marker);
 
-      const coverImg = trip.cover_image_url || this.getTripImage(trip.destination);
+      const coverImg = this.getTripImage(trip.destination, trip.id, trip.cover_image_url);
       const formattedBudget = this.formatCurrency(trip.budget);
 
       const popupContent = document.createElement('div');
@@ -845,6 +854,12 @@ export class DashboardComponent implements OnInit {
             </div>
         </div>
       `;
+
+      const popupImg = popupContent.querySelector('img');
+      if (popupImg) {
+        popupImg.dataset['fallbackSeed'] = `${trip.id}-${trip.destination}`;
+        popupImg.addEventListener('error', (event) => this.handleImgError(event));
+      }
 
       const goBtn = popupContent.querySelector('.popup-btn-go');
       if (goBtn) {

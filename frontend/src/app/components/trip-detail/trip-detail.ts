@@ -21,11 +21,28 @@ import {
   BudgetCategory,
   LocationResponse,
   LocationCategory,
+  ItineraryGenerationSummary,
 } from '../../services/trip.service';
 
 import { PlacePhotoService, BestRatedPlace } from '../../services/place-photo.service';
+import {
+  GENERIC_TRAVEL_FALLBACK_IMAGES,
+  getInlineScenicFallback,
+  resolveTravelCoverImage,
+} from '../../services/travel-cover-images';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { OsrmService } from '../../services/osrm.service';
+
+export interface RouteSegment {
+  fromName: string;
+  fromType: ActivityType | null;
+  toName: string;
+  toType: ActivityType | null;
+  distanceKm: number;
+  durationMin: number;
+  coords: [number, number][];
+}
 
 @Component({
   selector: 'app-trip-detail',
@@ -42,14 +59,63 @@ export class TripDetailComponent implements OnInit {
   private readonly aiStreamService = inject(AiStreamService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly osrmService = inject(OsrmService);
 
   // Dynamic Destination Images Cache
   readonly destinationImagesMap = signal<Map<string, string[]>>(new Map());
-  readonly defaultPlaceholderUrl = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
+  readonly defaultPlaceholderUrl = resolveTravelCoverImage('travel', 'place-placeholder');
+
+  // A local database of coordinates for popular destinations
+  readonly destinationCoordinates: { [key: string]: [number, number] } = {
+    'phú quốc': [10.2181, 103.9607],
+    'phu quoc': [10.2181, 103.9607],
+    'đà nẵng': [16.0471, 108.2068],
+    'da nang': [16.0471, 108.2068],
+    sapa: [22.3364, 103.8438],
+    'hà giang': [22.8233, 104.9836],
+    'ha giang': [22.8233, 104.9836],
+    'hà nội': [21.0285, 105.8542],
+    hanoi: [21.0285, 105.8542],
+    'hội an': [15.8801, 108.338],
+    'hoi an': [15.8801, 108.338],
+    'đà lạt': [11.9404, 108.4583],
+    'da lat': [11.9404, 108.4583],
+    tokyo: [35.6762, 139.6503],
+    bali: [-8.4095, 115.1889],
+    'hồ chí minh': [10.8231, 106.6297],
+    'ho chi minh': [10.8231, 106.6297],
+    'nha trang': [12.2388, 109.1967],
+    huế: [16.4637, 107.5909],
+    hue: [16.4637, 107.5909],
+  };
+
+  getCoordinatesForDestination(destination: string | undefined): [number, number] {
+    if (!destination) return [16.0471, 108.2068];
+    const dest = destination.toLowerCase().trim();
+    if (this.destinationCoordinates[dest]) {
+      return this.destinationCoordinates[dest];
+    }
+    for (const key in this.destinationCoordinates) {
+      if (dest.includes(key) || key.includes(dest)) {
+        return this.destinationCoordinates[key];
+      }
+    }
+    return [16.0471, 108.2068];
+  }
 
   // Leaflet Map instance & active markers
   private exploreMap: any = null;
   private mapMarkers: any[] = [];
+
+  // Route mapping fields & signals
+  private routeMap: any = null;
+  private routeMarkers: any[] = [];
+  private routePolylines: any[] = [];
+  readonly routeDayIndex = signal<number>(0);
+  readonly isLoadingRoute = signal<boolean>(false);
+  readonly routeSegments = signal<RouteSegment[]>([]);
+  readonly routeTotalDistance = signal<number>(0);
+  readonly routeTotalDuration = signal<number>(0);
 
   // User Info signal link
   readonly currentUser = this.authService.currentUser;
@@ -67,6 +133,8 @@ export class TripDetailComponent implements OnInit {
   readonly isLoadingDetail = signal<boolean>(true);
   readonly isLoadingDays = signal<boolean>(true);
   readonly isGenerating = signal<boolean>(false);
+  readonly generationProgressMessage = signal<string | null>(null);
+  readonly generationSummary = signal<ItineraryGenerationSummary | null>(null);
   readonly errorMsg = signal<string | null>(null);
 
   // Chat Form/State
@@ -74,7 +142,7 @@ export class TripDetailComponent implements OnInit {
   readonly isSendingMessage = signal<boolean>(false);
 
   // Sub-tabs switcher state
-  readonly activeSubTab = signal<'itinerary' | 'budget' | 'explore' | 'settings'>('itinerary');
+  readonly activeSubTab = signal<'itinerary' | 'route' | 'budget' | 'explore' | 'settings'>('itinerary');
 
   // Settings State Signals
   readonly isSavingSettings = signal<boolean>(false);
@@ -256,15 +324,26 @@ export class TripDetailComponent implements OnInit {
   // AI Auto Itinerary Generation
   onGenerateItinerary(): void {
     this.isGenerating.set(true);
+    this.generationSummary.set(null);
+    this.generationProgressMessage.set('Dang tim dia diem phu hop...');
+    setTimeout(() => {
+      if (this.isGenerating()) this.generationProgressMessage.set('Dang toi uu tuyen duong va khung gio...');
+    }, 1200);
+    setTimeout(() => {
+      if (this.isGenerating()) this.generationProgressMessage.set('Dang kiem tra ngan sach...');
+    }, 2400);
     this.tripService.generateDays(this.tripId, true).subscribe({
-      next: () => {
+      next: (res) => {
         this.isGenerating.set(false);
+        this.generationProgressMessage.set(null);
+        this.generationSummary.set(res.data?.summary || null);
         this.fetchItinerary();
         // Ask AI assistant for a welcome advice as well
         this.sendMessageToAi("Hãy tóm tắt lịch trình bạn vừa thiết kế cho chuyến đi của tôi.");
       },
       error: (err) => {
         this.isGenerating.set(false);
+        this.generationProgressMessage.set(null);
         alert(err?.error?.message || 'Có lỗi xảy ra khi tự động tạo lịch trình.');
       },
     });
@@ -496,13 +575,18 @@ export class TripDetailComponent implements OnInit {
   }
 
   // Budget Tracker logic
-  switchSubTab(tab: 'itinerary' | 'budget' | 'explore' | 'settings'): void {
+  switchSubTab(tab: 'itinerary' | 'route' | 'budget' | 'explore' | 'settings'): void {
     this.activeSubTab.set(tab);
     if (tab === 'budget') {
       this.loadBudgetData();
     } else if (tab === 'explore') {
       this.loadExploreData();
       setTimeout(() => this.initOrRefreshExploreMap(), 100);
+    } else if (tab === 'route') {
+      if (this.routeDayIndex() >= this.days().length) {
+        this.routeDayIndex.set(0);
+      }
+      setTimeout(() => this.initOrRefreshRouteMap(), 100);
     }
   }
 
@@ -977,8 +1061,8 @@ export class TripDetailComponent implements OnInit {
       this.exploreMap = null;
     }
 
-    // Find a center coordinate based on loaded explore list, otherwise default to city or Hanoi
-    let centerCoords: [number, number] = [21.0285, 105.8542];
+    // Find a center coordinate based on loaded explore list, otherwise default to trip destination coordinates
+    let centerCoords = this.getCoordinatesForDestination(this.trip()?.destination);
     const valid = this.exploreLocations().filter(loc => loc.lat !== null && loc.lng !== null);
     if (valid.length > 0) {
       centerCoords = [valid[0].lat as number, valid[0].lng as number];
@@ -1060,6 +1144,206 @@ export class TripDetailComponent implements OnInit {
     if (validCoords.length > 0) {
       this.exploreMap.fitBounds(validCoords, { padding: [40, 40] });
     }
+  }
+
+  // Initialize or redraw Route Leaflet Map
+  initOrRefreshRouteMap(retryCount = 0): void {
+    if (this.activeSubTab() !== 'route') return;
+
+    const container = document.getElementById('route-map');
+    if (!container) {
+      if (retryCount < 10) {
+        setTimeout(() => this.initOrRefreshRouteMap(retryCount + 1), 100);
+      }
+      return;
+    }
+
+    if (this.routeMap) {
+      try {
+        this.routeMap.remove();
+      } catch (e) {
+        console.warn('Error removing old route map:', e);
+      }
+      this.routeMap = null;
+    }
+
+    // Default to trip destination coordinates
+    let centerCoords = this.getCoordinatesForDestination(this.trip()?.destination);
+    
+    this.routeMap = L.map('route-map').setView(centerCoords, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(this.routeMap);
+
+    setTimeout(() => {
+      if (this.routeMap) {
+        this.routeMap.invalidateSize();
+        this.renderRouteForDay(this.routeDayIndex());
+      }
+    }, 250);
+  }
+
+  selectRouteDay(idx: number): void {
+    this.routeDayIndex.set(idx);
+    this.renderRouteForDay(idx);
+  }
+
+  clearRouteLayers(): void {
+    this.routeMarkers.forEach(m => m.remove());
+    this.routeMarkers = [];
+    this.routePolylines.forEach(p => p.remove());
+    this.routePolylines = [];
+  }
+
+  renderRouteForDay(dayIndex: number): void {
+    if (!this.routeMap) return;
+    this.clearRouteLayers();
+
+    const day = this.days()[dayIndex];
+    if (!day) return;
+
+    // Filter activities with valid coords
+    const validActivities = day.activities.filter(act => act.location && act.location.lat !== null && act.location.lng !== null);
+    
+    if (validActivities.length === 0) {
+      this.routeSegments.set([]);
+      this.routeTotalDistance.set(0);
+      this.routeTotalDuration.set(0);
+      return;
+    }
+
+    const coords = validActivities.map(act => [act.location!.lat, act.location!.lng] as [number, number]);
+
+    if (validActivities.length === 1) {
+      this.routeSegments.set([]);
+      this.routeTotalDistance.set(0);
+      this.routeTotalDuration.set(0);
+      
+      const act = validActivities[0];
+      const lat = act.location!.lat!;
+      const lng = act.location!.lng!;
+      
+      // Draw single marker
+      let markerColor = '#ff385c';
+      if (act.type === 'meal') markerColor = '#f59e0b';
+      else if (act.type === 'attraction') markerColor = '#3b82f6';
+      else if (act.type === 'hotel') markerColor = '#a855f7';
+      else if (act.type === 'transport') markerColor = '#14b8a6';
+
+      const markerHtml = `<div class="custom-map-pin-route text-white font-bold" style="background-color: ${markerColor}; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">1</div>`;
+      const customIcon = L.divIcon({
+        html: markerHtml,
+        className: 'custom-leaflet-route-pin',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+      });
+
+      const marker = L.marker([lat, lng], { icon: customIcon }).addTo(this.routeMap);
+      marker.bindPopup(`<div style="font-weight:bold; font-size:14px; color:#fff;">${act.title}</div><div style="font-size:12px; color:rgba(255,255,255,0.7);">${act.location!.name}</div>`);
+      this.routeMarkers.push(marker);
+
+      this.routeMap.setView([lat, lng], 14);
+      return;
+    }
+
+    this.isLoadingRoute.set(true);
+    this.osrmService.getRoute(coords).subscribe({
+      next: (res) => {
+        this.isLoadingRoute.set(false);
+        if (!res) return;
+
+        this.routeTotalDistance.set(res.totalDistanceMeters / 1000);
+        this.routeTotalDuration.set(res.totalDurationSeconds / 60);
+
+        const segments: RouteSegment[] = [];
+        const fitCoords: [number, number][] = [];
+
+        res.segments.forEach((seg, i) => {
+          const fromAct = validActivities[i];
+          const toAct = validActivities[i + 1];
+
+          segments.push({
+            fromName: fromAct.title,
+            fromType: fromAct.type,
+            toName: toAct.title,
+            toType: toAct.type,
+            distanceKm: seg.distanceMeters / 1000,
+            durationMin: seg.durationSeconds / 60,
+            coords: seg.geometryCoords
+          });
+
+          // Draw segment polyline
+          const polyline = L.polyline(seg.geometryCoords, {
+            color: '#8083ff',
+            weight: 4,
+            opacity: 0.85,
+            dashArray: '10 6',
+            lineCap: 'round',
+            lineJoin: 'round',
+            className: 'route-polyline-animated'
+          }).addTo(this.routeMap);
+
+          // Tooltip on segment polyline
+          polyline.bindTooltip(
+            `Đoạn ${i + 1}: ${(seg.distanceMeters / 1000).toFixed(1)} km (~${Math.round(seg.durationSeconds / 60)} phút)`,
+            { sticky: true, className: 'custom-polyline-tooltip' }
+          );
+
+          this.routePolylines.push(polyline);
+          seg.geometryCoords.forEach(c => fitCoords.push(c));
+        });
+
+        this.routeSegments.set(segments);
+
+        // Draw numbered markers for all valid activities
+        validActivities.forEach((act, idx) => {
+          const lat = act.location!.lat!;
+          const lng = act.location!.lng!;
+          
+          let markerColor = '#8083ff'; // Default primary tint
+          if (act.type === 'meal') markerColor = '#f59e0b';
+          else if (act.type === 'attraction') markerColor = '#3b82f6';
+          else if (act.type === 'hotel') markerColor = '#a855f7';
+          else if (act.type === 'transport') markerColor = '#14b8a6';
+
+          const markerHtml = `<div class="custom-map-pin-route text-white font-bold" style="background-color: ${markerColor}; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">${idx + 1}</div>`;
+          const customIcon = L.divIcon({
+            html: markerHtml,
+            className: 'custom-leaflet-route-pin',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+          });
+
+          const marker = L.marker([lat, lng], { icon: customIcon }).addTo(this.routeMap);
+          
+          const popupContent = `
+            <div style="padding: 4px;">
+              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: #fff;">#${idx + 1} - ${act.title}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.7);">${act.location?.name || ''}</div>
+              ${act.start_time ? `<div style="font-size: 11px; margin-top: 4px; color: #8083ff;">🕒 ${act.start_time}</div>` : ''}
+            </div>
+          `;
+          marker.bindPopup(popupContent);
+          this.routeMarkers.push(marker);
+        });
+
+        // Fit map bounds
+        if (fitCoords.length > 0) {
+          this.routeMap.fitBounds(fitCoords, { padding: [50, 50] });
+        }
+      },
+      error: () => {
+        this.isLoadingRoute.set(false);
+      }
+    });
+  }
+
+  zoomToSegment(coords: [number, number][]): void {
+    if (!this.routeMap || !coords || coords.length === 0) return;
+    this.routeMap.fitBounds(coords, { padding: [40, 40], maxZoom: 16 });
   }
 
   // Helper category mapping to icons
@@ -1146,37 +1430,27 @@ export class TripDetailComponent implements OnInit {
 
   // Helper to return beautiful covers matching Airbnb photo-first rule
   getTripImage(destination: string | undefined): string {
-    const FALLBACK_DEFAULT =
-      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80';
-
-    if (!destination) return FALLBACK_DEFAULT;
-
-    const dest = destination.toLowerCase().trim();
-    const map = this.destinationImagesMap();
-    const list = map.get(dest);
-
-    if (!list || list.length === 0) return FALLBACK_DEFAULT;
-
-    if (this.tripId) {
-      let hash = 0;
-      for (let i = 0; i < this.tripId.length; i++) {
-        hash = this.tripId.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      return list[Math.abs(hash) % list.length];
-    }
-
-    return list[0];
+    const dest = destination?.toLowerCase().trim() || '';
+    const list = dest ? this.destinationImagesMap().get(dest) || [] : [];
+    return resolveTravelCoverImage(destination, this.tripId || destination, list);
   }
 
   get svgFallback(): string {
     const isLight = document.documentElement.classList.contains('light');
-    if (isLight) {
-      return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWZlY2Y4Ii8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw5MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjZTRlMWVkIiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiNkYmQ4ZTQiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiM0NjQ4ZDQiIG9wYWNpdHk9IjAuMTUiLz48L3N2Zz4=';
-    }
-    return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMWMxZjJhIi8+PHBhdGggZD0iTTAsNDUwIEwzMDAsMjUwIEw1MDAsMzUwIEw4MDAsMTUwIEw4MDAsNjAwIEwwLDYwMCBaIiBmaWxsPSIjMTcxYjI2IiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJMMCw1MDAgTDIwMCw0MDAgTDQ1MCw0ODAgTDgwMCwzODAgTDgwMCw2MDAgTDAsNjAwIFoiIGZpbGw9IiMwYjBmMTkiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjY1MCIgY3k9IjE1MCIgcj0iNDAiIGZpbGw9IiNjMGMxZmYiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==';
+    return getInlineScenicFallback(isLight);
   }
 
   handleImgError(event: any): void {
-    event.target.src = this.svgFallback;
+    const img = event.target as HTMLImageElement;
+    const attempts = Number(img.dataset['fallbackAttempts'] || '0');
+
+    if (attempts < GENERIC_TRAVEL_FALLBACK_IMAGES.length) {
+      img.dataset['fallbackAttempts'] = String(attempts + 1);
+      img.src = GENERIC_TRAVEL_FALLBACK_IMAGES[attempts];
+      return;
+    }
+
+    img.onerror = null;
+    img.src = this.svgFallback;
   }
 }

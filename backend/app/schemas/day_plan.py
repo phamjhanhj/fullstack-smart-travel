@@ -8,6 +8,9 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ActivityType = Literal["meal", "attraction", "hotel", "transport", "other"]
+GeneratePace = Literal["relaxed", "balanced", "packed"]
+GenerateBudgetMode = Literal["flexible_15"]
+GenerateUserPlacePriority = Literal["balanced"]
 
 
 class LocationBrief(BaseModel):
@@ -105,6 +108,10 @@ class ReorderActivitiesRequest(BaseModel):
 
 class GenerateDaysRequest(BaseModel):
     overwrite: bool = False
+    must_visit: list[str] = Field(default_factory=list, max_length=20)
+    pace: GeneratePace = "balanced"
+    budget_mode: GenerateBudgetMode = "flexible_15"
+    prioritize_user_places: GenerateUserPlacePriority = "balanced"
 
 
 class DayPlanBrief(BaseModel):
@@ -113,3 +120,18 @@ class DayPlanBrief(BaseModel):
     id: uuid.UUID
     day_number: int
     date: dt.date
+
+
+class ItineraryGenerationSummary(BaseModel):
+    total_estimated_cost: int = 0
+    budget_limit: int | None = None
+    budget_used_percent: int | None = None
+    included_user_places: list[str] = Field(default_factory=list)
+    missing_user_places: list[str] = Field(default_factory=list)
+    candidate_places_count: int = 0
+    warnings: list[str] = Field(default_factory=list)
+
+
+class GenerateDaysResponse(BaseModel):
+    days: list[DayPlanBrief]
+    summary: ItineraryGenerationSummary

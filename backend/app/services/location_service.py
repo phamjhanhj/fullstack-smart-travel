@@ -6,6 +6,7 @@ thay cho Google Places - khong can API key, hoan toan mien phi.
 from __future__ import annotations
 
 import math
+import unicodedata
 import uuid
 
 import httpx
@@ -90,7 +91,7 @@ async def _geocode_destination(destination: str) -> tuple[float, float] | None:
             async with httpx.AsyncClient(timeout=settings.EXTERNAL_HTTP_TIMEOUT_SECONDS) as client:
                 resp = await client.get(
                     f"{_NOMINATIM_URL}/search",
-                    params={"q": q, "format": "json", "limit": 5, "accept-language": "vi", "countrycodes": "vn"},
+                    params={"q": q, "format": "json", "limit": 5, "accept-language": "vi"},
                     headers=_HEADERS,
                 )
                 resp.raise_for_status()
@@ -189,7 +190,6 @@ async def search_locations(db: AsyncSession, query: str, destination: str | None
                 "limit": limit,
                 "addressdetails": 1,
                 "accept-language": "vi",
-                "countrycodes": "vn",
             },
             headers=_HEADERS,
         )
@@ -215,6 +215,84 @@ async def search_locations(db: AsyncSession, query: str, destination: str | None
         saved_locations.append(location)
 
     return saved_locations
+
+
+async def discover_itinerary_candidates(
+    db: AsyncSession,
+    destination: str,
+    must_visit: list[str] | None = None,
+    interests: list[str] | None = None,
+    limit_per_query: int = 8,
+) -> list[dict]:
+    """
+    Build a grounded place pool for itinerary generation from free data sources.
+    The return shape is JSON-safe so it can be sent directly to the AI prompt.
+    """
+    must_visit = [p.strip() for p in (must_visit or []) if p and p.strip()]
+    interests = [i.strip().lower() for i in (interests or []) if i and i.strip()]
+
+    queries = [
+        ("attraction", "dia diem du lich noi tieng"),
+        ("attraction", "danh lam thang canh"),
+        ("restaurant", "quan an ngon nha hang noi tieng"),
+        ("cafe", "cafe quan ca phe dep"),
+        ("hotel", "khach san resort luu tru"),
+    ]
+
+    if any(i in {"nature", "adventure", "beaches"} for i in interests):
+        queries.insert(1, ("attraction", "thang canh tu nhien bai bien nui"))
+    if any(i in {"history", "culture"} for i in interests):
+        queries.insert(1, ("attraction", "bao tang di tich pho co den chua"))
+    if any(i in {"foodie", "cafe"} for i in interests):
+        queries.insert(2, ("restaurant", "am thuc dac san dia phuong"))
+
+    raw_locations: list[Location] = []
+
+    for place in must_visit:
+        try:
+            raw_locations.extend(await search_locations(db, place, destination, 3))
+        except Exception as exc:
+            print(f"[LocationService] must-visit search failed for '{place}': {exc}")
+
+    for _category, query in queries:
+        try:
+            raw_locations.extend(await search_locations(db, query, destination, limit_per_query))
+        except Exception as exc:
+            print(f"[LocationService] candidate search failed for '{query}': {exc}")
+
+    deduped: dict[str, Location] = {}
+    for loc in raw_locations:
+        if not getattr(loc, "name", None):
+            continue
+        key = _candidate_key(loc)
+        if key not in deduped:
+            deduped[key] = loc
+
+    candidates = []
+    for loc in deduped.values():
+        category = loc.category or "other"
+        must_match = _match_requested_place(loc.name, must_visit)
+        score = _score_candidate(loc, must_match=must_match)
+        candidates.append(
+            {
+                "ref": "",
+                "location_id": str(loc.id),
+                "name": loc.name,
+                "address": loc.address,
+                "lat": loc.lat,
+                "lng": loc.lng,
+                "category": category,
+                "photo_url": loc.photo_url,
+                "rating": loc.rating,
+                "score": score,
+                "must_visit_match": must_match,
+            }
+        )
+
+    candidates.sort(key=lambda item: item["score"], reverse=True)
+    for idx, item in enumerate(candidates[:80], start=1):
+        item["ref"] = f"p{idx}"
+    return candidates[:80]
 
 
 # --- Detail (GET /locations/{id}) --------------------------------------------
@@ -409,3 +487,44 @@ def _map_osm_tags(tags: dict) -> str:
                                     "nature_reserve", "water_park", "theme_park"]):
         return "attraction"
     return "other"
+
+
+def _strip_accents(value: str) -> str:
+    normalized = unicodedata.normalize("NFD", value.lower())
+    return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+
+
+def _candidate_key(location: Location) -> str:
+    name = _strip_accents(location.name or "").strip()
+    if location.lat is not None and location.lng is not None:
+        return f"{name}:{round(location.lat, 4)}:{round(location.lng, 4)}"
+    return name
+
+
+def _match_requested_place(name: str, requested_places: list[str]) -> str | None:
+    clean_name = _strip_accents(name)
+    for place in requested_places:
+        clean_place = _strip_accents(place)
+        if clean_place and (clean_place in clean_name or clean_name in clean_place):
+            return place
+    return None
+
+
+def _score_candidate(location: Location, *, must_match: str | None) -> float:
+    score = 10.0
+    category = (location.category or "").lower()
+    if must_match:
+        score += 100
+    if category == "attraction":
+        score += 35
+    elif category in {"restaurant", "cafe"}:
+        score += 20
+    elif category == "hotel":
+        score += 8
+    if location.rating:
+        score += min(location.rating * 8, 40)
+    if location.photo_url:
+        score += 6
+    if location.lat is not None and location.lng is not None:
+        score += 4
+    return score

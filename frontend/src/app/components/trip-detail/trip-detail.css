@@ -226,3 +226,43 @@ select {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
+/* Route mapping styles */
+.custom-leaflet-route-pin {
+  background: none !important;
+  border: none !important;
+}
+
+.custom-map-pin-route {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-map-pin-route:hover {
+  transform: scale(1.18);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+
+/* Animated dash polyline */
+.route-polyline-animated {
+  stroke-dasharray: 10, 8;
+  animation: routeDash 30s linear infinite;
+}
+
+@keyframes routeDash {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+/* Polyline tooltips override */
+.custom-polyline-tooltip {
+  background: rgba(15, 19, 29, 0.9) !important;
+  border: 1px solid var(--color-border-glass) !important;
+  color: var(--color-on-surface) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+  padding: 4px 8px !important;
+}
+

@@ -31,6 +31,9 @@ class AiActivityPayload(BaseModel):
     end_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     estimated_cost: int | None = Field(default=None, ge=0, le=1_000_000_000)
     notes: str | None = Field(default=None, max_length=2000)
+    location_ref: str | None = Field(default=None, max_length=20)
+    reason: str | None = Field(default=None, max_length=1000)
+    travel_note: str | None = Field(default=None, max_length=1000)
 
     @field_validator("type")
     @classmethod
@@ -422,3 +425,124 @@ async def _extract_itinerary_suggestion(user_msg: str, ai_msg: str) -> dict | No
         print(f"Error extracting activity suggestion: {e}")
     return None
 
+
+_GROUNDED_ITINERARY_PROMPT = """You are a senior travel itinerary planner for Vietnamese users.
+Return exactly one JSON object. Do not use markdown.
+
+Trip:
+- Destination: {destination}
+- Dates: {start_date} to {end_date}
+- Total days: {total_days}
+- Travelers: {num_travelers}
+- Budget: {budget_text}
+- Budget rule: total estimated_cost should stay within 115% of budget when budget exists.
+- Pace: {pace}
+- User preferences: {preferences}
+- User profile interests: {interests}
+- User requested places, balanced priority: {must_visit}
+
+Grounded place candidates:
+{candidate_json}
+
+Validation errors from previous attempt:
+{validation_errors}
+
+Rules:
+1. Use only the place candidates above for attraction, meal, cafe, and hotel activities.
+2. Any place-based activity must include location_ref matching a candidate ref, for example "p3".
+3. Transport/rest/check-in/check-out activities may omit location_ref.
+4. Each day must have logical, non-overlapping HH:MM start_time and end_time.
+5. Include famous attractions and the user's requested places when route, time, and budget make sense.
+6. Keep travel realistic by grouping nearby places on the same day when possible.
+7. Costs are VND for the whole group, not per person.
+8. Output schema:
+{{
+  "days": [
+    {{
+      "day_number": 1,
+      "activities": [
+        {{
+          "title": "Concrete activity title",
+          "description": "Short useful description",
+          "type": "meal | attraction | hotel | transport | other",
+          "start_time": "08:30",
+          "end_time": "10:00",
+          "estimated_cost": 100000,
+          "location_ref": "p1",
+          "reason": "Why this fits the trip",
+          "travel_note": "Route or timing note",
+          "notes": "Practical tips"
+        }}
+      ]
+    }}
+  ]
+}}"""
+
+
+async def generate_grounded_itinerary_with_ai(
+    trip: Trip,
+    candidates: list[dict],
+    *,
+    pace: str,
+    must_visit: list[str],
+    interests: list[str],
+    validation_errors: list[str] | None = None,
+) -> dict:
+    """Generate an itinerary constrained to known location candidates."""
+    if not settings.GROQ_API_KEY:
+        raise AppError(
+            "Vui long cau hinh GROQ_API_KEY de su dung tinh nang lap lich trinh AI.",
+            status_code=400,
+        )
+
+    total_days = (trip.end_date - trip.start_date).days + 1
+    compact_candidates = [
+        {
+            "ref": item.get("ref"),
+            "name": item.get("name"),
+            "category": item.get("category"),
+            "address": item.get("address"),
+            "lat": item.get("lat"),
+            "lng": item.get("lng"),
+            "rating": item.get("rating"),
+            "score": item.get("score"),
+            "must_visit_match": item.get("must_visit_match"),
+        }
+        for item in candidates[:45]
+    ]
+
+    prompt = _GROUNDED_ITINERARY_PROMPT.format(
+        destination=trip.destination,
+        start_date=trip.start_date.isoformat(),
+        end_date=trip.end_date.isoformat(),
+        total_days=total_days,
+        num_travelers=trip.num_travelers,
+        budget_text=f"{trip.budget} VND" if trip.budget else "no fixed budget",
+        pace=pace,
+        preferences=trip.preferences or "none",
+        interests=", ".join(interests) if interests else "none",
+        must_visit=", ".join(must_visit) if must_visit else "none",
+        candidate_json=json.dumps(compact_candidates, ensure_ascii=False),
+        validation_errors="; ".join(validation_errors or []) or "none",
+    )
+
+    try:
+        completion = await _groq_client.chat.completions.create(
+            model=settings.GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": "You produce grounded travel itinerary JSON only."},
+                {"role": "user", "content": prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+        content = completion.choices[0].message.content or ""
+        parsed = AiItineraryPayload.model_validate(json.loads(content))
+        return parsed.model_dump()
+    except (json.JSONDecodeError, ValidationError) as e:
+        print(f"Invalid grounded AI itinerary payload: {e}")
+        raise AppError("AI tra ve lich trinh khong dung dinh dang.", status_code=502)
+    except AppError:
+        raise
+    except Exception as e:
+        print(f"Error in generate_grounded_itinerary_with_ai: {e}")
+        raise AppError("Khong the lap lich trinh bang AI luc nay.", status_code=500)

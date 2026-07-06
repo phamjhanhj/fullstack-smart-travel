@@ -40,6 +40,20 @@
         <span class="material-symbols-outlined">event_note</span>
         <span>Lịch trình</span>
       </a>
+      <!-- Route Tab -->
+      <a
+        class="flex items-center gap-3 px-4 py-3 font-label-md text-label-md cursor-pointer transition-all duration-200"
+        [ngClass]="{
+          'bg-primary-container/20 text-primary border-r-4 border-primary':
+            activeSubTab() === 'route',
+          'text-on-surface-variant hover:bg-white/5 hover:translate-x-1':
+            activeSubTab() !== 'route',
+        }"
+        (click)="switchSubTab('route')"
+      >
+        <span class="material-symbols-outlined">route</span>
+        <span>Lộ trình</span>
+      </a>
 
       <!-- Budget Tab -->
       <a
@@ -151,6 +165,37 @@
               isGenerating() ? 'Đang lên lịch AI...' : 'Tạo lịch trình bằng AI'
             }}</span>
           </button>
+        </div>
+
+        <div
+          *ngIf="generationProgressMessage()"
+          class="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+          <span class="font-semibold">{{ generationProgressMessage() }}</span>
+        </div>
+
+        <div
+          *ngIf="generationSummary() as summary"
+          class="rounded-xl border border-glass bg-surface-container/40 px-4 py-3 text-sm text-on-surface-variant space-y-2"
+        >
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="flex items-center gap-1.5 text-primary font-semibold">
+              <span class="material-symbols-outlined text-[18px]">verified</span>
+              {{ summary.candidate_places_count }} dia diem that da duoc kiem tra
+            </span>
+            <span>Chi phi uoc tinh: {{ formatCurrency(summary.total_estimated_cost) }}</span>
+            <span *ngIf="summary.budget_used_percent !== null">
+              {{ summary.budget_used_percent }}% ngan sach
+            </span>
+          </div>
+          <div
+            *ngIf="summary.warnings.length > 0"
+            class="text-status-warning flex items-start gap-2"
+          >
+            <span class="material-symbols-outlined text-[18px]">warning</span>
+            <span>{{ summary.warnings.join(' ') }}</span>
+          </div>
         </div>
 
         <!-- Empty Itinerary State -->
@@ -272,6 +317,7 @@
                         [src]="act.location!.photo_url"
                         class="w-full h-full object-cover"
                         [alt]="act.title"
+                        [attr.data-fallback-seed]="act.id || act.title"
                         loading="lazy"
                         decoding="async"
                         (error)="handleImgError($event)"
@@ -357,7 +403,134 @@
         </div>
       </div>
 
-      <!-- ==================== TAB 2: BUDGET ==================== -->
+      <!-- ==================== TAB 2: ROUTE MAP ==================== -->
+      <div *ngIf="activeSubTab() === 'route'" class="space-y-8 animate-fade-in">
+        <!-- Banner Title Section -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-glass pb-6">
+          <div>
+            <h1 class="font-headline-lg text-headline-lg text-white mb-2 leading-tight">
+              Bản đồ Lộ trình Di chuyển
+            </h1>
+            <p class="text-on-surface-variant font-body-md text-sm">
+              Theo dõi và tối ưu hóa tuyến đường di chuyển giữa các hoạt động trong ngày.
+            </p>
+          </div>
+        </div>
+
+        <!-- Day Selector Pills -->
+        <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar border-b border-glass select-none">
+          <button
+            *ngFor="let day of days(); let idx = index"
+            [class]="
+              routeDayIndex() === idx
+                ? 'px-5 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm shadow-md transition-all cursor-pointer'
+                : 'px-5 py-2.5 rounded-xl bg-white/5 border border-glass text-on-surface-variant hover:text-white text-sm font-semibold transition-all cursor-pointer'
+            "
+            (click)="selectRouteDay(idx)"
+          >
+            Ngày {{ day.day_number }}
+          </button>
+        </div>
+
+        <!-- Two column layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 min-h-[500px]">
+          <!-- Left list: segments and activities (40% / 2 columns) -->
+          <div class="lg:col-span-2 space-y-6 flex flex-col justify-between">
+            <div class="space-y-4 max-h-[550px] overflow-y-auto pr-2">
+              
+              <!-- Empty state: No routes -->
+              <div
+                class="glass-card rounded-2xl p-6 text-center text-on-surface-variant text-sm border border-glass"
+                *ngIf="routeSegments().length === 0 && !isLoadingRoute()"
+              >
+                <span class="material-symbols-outlined text-4xl text-primary/60 mb-2">map</span>
+                <p>Không có dữ liệu tuyến đường cho ngày này.</p>
+                <p class="text-xs text-on-surface-variant/70 mt-1">Các hoạt động cần có địa điểm và tọa độ GPS để hiển thị trên bản đồ.</p>
+              </div>
+
+              <!-- Loading spinner -->
+              <div
+                class="glass-card rounded-2xl p-8 text-center text-on-surface-variant text-sm border border-glass flex flex-col items-center justify-center gap-3"
+                *ngIf="isLoadingRoute()"
+              >
+                <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span>Đang tải tuyến đường...</span>
+              </div>
+
+              <!-- List of segments -->
+              <div *ngIf="routeSegments().length > 0 && !isLoadingRoute()" class="space-y-4 relative pl-4">
+                <!-- Vertical line connector -->
+                <div class="absolute left-[27px] top-4 bottom-4 w-0.5 border-l-2 border-dashed border-primary/30 z-0"></div>
+
+                <div 
+                  *ngFor="let seg of routeSegments(); let i = index" 
+                  class="glass-card rounded-xl p-4 border border-glass hover:border-primary/50 transition-all cursor-pointer relative z-10"
+                  (click)="zoomToSegment(seg.coords)"
+                >
+                  <!-- Numbered indicator -->
+                  <div class="absolute -left-[23px] top-4 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center border border-bg-slate-deep z-20">
+                    {{ i + 1 }}
+                  </div>
+
+                  <div class="space-y-2">
+                    <div class="flex justify-between items-start gap-2">
+                      <div class="min-w-0">
+                        <div class="text-xs text-on-surface-variant font-semibold flex items-center gap-1">
+                          <span class="material-symbols-outlined text-[14px]">my_location</span>
+                          <span class="truncate">Từ: {{ seg.fromName }}</span>
+                        </div>
+                        <div class="text-xs text-primary font-bold flex items-center gap-1 mt-1">
+                          <span class="material-symbols-outlined text-[14px]">pin_drop</span>
+                          <span class="truncate">Đến: {{ seg.toName }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 pt-2 border-t border-glass/40 text-xs font-semibold text-on-surface-variant">
+                      <span class="flex items-center gap-1 text-emerald-400">
+                        <span class="material-symbols-outlined text-[14px]">directions_car</span>
+                        <span>{{ seg.distanceKm.toFixed(1) }} km</span>
+                      </span>
+                      <span>•</span>
+                      <span class="flex items-center gap-1 text-indigo-300">
+                        <span class="material-symbols-outlined text-[14px]">schedule</span>
+                        <span>{{ seg.durationMin | number:'1.0-0' }} phút di chuyển</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total summary widget at the bottom -->
+            <div 
+              class="glass-card rounded-2xl p-5 border border-glass flex items-center justify-between"
+              *ngIf="routeSegments().length > 0 && !isLoadingRoute()"
+            >
+              <div>
+                <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tổng hành trình trong ngày</h4>
+                <div class="text-[20px] font-extrabold text-white mt-1 flex items-baseline gap-1">
+                  <span>{{ routeTotalDistance().toFixed(1) }}</span>
+                  <span class="text-xs font-semibold text-on-surface-variant">km</span>
+                  <span class="mx-2 text-on-surface-variant/40">|</span>
+                  <span>{{ routeTotalDuration() | number:'1.0-0' }}</span>
+                  <span class="text-xs font-semibold text-on-surface-variant">phút</span>
+                </div>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-2xl">legend_toggle</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side: Leaflet interactive Map pane (60% / 3 columns) -->
+          <div class="lg:col-span-3 min-h-[450px] lg:h-auto rounded-2xl border border-glass overflow-hidden z-10 relative">
+            <div id="route-map" class="w-full h-full absolute inset-0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 3: BUDGET ==================== -->
       <div *ngIf="activeSubTab() === 'budget'" class="space-y-8 animate-fade-in">
         <div class="flex justify-between items-end border-b border-glass pb-6">
           <div>
@@ -724,6 +897,7 @@
                   <img
                     [src]="loc.photo_url || defaultPlaceholderUrl"
                     (error)="handleImgError($event)"
+                    [attr.data-fallback-seed]="loc.google_place_id || loc.name"
                     class="w-full h-full object-cover"
                     [alt]="loc.name"
                     loading="lazy"
@@ -804,6 +978,7 @@
                     <img
                       [src]="place.photo_url || defaultPlaceholderUrl"
                       (error)="handleImgError($event)"
+                      [attr.data-fallback-seed]="place.name"
                       class="w-full h-full object-cover"
                       [alt]="place.name"
                     />
@@ -1203,6 +1378,8 @@
               [src]="sug.content_json?.photo_url"
               class="w-full h-full object-cover"
               [alt]="sug.content_json?.title"
+              [attr.data-fallback-seed]="sug.id || sug.content_json?.title"
+              (error)="handleImgError($event)"
             />
           </ng-container>
           <ng-template #sugFallbackImg>

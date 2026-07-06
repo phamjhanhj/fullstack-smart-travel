@@ -130,6 +130,29 @@ export interface DayPlanBrief {
   date: string;
 }
 
+export interface GenerateDaysRequest {
+  overwrite: boolean;
+  must_visit?: string[];
+  pace?: 'relaxed' | 'balanced' | 'packed';
+  budget_mode?: 'flexible_15';
+  prioritize_user_places?: 'balanced';
+}
+
+export interface ItineraryGenerationSummary {
+  total_estimated_cost: number;
+  budget_limit: number | null;
+  budget_used_percent: number | null;
+  included_user_places: string[];
+  missing_user_places: string[];
+  candidate_places_count: number;
+  warnings: string[];
+}
+
+export interface GenerateDaysResponse {
+  days: DayPlanBrief[];
+  summary: ItineraryGenerationSummary;
+}
+
 // Module 7: AI Chat & Suggestions Interfaces
 export type ChatRole = 'user' | 'assistant';
 export type SuggestionStatus = 'pending' | 'accepted' | 'rejected';
@@ -300,10 +323,23 @@ export class TripService {
     );
   }
 
-  generateDays(tripId: string, overwrite = false): Observable<ResponseEnvelope<DayPlanBrief[]>> {
-    return this.http.post<ResponseEnvelope<DayPlanBrief[]>>(
+  generateDays(
+    tripId: string,
+    overwriteOrPayload: boolean | GenerateDaysRequest = false,
+  ): Observable<ResponseEnvelope<GenerateDaysResponse>> {
+    const payload: GenerateDaysRequest =
+      typeof overwriteOrPayload === 'boolean'
+        ? {
+            overwrite: overwriteOrPayload,
+            pace: 'balanced',
+            budget_mode: 'flexible_15',
+            prioritize_user_places: 'balanced',
+          }
+        : overwriteOrPayload;
+
+    return this.http.post<ResponseEnvelope<GenerateDaysResponse>>(
       `${this.baseUrl}/trips/${tripId}/days/generate`,
-      { overwrite }
+      payload
     );
   }
 

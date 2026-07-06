@@ -137,8 +137,9 @@
           >
             <div class="h-64 w-full relative overflow-hidden">
               <img
-                [src]="getTripImage(dest.name)"
+                [src]="dest.image || getTripImage(dest.name)"
                 (error)="handleImgError($event)"
+                [attr.data-fallback-seed]="dest.name"
                 loading="lazy"
                 decoding="async"
                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -368,8 +369,9 @@
         >
           <div class="h-48 w-full relative">
             <img
-              [src]="trip.cover_image_url || getTripImage(trip.destination)"
+              [src]="getTripImage(trip.destination, trip.id, trip.cover_image_url)"
               [alt]="trip.title"
+              [attr.data-fallback-seed]="trip.id + '-' + trip.destination"
               loading="lazy"
               decoding="async"
               (error)="handleImgError($event)"

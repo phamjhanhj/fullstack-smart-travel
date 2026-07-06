@@ -19,6 +19,7 @@ from app.schemas.day_plan import (
     CreateActivityRequest,
     DayPlanBrief,
     DayPlanResponse,
+    GenerateDaysResponse,
     GenerateDaysRequest,
     ReorderActivitiesRequest,
     UpdateActivityRequest,
@@ -69,9 +70,12 @@ async def generate_days(
     trip: Trip = Depends(get_owned_trip),
     db: AsyncSession = Depends(get_db),
 ):
-    new_days = await activity_service.generate_day_plans(db, trip, payload.overwrite)
+    new_days, summary = await activity_service.generate_day_plans(db, trip, payload)
     return envelope_created(
-        data=[DayPlanBrief.model_validate(d) for d in new_days],
+        data=GenerateDaysResponse(
+            days=[DayPlanBrief.model_validate(d) for d in new_days],
+            summary=summary,
+        ),
         message=f"Da tao {len(new_days)} ngay cho chuyen di",
     )
 
