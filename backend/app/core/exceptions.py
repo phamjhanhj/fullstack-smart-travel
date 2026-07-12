@@ -1,9 +1,4 @@
-"""
-Custom exceptions + global exception handlers.
-Đảm bảo MỌI lỗi trả về (400/401/403/404/422/500) đều theo đúng envelope
-{ status_code, message, data } như API spec yêu cầu — bao gồm cả lỗi
-validation tự động của FastAPI/Pydantic (422).
-"""
+"""Custom exceptions and global exception handlers."""
 from __future__ import annotations
 
 from fastapi import FastAPI, Request, status
@@ -14,7 +9,7 @@ from app.core.response import envelope
 
 
 class AppError(Exception):
-    """Base exception cho lỗi nghiệp vụ — dùng trong services/routers."""
+    """Base business exception used by services and routers."""
 
     def __init__(self, message: str, status_code: int = status.HTTP_400_BAD_REQUEST):
         self.message = message
@@ -23,27 +18,27 @@ class AppError(Exception):
 
 
 class NotFoundError(AppError):
-    def __init__(self, message: str = "Không tìm thấy dữ liệu"):
+    def __init__(self, message: str = "Khong tim thay du lieu"):
         super().__init__(message, status.HTTP_404_NOT_FOUND)
 
 
 class ForbiddenError(AppError):
-    def __init__(self, message: str = "Bạn không có quyền truy cập tài nguyên này"):
+    def __init__(self, message: str = "Ban khong co quyen truy cap tai nguyen nay"):
         super().__init__(message, status.HTTP_403_FORBIDDEN)
 
 
 class UnauthorizedError(AppError):
-    def __init__(self, message: str = "Token không hợp lệ hoặc đã hết hạn"):
+    def __init__(self, message: str = "Token khong hop le hoac da het han"):
         super().__init__(message, status.HTTP_401_UNAUTHORIZED)
 
 
 class ConflictError(AppError):
-    def __init__(self, message: str = "Dữ liệu đã tồn tại"):
+    def __init__(self, message: str = "Du lieu da ton tai"):
         super().__init__(message, status.HTTP_400_BAD_REQUEST)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    """Đăng ký toàn bộ exception handler vào app FastAPI — gọi 1 lần trong main.py."""
+    """Register consistent envelope-shaped exception handlers."""
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):
@@ -51,23 +46,29 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http_exception(request: Request, exc: StarletteHTTPException):
-        # Bắt các HTTPException mặc định (vd: 404 route không tồn tại)
         return envelope(data=None, message=str(exc.detail), status_code=exc.status_code)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(request: Request, exc: RequestValidationError):
-        # Format lại lỗi Pydantic 422 đúng theo ví dụ trong API spec
+        fields = {str(error.get("loc", [""])[-1]) for error in exc.errors()}
+        message = "Validation error"
+        if "email" in fields:
+            message = "Email khong hop le"
+        elif "password" in fields:
+            message = "Mat khau khong hop le"
+        elif "full_name" in fields:
+            message = "Ho va ten khong hop le"
+
         return envelope(
             data={"detail": exc.errors()},
-            message="Validation error",
+            message=message,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
 
     @app.exception_handler(Exception)
     async def handle_unexpected_error(request: Request, exc: Exception):
-        # Fallback cho mọi lỗi không lường trước — không để leak stack trace ra ngoài
         return envelope(
             data=None,
-            message="Lỗi hệ thống, vui lòng thử lại sau",
+            message="Loi he thong, vui long thu lai sau",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

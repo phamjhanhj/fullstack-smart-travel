@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { TripService, TripListItem, CreateTripRequest } from '../../services/trip.service';
+import { TripService, TripListItem, CreateTripRequest, TripScope } from '../../services/trip.service';
 import { PlacePhotoService } from '../../services/place-photo.service';
 import {
   GENERIC_TRAVEL_FALLBACK_IMAGES,
@@ -47,9 +47,11 @@ export class DashboardComponent implements OnInit {
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
   readonly filterStatus = signal<string>('all');
+  readonly tripScopeFilter = signal<TripScope>('all');
   readonly isModalOpen = signal<boolean>(false);
   readonly modalErrorMessage = signal<string | null>(null);
   readonly submitProgressMessage = signal<string | null>(null);
+  readonly submittingMode = signal<'manual' | 'ai' | null>(null);
   readonly overBudgetTrips = signal<TripListItem[]>([]);
 
   // Airbnb Hub State
@@ -261,7 +263,7 @@ export class DashboardComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.tripService.listTrips().subscribe({
+    this.tripService.listTrips(undefined, 1, 100, 'all').subscribe({
       next: (res) => {
         this.isLoading.set(false);
         if (res && res.data && res.data.items) {
@@ -313,7 +315,14 @@ export class DashboardComponent implements OnInit {
 
   getFilteredTrips(): TripListItem[] {
     const currentFilter = this.filterStatus();
+    const scopeFilter = this.tripScopeFilter();
     let allTrips = this.trips();
+
+    if (scopeFilter === 'owned') {
+      allTrips = allTrips.filter((trip) => trip.access_type === 'owner');
+    } else if (scopeFilter === 'shared') {
+      allTrips = allTrips.filter((trip) => trip.access_type === 'shared');
+    }
 
     if (currentFilter !== 'all') {
       allTrips = allTrips.filter((trip) => trip.status === currentFilter);
@@ -405,6 +414,30 @@ export class DashboardComponent implements OnInit {
     this.filterStatus.set(status);
   }
 
+  onScopeFilterChange(scope: TripScope): void {
+    this.tripScopeFilter.set(scope);
+  }
+
+  getOwnedTripsCount(): number {
+    return this.trips().filter((trip) => trip.access_type === 'owner').length;
+  }
+
+  getSharedTripsCount(): number {
+    return this.trips().filter((trip) => trip.access_type === 'shared').length;
+  }
+
+  getTripsCountByStatus(status: string): number {
+    if (status === 'all') {
+      return this.trips().length;
+    }
+    return this.trips().filter((trip) => trip.status === status).length;
+  }
+
+  getTripAccessLabel(trip: TripListItem): string {
+    if (trip.role === 'owner') return 'Chủ chuyến đi';
+    return trip.role === 'editor' ? 'Được chia sẻ: Sửa' : 'Được chia sẻ: Xem';
+  }
+
   openModal(): void {
     this.createForm.reset({
       title: '',
@@ -423,7 +456,7 @@ export class DashboardComponent implements OnInit {
     this.isModalOpen.set(false);
   }
 
-  onSubmitTrip(): void {
+  onSubmitTrip(mode: 'manual' | 'ai' = 'ai'): void {
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
       return;
@@ -443,6 +476,7 @@ export class DashboardComponent implements OnInit {
       return;
     }
     this.isSubmitting.set(true);
+    this.submittingMode.set(mode);
     this.modalErrorMessage.set(null);
     this.submitProgressMessage.set('Đang tạo chuyến đi...');
 
@@ -462,52 +496,68 @@ export class DashboardComponent implements OnInit {
         const tripId = res?.data?.id;
         if (!tripId) {
           this.isSubmitting.set(false);
+          this.submittingMode.set(null);
           this.submitProgressMessage.set(null);
           this.modalErrorMessage.set('Không thể tạo chuyến đi. Vui lòng thử lại.');
           return;
         }
 
-        // Step 2: Auto-generate grounded AI itinerary
-        this.submitProgressMessage.set('Dang tim dia diem phu hop...');
-        setTimeout(() => {
-          if (this.isSubmitting()) this.submitProgressMessage.set('Dang toi uu tuyen duong va khung gio...');
-        }, 1200);
-        setTimeout(() => {
-          if (this.isSubmitting()) this.submitProgressMessage.set('Dang kiem tra ngan sach...');
-        }, 2400);
-        this.tripService.generateDays(tripId, true).subscribe({
-          next: () => {
-            // Step 3: Ask AI for summary then navigate
-            this.submitProgressMessage.set('Hoàn tất! Đang chuyển hướng...');
-            this.tripService
-              .sendMessage(tripId, 'Hãy tóm tắt lịch trình bạn vừa thiết kế cho chuyến đi của tôi.')
-              .subscribe({
-                next: () => {
-                  this.isSubmitting.set(false);
-                  this.submitProgressMessage.set(null);
-                  this.closeModal();
-                  this.router.navigate(['/trip', tripId]);
-                },
-                error: () => {
-                  // AI summary failed but itinerary was generated - still navigate
-                  this.isSubmitting.set(false);
-                  this.submitProgressMessage.set(null);
-                  this.closeModal();
-                  this.router.navigate(['/trip', tripId]);
-                },
-              });
-          },
-          error: (err) => {
-            // AI generation failed - still navigate to trip detail
-            this.isSubmitting.set(false);
-            this.submitProgressMessage.set(null);
-            this.closeModal();
-            this.router.navigate(['/trip', tripId]);
-          },
-        });
+        if (mode === 'ai') {
+          // Step 2: Auto-generate grounded AI itinerary
+          this.submitProgressMessage.set('Đang tìm địa điểm phù hợp...');
+          setTimeout(() => {
+            if (this.isSubmitting() && this.submittingMode() === 'ai') {
+              this.submitProgressMessage.set('Đang tối ưu tuyến đường và khung giờ...');
+            }
+          }, 1200);
+          setTimeout(() => {
+            if (this.isSubmitting() && this.submittingMode() === 'ai') {
+              this.submitProgressMessage.set('Đang kiểm tra ngân sách...');
+            }
+          }, 2400);
+
+          this.tripService.generateDays(tripId, { overwrite: true, ai: true }).subscribe({
+            next: () => {
+              this.submitProgressMessage.set('Hoàn tất! Đang chuyển hướng...');
+              this.isSubmitting.set(false);
+              this.submittingMode.set(null);
+              this.submitProgressMessage.set(null);
+              this.closeModal();
+              this.router.navigate(['/trip', tripId]);
+            },
+            error: (err) => {
+              this.isSubmitting.set(false);
+              this.submittingMode.set(null);
+              this.submitProgressMessage.set(null);
+              this.closeModal();
+              this.router.navigate(['/trip', tripId]);
+            },
+          });
+        } else {
+          // Manual Flow - only initialize empty days
+          this.submitProgressMessage.set('Đang tạo các ngày cho chuyến đi...');
+          this.tripService.generateDays(tripId, { overwrite: true, ai: false }).subscribe({
+            next: () => {
+              this.submitProgressMessage.set('Hoàn tất! Đang chuyển hướng...');
+              this.isSubmitting.set(false);
+              this.submittingMode.set(null);
+              this.submitProgressMessage.set(null);
+              this.closeModal();
+              this.router.navigate(['/trip', tripId]);
+            },
+            error: (err) => {
+              this.isSubmitting.set(false);
+              this.submittingMode.set(null);
+              this.submitProgressMessage.set(null);
+              this.closeModal();
+              this.router.navigate(['/trip', tripId]);
+            },
+          });
+        }
       },
       error: (err) => {
         this.isSubmitting.set(false);
+        this.submittingMode.set(null);
         this.submitProgressMessage.set(null);
         if (err.error && err.error.message) {
           this.modalErrorMessage.set(err.error.message);

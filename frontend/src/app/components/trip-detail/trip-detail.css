@@ -4,7 +4,7 @@
   min-height: 100vh;
   background-color: var(--color-bg-slate-deep);
   color: var(--color-on-surface);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-family);
 }
 
 /* Glass Panels & Surfaces */
@@ -137,17 +137,36 @@
 .modal-card {
   width: 100%;
   max-width: 500px;
-  background: rgba(28, 31, 42, 0.95);
+  background: var(--color-surface-container);
   backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-glass);
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: modalScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+html.light .modal-card {
+  box-shadow: 0 20px 40px rgba(70, 72, 212, 0.12);
+}
+
 .modal-card.max-w-sm {
   max-width: 400px;
+}
+
+.modal-card.max-w-2xl {
+  max-width: min(760px, calc(100vw - 32px));
+}
+
+@media (max-width: 640px) {
+  .modal-scrim {
+    align-items: flex-end;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 24px);
+    border-radius: 20px 20px 0 0;
+  }
 }
 
 @keyframes modalFadeIn {
@@ -258,11 +277,10 @@ select {
   background: rgba(15, 19, 29, 0.9) !important;
   border: 1px solid var(--color-border-glass) !important;
   color: var(--color-on-surface) !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: var(--font-family) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   border-radius: 6px !important;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
   padding: 4px 8px !important;
 }
-

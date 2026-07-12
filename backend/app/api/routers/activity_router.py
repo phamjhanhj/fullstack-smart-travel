@@ -9,7 +9,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 
-from app.core.deps import get_current_user, get_owned_trip
+from app.core.deps import get_current_user, get_trip_edit_access, get_trip_read_access
 from app.core.response import envelope, envelope_created
 from app.db.session import get_db
 from app.models.trip import Trip
@@ -33,7 +33,7 @@ trip_days_router = APIRouter(prefix="/trips/{trip_id}/days", tags=["Day Plans"])
 
 @trip_days_router.get("")
 async def list_days(
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):
     days = await activity_service.list_days_with_activities(db, trip.id)
@@ -43,7 +43,7 @@ async def list_days(
 @trip_days_router.get("/{day_id}")
 async def get_day_detail(
     day_id: uuid.UUID,
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):
     day_plan = await activity_service.get_day_or_404(db, trip.id, day_id)
@@ -54,10 +54,11 @@ async def get_day_detail(
 async def add_activity(
     day_id: uuid.UUID,
     payload: CreateActivityRequest,
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_edit_access),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    activity = await activity_service.create_activity(db, trip.id, day_id, payload)
+    activity = await activity_service.create_activity(db, trip.id, day_id, payload, current_user)
     return envelope_created(
         data=ActivityResponse.model_validate(activity),
         message="Them hoat dong thanh cong",
@@ -67,10 +68,11 @@ async def add_activity(
 @trip_days_router.post("/generate", status_code=201)
 async def generate_days(
     payload: GenerateDaysRequest,
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_edit_access),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    new_days, summary = await activity_service.generate_day_plans(db, trip, payload)
+    new_days, summary = await activity_service.generate_day_plans(db, trip, payload, current_user)
     return envelope_created(
         data=GenerateDaysResponse(
             days=[DayPlanBrief.model_validate(d) for d in new_days],
@@ -91,8 +93,8 @@ async def update_activity(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    activity = await activity_service.get_activity_owned_or_404(db, activity_id, current_user.id)
-    updated = await activity_service.update_activity(db, activity, payload)
+    activity = await activity_service.get_activity_editable_or_404(db, activity_id, current_user.id)
+    updated = await activity_service.update_activity(db, activity, payload, current_user)
     return envelope(
         data=ActivityResponse.model_validate(updated),
         message="Cap nhat thanh cong",
@@ -105,8 +107,8 @@ async def delete_activity(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    activity = await activity_service.get_activity_owned_or_404(db, activity_id, current_user.id)
-    await activity_service.delete_activity(db, activity)
+    activity = await activity_service.get_activity_editable_or_404(db, activity_id, current_user.id)
+    await activity_service.delete_activity(db, activity, current_user)
     return envelope(data=None, message="Da xoa hoat dong")
 
 
@@ -116,5 +118,5 @@ async def reorder_activities(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await activity_service.reorder_activities(db, current_user.id, payload)
+    await activity_service.reorder_activities(db, current_user, payload)
     return envelope(data=None, message="Da cap nhat thu tu")

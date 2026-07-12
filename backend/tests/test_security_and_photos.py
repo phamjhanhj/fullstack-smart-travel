@@ -7,6 +7,7 @@ from app.core.config import Settings
 from app.schemas.trip import UpdateTripRequest
 from app.schemas.user import UpdateProfileRequest
 from app.services.destination_photo_service import _build_photo_details
+from app.services.trip_history_service import diff_snapshots, serialize_value
 
 
 def test_production_rejects_default_jwt_secret() -> None:
@@ -38,3 +39,22 @@ def test_photo_details_are_backward_compatible_metadata() -> None:
     assert details[0]["thumbnail_url"] == "https://example.com/photo.jpg"
     assert details[0]["source"] == "foursquare"
     assert details[0]["alt"] == "Travel photo of Da Nang"
+
+
+def test_trip_history_diff_uses_labels_and_changed_values_only() -> None:
+    changes = diff_snapshots(
+        {"title": "Old trip", "budget": 1000, "status": "draft"},
+        {"title": "New trip", "budget": 1000, "status": "active"},
+        {"title": "Ten chuyen di", "status": "Trang thai"},
+    )
+
+    assert changes == [
+        {"field": "title", "label": "Ten chuyen di", "before": "Old trip", "after": "New trip"},
+        {"field": "status", "label": "Trang thai", "before": "draft", "after": "active"},
+    ]
+
+
+def test_trip_history_serialize_value_handles_nested_values() -> None:
+    payload = serialize_value({"items": [{"id": "abc", "value": None}]})
+
+    assert payload == {"items": [{"id": "abc", "value": None}]}

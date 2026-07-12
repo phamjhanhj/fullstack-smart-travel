@@ -17,6 +17,7 @@ from app.core.security import decode_token
 from app.db.session import get_db
 from app.models.trip import Trip
 from app.models.user import User
+from app.services import trip_share_service
 
 
 async def get_current_user(
@@ -63,16 +64,31 @@ async def get_owned_trip(
     Dung lam dependency chung cho moi route co {trip_id} trong path
     -> tranh lap code kiem tra quyen o tung router.
     """
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
+    return await trip_share_service.get_owned_trip_or_404(db, trip_id, current_user.id)
 
-    if trip is None:
-        raise NotFoundError("Khong tim thay chuyen di")
 
-    if trip.user_id != current_user.id:
-        raise ForbiddenError("Ban khong co quyen truy cap chuyen di nay")
+async def get_trip_read_access(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Trip:
+    return await trip_share_service.get_accessible_trip_or_404(db, trip_id, current_user.id)
 
-    return trip
+
+async def get_trip_edit_access(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Trip:
+    return await trip_share_service.get_editable_trip_or_404(db, trip_id, current_user.id)
+
+
+async def get_trip_owner_access(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Trip:
+    return await trip_share_service.get_owned_trip_or_404(db, trip_id, current_user.id)
 
 
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:

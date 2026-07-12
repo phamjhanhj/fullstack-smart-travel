@@ -42,9 +42,109 @@
       <button (click)="toggleTheme()" class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer flex items-center justify-center" title="Đổi giao diện">
         <span class="material-symbols-outlined">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</span>
       </button>
-      <button class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer">
-        <span class="material-symbols-outlined">notifications</span>
-      </button>
+      <div class="relative">
+        <button
+          type="button"
+          (click)="toggleNotifications()"
+          class="relative text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer flex items-center justify-center"
+          title="Lời mời chia sẻ"
+        >
+          <span class="material-symbols-outlined">notifications</span>
+          <span
+            *ngIf="pendingInvites().length > 0"
+            class="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-status-warning text-white text-[10px] font-bold leading-5 text-center border border-surface"
+          >
+            {{ pendingInvites().length > 9 ? '9+' : pendingInvites().length }}
+          </span>
+        </button>
+
+        <div
+          *ngIf="isNotificationsOpen()"
+          class="absolute right-0 top-9 w-[360px] max-w-[calc(100vw-2rem)] rounded-lg border border-border-glass bg-surface/95 shadow-2xl backdrop-blur-xl p-4 text-on-surface z-[60]"
+        >
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 class="text-sm font-bold">Lời mời chuyến đi</h3>
+              <p class="text-xs text-on-surface-variant">Chấp nhận để chuyến đi xuất hiện trong mục Được chia sẻ.</p>
+            </div>
+            <button
+              type="button"
+              (click)="isNotificationsOpen.set(false)"
+              class="material-symbols-outlined text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer p-1"
+              title="Đóng"
+            >
+              close
+            </button>
+          </div>
+
+          <div *ngIf="notificationError()" class="mb-3 rounded-md border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-xs text-status-warning">
+            {{ notificationError() }}
+          </div>
+
+          <div *ngIf="isLoadingInvites()" class="py-6 text-center text-xs text-on-surface-variant">
+            Đang tải lời mời...
+          </div>
+
+          <div *ngIf="!isLoadingInvites() && pendingInvites().length === 0" class="py-6 text-center">
+            <span class="material-symbols-outlined text-on-surface-variant mb-2">notifications_off</span>
+            <p class="text-sm font-semibold">Không có lời mời mới</p>
+            <p class="text-xs text-on-surface-variant mt-1">Khi bạn được mời bằng email, lời mời sẽ hiện ở đây.</p>
+          </div>
+
+          <div *ngIf="!isLoadingInvites() && pendingInvites().length > 0" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            <div
+              *ngFor="let invite of pendingInvites()"
+              class="rounded-lg border border-border-glass bg-white/5 p-3"
+            >
+              <div class="flex items-start gap-3">
+                <ng-container *ngIf="invite.trip.cover_image_url; else inviteTripFallback">
+                  <img
+                    [src]="invite.trip.cover_image_url"
+                    class="w-14 h-14 rounded-md object-cover border border-border-glass"
+                    alt=""
+                  />
+                </ng-container>
+                <ng-template #inviteTripFallback>
+                  <div class="w-14 h-14 rounded-md border border-border-glass bg-primary/10 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined">travel_explore</span>
+                  </div>
+                </ng-template>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs text-on-surface-variant">
+                    <strong class="text-on-surface">{{ invite.invited_by.full_name }}</strong>
+                    đã mời bạn tham gia
+                  </p>
+                  <h4 class="text-sm font-bold truncate mt-1">{{ invite.trip.title }}</h4>
+                  <p class="text-xs text-on-surface-variant truncate">{{ invite.trip.destination }}</p>
+                  <p class="text-xs text-on-surface-variant mt-1">{{ formatInviteDateRange(invite) }}</p>
+                  <span class="inline-flex mt-2 rounded-full border border-primary/40 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    Quyền {{ getInviteRoleLabel(invite.role) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 mt-3">
+                <button
+                  type="button"
+                  (click)="acceptInvite(invite, $event)"
+                  [disabled]="inviteActionId() === invite.id"
+                  class="rounded-md bg-primary text-on-primary border-none px-3 py-2 text-xs font-bold cursor-pointer disabled:opacity-60"
+                >
+                  Chấp nhận
+                </button>
+                <button
+                  type="button"
+                  (click)="rejectInvite(invite, $event)"
+                  [disabled]="inviteActionId() === invite.id"
+                  class="rounded-md bg-transparent text-on-surface border border-border-glass px-3 py-2 text-xs font-bold cursor-pointer hover:bg-white/10 disabled:opacity-60"
+                >
+                  Từ chối
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <a routerLink="/profile" class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
         <img
           [src]="getUserAvatarUrl()"

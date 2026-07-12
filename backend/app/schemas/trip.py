@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.trip_share import ShareUserBrief, TripAccessRole, TripAccessType
+
 TripStatus = Literal["draft", "active", "completed"]
 
 
@@ -61,6 +63,9 @@ class TripResponse(BaseModel):
     cover_image_url: str | None = None
     created_at: dt.datetime
     updated_at: dt.datetime | None = None
+    owner: ShareUserBrief
+    access_type: TripAccessType
+    role: TripAccessRole
 
 
 class DayPlanSummary(BaseModel):
@@ -90,6 +95,9 @@ class TripListItem(BaseModel):
     status: str
     cover_image_url: str | None = None
     created_at: dt.datetime
+    owner: ShareUserBrief
+    access_type: TripAccessType
+    role: TripAccessRole
 
 
 class TripListResponse(BaseModel):

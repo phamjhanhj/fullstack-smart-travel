@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
+import math
 import re
 import unicodedata
 
@@ -15,6 +16,8 @@ from app.models.activity import Activity
 from app.models.trip import DayPlan, Trip
 from app.models.location import Location
 from app.models.user import User
+from app.services import trip_share_service
+from app.services import trip_history_service
 from app.schemas.day_plan import (
     CreateActivityRequest,
     GenerateDaysRequest,
@@ -49,15 +52,41 @@ async def get_day_or_404(db: AsyncSession, trip_id: uuid.UUID, day_id: uuid.UUID
 
 
 async def create_activity(
-    db: AsyncSession, trip_id: uuid.UUID, day_id: uuid.UUID, payload: CreateActivityRequest
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    day_id: uuid.UUID,
+    payload: CreateActivityRequest,
+    actor: User,
 ) -> Activity:
     """POST /trips/{id}/days/{day_id}/activities."""
     await get_day_or_404(db, trip_id, day_id)  # dam bao day thuoc dung trip
 
     activity = Activity(day_plan_id=day_id, **payload.model_dump())
     db.add(activity)
+    await db.flush()
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=trip_id,
+        actor_user_id=actor.id,
+        entity_type="activity",
+        entity_id=activity.id,
+        action="created",
+        summary=f"Da them hoat dong \"{activity.title}\"",
+        metadata={"day_id": day_id, "title": activity.title},
+    )
     await db.commit()
-    await db.refresh(activity)
+    return await _get_activity_for_response(db, activity.id)
+
+
+async def _get_activity_for_response(db: AsyncSession, activity_id: uuid.UUID) -> Activity:
+    result = await db.execute(
+        select(Activity)
+        .where(Activity.id == activity_id)
+        .options(selectinload(Activity.location))
+    )
+    activity = result.scalar_one_or_none()
+    if activity is None:
+        raise NotFoundError("Khong tim thay hoat dong nay")
     return activity
 
 
@@ -78,32 +107,81 @@ async def get_activity_owned_or_404(db: AsyncSession, activity_id: uuid.UUID, us
     return activity
 
 
-async def update_activity(db: AsyncSession, activity: Activity, payload: UpdateActivityRequest) -> Activity:
+async def get_activity_editable_or_404(db: AsyncSession, activity_id: uuid.UUID, user_id: uuid.UUID) -> Activity:
+    """Lay activity neu user la owner hoac editor cua trip chua activity."""
+    result = await db.execute(
+        select(Activity)
+        .join(DayPlan, Activity.day_plan_id == DayPlan.id)
+        .where(Activity.id == activity_id)
+        .options(selectinload(Activity.day_plan))
+    )
+    activity = result.scalar_one_or_none()
+    if activity is None:
+        raise NotFoundError("Khong tim thay hoat dong nay")
+    day_plan = activity.day_plan
+    if not await trip_share_service.user_can_edit_trip(db, day_plan.trip_id, user_id):
+        raise ForbiddenError("Ban khong co quyen chinh sua hoat dong nay")
+    return activity
+
+
+async def update_activity(
+    db: AsyncSession,
+    activity: Activity,
+    payload: UpdateActivityRequest,
+    actor: User,
+) -> Activity:
+    tracked_fields = list(trip_history_service.ACTIVITY_FIELD_LABELS.keys())
+    before = trip_history_service.snapshot_fields(activity, tracked_fields)
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(activity, field, value)
 
+    await db.flush()
+    after = trip_history_service.snapshot_fields(activity, tracked_fields)
+    changes = trip_history_service.diff_snapshots(
+        before,
+        after,
+        trip_history_service.ACTIVITY_FIELD_LABELS,
+    )
+    if changes:
+        await trip_history_service.record_history_event(
+            db,
+            trip_id=activity.day_plan.trip_id,
+            actor_user_id=actor.id,
+            entity_type="activity",
+            entity_id=activity.id,
+            action="updated",
+            summary=f"Da cap nhat hoat dong \"{activity.title}\"",
+            changes=changes,
+            metadata={"day_id": activity.day_plan_id},
+        )
     await db.commit()
-    await db.refresh(activity)
-    return activity
+    return await _get_activity_for_response(db, activity.id)
 
 
-async def delete_activity(db: AsyncSession, activity: Activity) -> None:
+async def delete_activity(db: AsyncSession, activity: Activity, actor: User) -> None:
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=activity.day_plan.trip_id,
+        actor_user_id=actor.id,
+        entity_type="activity",
+        entity_id=activity.id,
+        action="deleted",
+        summary=f"Da xoa hoat dong \"{activity.title}\"",
+        metadata={"day_id": activity.day_plan_id, "title": activity.title},
+    )
     await db.delete(activity)
     await db.commit()
 
 
-async def reorder_activities(db: AsyncSession, user_id: uuid.UUID, payload: ReorderActivitiesRequest) -> None:
+async def reorder_activities(db: AsyncSession, actor: User, payload: ReorderActivitiesRequest) -> None:
     """
     PATCH /activities/reorder - cap nhat order_index hang loat.
     Kiem tra day_plan_id thuoc trip cua user truoc khi update bat ky activity nao.
     """
-    day_result = await db.execute(
-        select(DayPlan).join(Trip, DayPlan.trip_id == Trip.id).where(
-            DayPlan.id == payload.day_plan_id, Trip.user_id == user_id
-        )
-    )
-    if day_result.scalar_one_or_none() is None:
+    day_result = await db.execute(select(DayPlan).where(DayPlan.id == payload.day_plan_id))
+    day_plan = day_result.scalar_one_or_none()
+    if day_plan is None or not await trip_share_service.user_can_edit_trip(db, day_plan.trip_id, actor.id):
         raise ForbiddenError("Ban khong co quyen sap xep ngay nay")
 
     activity_ids = [item.id for item in payload.items]
@@ -115,13 +193,39 @@ async def reorder_activities(db: AsyncSession, user_id: uuid.UUID, payload: Reor
     if len(activities_by_id) != len(activity_ids):
         raise AppError("Mot so hoat dong khong thuoc ngay nay", status_code=400)
 
+    changes: list[dict] = []
     for item in payload.items:
-        activities_by_id[item.id].order_index = item.order_index
+        activity = activities_by_id[item.id]
+        before_order = activity.order_index
+        activity.order_index = item.order_index
+        if before_order != item.order_index:
+            changes.append(
+                {
+                    "field": "order_index",
+                    "label": "Thu tu",
+                    "before": before_order,
+                    "after": item.order_index,
+                    "activity_id": str(activity.id),
+                    "activity_title": activity.title,
+                }
+            )
 
+    if changes:
+        await trip_history_service.record_history_event(
+            db,
+            trip_id=day_plan.trip_id,
+            actor_user_id=actor.id,
+            entity_type="activity",
+            entity_id=payload.day_plan_id,
+            action="reordered",
+            summary=f"Da sap xep lai hoat dong ngay {day_plan.day_number}",
+            changes=changes,
+            metadata={"day_id": payload.day_plan_id, "day_number": day_plan.day_number},
+        )
     await db.commit()
 
 
-async def generate_day_plans(db: AsyncSession, trip: Trip, overwrite: bool) -> list[DayPlan]:
+async def _generate_day_plans_legacy(db: AsyncSession, trip: Trip, overwrite: bool) -> list[DayPlan]:
     """
     POST /trips/{id}/days/generate - Tự động lập lịch trình bằng AI (Groq/Llama 3).
     overwrite=True: xóa toàn bộ day_plans cũ trước khi tạo lại.
@@ -232,6 +336,7 @@ async def generate_day_plans(
     db: AsyncSession,
     trip: Trip,
     payload: GenerateDaysRequest | bool,
+    actor: User,
 ) -> tuple[list[DayPlan], ItineraryGenerationSummary]:
     """
     Generate a grounded itinerary:
@@ -248,10 +353,65 @@ async def generate_day_plans(
     if not payload.overwrite and existing_count.scalars().first() is not None:
         raise AppError("Chuyen di da co lich trinh, dung overwrite=true de tao lai", status_code=400)
 
+    if not payload.ai:
+        if payload.overwrite:
+            existing = await db.execute(select(DayPlan).where(DayPlan.trip_id == trip.id))
+            for day in existing.scalars().all():
+                await db.delete(day)
+            await db.flush()
+
+        new_days = [
+            DayPlan(trip_id=trip.id, day_number=i, date=trip.start_date + timedelta(days=i - 1))
+            for i in range(1, total_days + 1)
+        ]
+        db.add_all(new_days)
+        await db.flush()
+
+        summary = ItineraryGenerationSummary(
+            total_estimated_cost=0,
+            budget_limit=trip.budget,
+            budget_used_percent=0,
+            included_user_places=[],
+            missing_user_places=[],
+            candidate_places_count=0,
+            warnings=[]
+        )
+        await trip_history_service.record_history_event(
+            db,
+            trip_id=trip.id,
+            actor_user_id=actor.id,
+            entity_type="itinerary",
+            entity_id=trip.id,
+            action="generated",
+            summary=f"Da tao {len(new_days)} ngay lich trinh",
+            metadata={
+                "days_created": len(new_days),
+                "overwrite": payload.overwrite,
+                "ai": False,
+                "generation_summary": summary.model_dump(),
+            },
+        )
+        await db.commit()
+        for day in new_days:
+            await db.refresh(day)
+
+        return new_days, summary
+
     user_interests = await _load_user_interests(db, trip.user_id)
+    weighted_interests = [
+        interest
+        for interest, _weight in sorted(
+            payload.interest_weights.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        if _weight > 0
+    ]
+    user_interests = _merge_unique([*weighted_interests, *user_interests])
     must_visit = _merge_unique(
         [*payload.must_visit, *_extract_requested_places_from_preferences(trip.preferences or "")]
     )[:12]
+    avoid_places = _merge_unique(payload.avoid_places)[:12]
 
     from app.services.location_service import discover_itinerary_candidates
 
@@ -261,10 +421,12 @@ async def generate_day_plans(
         must_visit=must_visit,
         interests=user_interests,
     )
+    candidates = _filter_avoided_candidates(candidates, avoid_places)
     candidates_by_ref = {item["ref"]: item for item in candidates if item.get("ref")}
 
     itinerary_data: dict | None = None
     validation_errors: list[str] = []
+    experience_warnings: list[str] = []
 
     if candidates:
         from app.services.ai_service import generate_grounded_itinerary_with_ai
@@ -277,14 +439,30 @@ async def generate_day_plans(
                     pace=payload.pace,
                     must_visit=must_visit,
                     interests=user_interests,
+                    avoid_places=avoid_places,
+                    budget_mode=payload.budget_mode,
+                    prioritize_user_places=payload.prioritize_user_places,
+                    transport_mode=payload.transport_mode,
+                    departure_location=payload.departure_location,
+                    departure_time=payload.departure_time,
+                    estimated_travel_hours=payload.estimated_travel_hours,
+                    arrival_transport=payload.arrival_transport,
+                    daily_start_time=payload.daily_start_time,
+                    daily_end_time=payload.daily_end_time,
+                    dietary_notes=payload.dietary_notes,
+                    mobility_notes=payload.mobility_notes,
                     validation_errors=validation_errors,
                 )
                 itinerary_data = _sanitize_itinerary(itinerary_data, total_days, candidates_by_ref)
+                _enforce_closed_loop_itinerary(itinerary_data, trip, candidates, total_days, payload)
+                experience_warnings = _enrich_experience_route(itinerary_data, trip, candidates, total_days, payload)
                 validation_errors = _validate_itinerary(
                     itinerary_data,
                     total_days=total_days,
                     candidates_by_ref=candidates_by_ref,
                     budget=trip.budget,
+                    budget_mode=payload.budget_mode,
+                    payload=payload,
                 )
                 if not validation_errors:
                     break
@@ -300,22 +478,39 @@ async def generate_day_plans(
             total_days=total_days,
             pace=payload.pace,
         )
+        _enforce_closed_loop_itinerary(itinerary_data, trip, candidates, total_days, payload)
+        experience_warnings = _enrich_experience_route(itinerary_data, trip, candidates, total_days, payload)
         validation_errors = _validate_itinerary(
             itinerary_data,
             total_days=total_days,
             candidates_by_ref=candidates_by_ref,
             budget=trip.budget,
+            budget_mode=payload.budget_mode,
+            payload=payload,
         )
         if validation_errors:
-            _fit_itinerary_to_budget(itinerary_data, trip.budget)
+            _fit_itinerary_to_budget(itinerary_data, trip.budget, payload.budget_mode)
+
+    _apply_realistic_costs(itinerary_data, trip, payload.budget_mode)
+    budget_trim_warning = _trim_optional_experiences_to_budget(
+        itinerary_data,
+        trip.budget,
+        payload.budget_mode,
+        candidates_by_ref,
+        payload,
+    )
+    if budget_trim_warning:
+        experience_warnings.append(budget_trim_warning)
+    _fit_itinerary_to_budget(itinerary_data, trip.budget, payload.budget_mode)
 
     summary = _build_generation_summary(
         itinerary_data,
         candidates_by_ref=candidates_by_ref,
         must_visit=must_visit,
         budget=trip.budget,
+        budget_mode=payload.budget_mode,
         candidate_places_count=len(candidates),
-        warnings=validation_errors,
+        warnings=_merge_unique([*validation_errors, *experience_warnings]),
     )
 
     if payload.overwrite:
@@ -353,6 +548,28 @@ async def generate_day_plans(
                 )
             )
 
+    await db.flush()
+    total_activities = sum(
+        len(day_data.get("activities", []))
+        for day_data in itinerary_data.get("days", [])
+        if isinstance(day_data, dict)
+    )
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=trip.id,
+        actor_user_id=actor.id,
+        entity_type="itinerary",
+        entity_id=trip.id,
+        action="generated",
+        summary=f"Da tao lich trinh AI gom {len(new_days)} ngay",
+        metadata={
+            "days_created": len(new_days),
+            "activities_created": total_activities,
+            "overwrite": payload.overwrite,
+            "ai": True,
+            "generation_summary": summary.model_dump(),
+        },
+    )
     await db.commit()
     for day in new_days:
         await db.refresh(day)
@@ -413,6 +630,21 @@ def _merge_unique(items: list[str]) -> list[str]:
             seen.add(key)
             result.append(clean)
     return result
+
+
+def _filter_avoided_candidates(candidates: list[dict], avoid_places: list[str]) -> list[dict]:
+    if not avoid_places:
+        return candidates
+
+    avoid_keys = [_normalize_text(place) for place in avoid_places if place.strip()]
+    filtered: list[dict] = []
+    for candidate in candidates:
+        name = _normalize_text(str(candidate.get("name") or ""))
+        address = _normalize_text(str(candidate.get("address") or ""))
+        if any(key and (key in name or key in address) for key in avoid_keys):
+            continue
+        filtered.append(candidate)
+    return filtered
 
 
 def _normalize_text(value: str) -> str:
@@ -499,6 +731,8 @@ def _validate_itinerary(
     total_days: int,
     candidates_by_ref: dict[str, dict],
     budget: int | None,
+    budget_mode: str = "flexible_15",
+    payload: GenerateDaysRequest | None = None,
 ) -> list[str]:
     errors: list[str] = []
     days = data.get("days") if isinstance(data, dict) else []
@@ -506,20 +740,31 @@ def _validate_itinerary(
         return [f"Expected exactly {total_days} days."]
 
     total_cost = 0
-    attraction_count = 0
-    place_based_types = {"meal", "attraction", "hotel"}
+    place_based_types = {"attraction"}
+    available_attractions = sum(
+        1 for candidate in candidates_by_ref.values() if candidate.get("category") == "attraction"
+    )
 
     for day in days:
+        day_number = int(day.get("day_number") or 0)
+        day_activities = [activity for activity in day.get("activities", []) if isinstance(activity, dict)]
         intervals: list[tuple[int, int]] = []
-        for activity in day.get("activities", []):
+        day_types: set[str] = set()
+        day_titles: list[str] = []
+        day_attraction_count = 0
+        latest_end = 0
+        for activity in day_activities:
             activity_type = _sanitize_type(activity.get("type"))
             title = activity.get("title") or "activity"
+            normalized_title = _normalize_text(str(title))
+            day_types.add(activity_type)
+            day_titles.append(normalized_title)
             if activity_type in place_based_types and candidates_by_ref and not activity.get("location_ref"):
                 errors.append(f"Activity '{title}' needs a valid location_ref.")
             if activity.get("location_ref") and activity["location_ref"] not in candidates_by_ref:
                 errors.append(f"Unknown location_ref {activity.get('location_ref')}.")
             if activity_type == "attraction":
-                attraction_count += 1
+                day_attraction_count += 1
             total_cost += _sanitize_cost(activity.get("estimated_cost")) or 0
             start = _minutes(activity.get("start_time"))
             end = _minutes(activity.get("end_time"))
@@ -529,13 +774,47 @@ def _validate_itinerary(
             if any(start < old_end and end > old_start for old_start, old_end in intervals):
                 errors.append(f"Day {day.get('day_number')} has overlapping activities.")
             intervals.append((start, end))
+            latest_end = max(latest_end, end)
 
-    if budget and total_cost > int(budget * 1.15):
-        errors.append("Total estimated cost is over the flexible 15 percent budget cap.")
+        if not day_activities:
+            errors.append(f"Day {day_number} has no activities.")
+            continue
 
-    minimum_attractions = min(max(total_days, 2), 5)
-    if candidates_by_ref and attraction_count < minimum_attractions:
-        errors.append(f"Expected at least {minimum_attractions} attraction activities.")
+        title_text = " ".join(day_titles)
+        has_lodging = (
+            "hotel" in day_types
+            or any(key in title_text for key in ["homestay", "khach san", "nhan phong", "check-in", "check out", "checkout", "nghi dem"])
+        )
+        has_rest = any(key in title_text for key in ["nghi", "tam rua", "thu gian"]) or has_lodging
+        has_return = "transport" in day_types and any(key in title_text for key in ["roi", "ve lai", "quay ve", "tro ve"])
+        is_overnight_travel_day = "transport" in day_types and latest_end >= (23 * 60 + 30) and not has_lodging
+
+        if day_number == 1 and "transport" not in day_types:
+            errors.append("Day 1 needs outbound transport from the departure location.")
+        if 1 < day_number < total_days and "meal" not in day_types:
+            errors.append(f"Day {day_number} needs at least one meal.")
+        if day_number < total_days and not has_lodging and not is_overnight_travel_day:
+            errors.append(f"Day {day_number} needs lodging or overnight rest.")
+        if day_number > 1 and not has_rest:
+            errors.append(f"Day {day_number} needs a rest/lodging step.")
+        if day_number == total_days and total_days > 1 and "meal" not in day_types:
+            errors.append("Last day needs at least one meal before return.")
+        if day_number == total_days and not any(key in title_text for key in ["check-out", "checkout", "tra phong"]):
+            errors.append("Last day needs checkout.")
+        if day_number == total_days and not has_return:
+            errors.append("Last day needs return/outbound transport.")
+        min_attractions = _minimum_required_attractions_for_day(
+            day_number,
+            total_days,
+            payload or GenerateDaysRequest(),
+            available_attractions,
+        )
+        if available_attractions and day_attraction_count < min_attractions:
+            errors.append(f"Day {day_number} needs at least {min_attractions} attraction activity.")
+
+    budget_cap = _budget_cap(budget, budget_mode)
+    if budget_cap and total_cost > budget_cap:
+        errors.append("Total estimated cost is over the selected budget cap.")
 
     return errors[:8]
 
@@ -546,6 +825,616 @@ def _minutes(value: str | None) -> int | None:
         return None
     hours, minutes = value.split(":")
     return int(hours) * 60 + int(minutes)
+
+
+def _format_minutes(value: int) -> str:
+    value = value % (24 * 60)
+    return f"{value // 60:02d}:{value % 60:02d}"
+
+
+def _safe_time_window(start: int, duration: int, *, latest_end: int = 23 * 60 + 59) -> tuple[str, str] | None:
+    end = min(start + max(duration, 1), latest_end)
+    if end <= start:
+        return None
+    return _format_minutes(start), _format_minutes(end)
+
+
+def _arrival_plan(payload: GenerateDaysRequest) -> tuple[int, int, int, int]:
+    departure_min = _minutes(payload.departure_time) if payload.departure_time else None
+    if departure_min is None:
+        departure_min = 6 * 60 + 30
+
+    if payload.estimated_travel_hours is not None:
+        travel_minutes = max(int(round(payload.estimated_travel_hours * 60)), 0)
+    else:
+        travel_minutes = 5 * 60
+    if travel_minutes == 0:
+        travel_minutes = 15
+
+    arrival_total = departure_min + travel_minutes
+    return departure_min, travel_minutes, arrival_total // (24 * 60), arrival_total % (24 * 60)
+
+
+def _enforce_closed_loop_itinerary(
+    data: dict,
+    trip: Trip,
+    candidates: list[dict],
+    total_days: int,
+    payload: GenerateDaysRequest,
+) -> None:
+    """Add deterministic travel/lodging/meals/rest/return steps for a closed-loop route."""
+    days = data.get("days") if isinstance(data, dict) else []
+    if not isinstance(days, list):
+        return
+
+    meals = [c for c in candidates if c.get("category") in {"restaurant", "cafe"}]
+    hotels = [c for c in candidates if c.get("category") == "hotel"]
+    hotel = hotels[0] if hotels else None
+    traveler_count = max(trip.num_travelers or 1, 1)
+    used_attraction_refs: set[str] = set()
+    meal_index = 0
+    departure_min, _travel_minutes, arrival_day_offset, arrival_min = _arrival_plan(payload)
+    arrival_day = min(max(1 + arrival_day_offset, 1), total_days)
+    departure = payload.departure_location or "diem xuat phat"
+    arrival_transport = payload.arrival_transport or payload.transport_mode or "phuong tien phu hop"
+
+    for day in days:
+        day_number = int(day.get("day_number") or 0)
+        if not 1 <= day_number <= total_days:
+            continue
+
+        acts = [a for a in day.get("activities", []) if isinstance(a, dict)]
+        acts = _drop_repeated_attractions(acts, used_attraction_refs)
+        earliest_daily_min = 0
+
+        if day_number < arrival_day:
+            acts = []
+        elif day_number == arrival_day:
+            ready_min = min(arrival_min + 45, 23 * 60 + 59)
+            earliest_daily_min = ready_min
+            acts = [
+                a for a in acts
+                if (_minutes(a.get("start_time")) or 0) >= ready_min
+                or _sanitize_type(a.get("type")) in {"hotel", "transport"}
+            ]
+        elif day_number == 1:
+            acts = [
+                a for a in acts
+                if (_minutes(a.get("start_time")) or 0) >= 720 or _sanitize_type(a.get("type")) in {"meal", "hotel"}
+            ]
+
+        if day_number == 1:
+            travel_end = arrival_min if arrival_day == 1 else 23 * 60 + 59
+            if travel_end <= departure_min:
+                travel_end = min(departure_min + 15, 23 * 60 + 59)
+            _append_activity(
+                acts,
+                _simple_activity(
+                    f"Di chuyen tu {departure} den {trip.destination} bang {arrival_transport}",
+                    "transport",
+                    _format_minutes(departure_min),
+                    _format_minutes(travel_end),
+                    _estimate_arrival_transport_cost(trip, payload),
+                    None,
+                    "Tinh ca chi phi di chuyen lien tinh/den diem du lich cho ca nhom.",
+                ),
+            )
+
+        if 1 < day_number < arrival_day:
+            _append_activity(
+                acts,
+                _simple_activity(
+                    f"Tiep tuc di chuyen den {trip.destination}",
+                    "transport",
+                    "00:00",
+                    "23:59",
+                    0,
+                    None,
+                    "Chang di chuyen keo dai qua ngay, duoc tach de khong tao gio ket thuc nho hon gio bat dau.",
+                ),
+            )
+
+        if day_number == arrival_day:
+            if arrival_day > 1 and arrival_min > 0:
+                _append_activity(
+                    acts,
+                    _simple_activity(
+                        f"Tiep tuc di chuyen den {trip.destination}",
+                        "transport",
+                        "00:00",
+                        _format_minutes(arrival_min),
+                        0,
+                        None,
+                        "Phan di chuyen sau nua dem, tach rieng khoi ngay xuat phat.",
+                    ),
+                )
+
+            checkin_window = _safe_time_window(arrival_min, 30)
+            if checkin_window:
+                checkin_start, checkin_end = checkin_window
+            else:
+                checkin_start, checkin_end = "11:45", "12:15"
+            _append_activity(
+                acts,
+                _candidate_activity(
+                    hotel,
+                    fallback_title=f"Nhan phong homestay/khach san tai {trip.destination}",
+                    activity_type="hotel" if hotel else "other",
+                    start=checkin_start,
+                    end=checkin_end,
+                    cost=0,
+                    notes="Den noi, gui hanh ly/nhan phong neu co san phong va nghi ngan truoc khi bat dau lich choi.",
+                ),
+            )
+        elif arrival_day < day_number < total_days:
+            _append_activity(
+                acts,
+                _candidate_activity(
+                    hotel,
+                    fallback_title=f"Xuat phat tu homestay tai {trip.destination}",
+                    activity_type="hotel" if hotel else "other",
+                    start="07:30",
+                    end="07:45",
+                    cost=0,
+                    notes="Bat dau ngay moi tu noi luu tru de lo trinh ro rang.",
+                ),
+            )
+
+        if day_number == total_days:
+            acts = [
+                a for a in acts
+                if (_minutes(a.get("start_time")) or 0) < 1020 or _sanitize_type(a.get("type")) in {"transport", "hotel"}
+            ]
+
+        if day_number >= arrival_day:
+            breakfast = _next_candidate(meals, meal_index)
+            meal_index += 1
+            if (_minutes("08:45") or 0) > earliest_daily_min:
+                _append_meal_if_missing(acts, breakfast, trip.destination, "sang", "08:00", "08:45", 50_000 * traveler_count)
+
+            lunch = _next_candidate(meals, meal_index)
+            meal_index += 1
+            if (_minutes("13:15") or 0) > earliest_daily_min:
+                _append_meal_if_missing(acts, lunch, trip.destination, "trua", "12:15", "13:15", 120_000 * traveler_count)
+                _append_activity(
+                    acts,
+                    _simple_activity(
+                        "Nghi ngoi tai homestay/quan ca phe gan tuyen",
+                        "other",
+                        "13:15",
+                        "14:00",
+                        0,
+                        None,
+                        "Giu suc va tranh lich bi day qua muc.",
+                    ),
+                )
+
+            dinner = _next_candidate(meals, meal_index)
+            meal_index += 1
+            if (_minutes("19:30") or 0) > earliest_daily_min:
+                _append_meal_if_missing(acts, dinner, trip.destination, "toi", "18:30", "19:30", 150_000 * traveler_count)
+
+        if arrival_day <= day_number < total_days:
+            _append_activity(
+                acts,
+                _candidate_activity(
+                    hotel,
+                    fallback_title=f"Ve homestay nghi ngoi, tam rua va nghi dem tai {trip.destination}",
+                    activity_type="hotel" if hotel else "other",
+                    start="21:00",
+                    end="21:30",
+                    cost=_estimate_lodging_cost(trip),
+                    notes="Ket thuc ngay tai noi luu tru, phu hop lich trinh khep kin.",
+                ),
+            )
+        elif day_number == total_days:
+            _append_activity(
+                acts,
+                _candidate_activity(
+                    hotel,
+                    fallback_title=f"Check-out homestay/khach san tai {trip.destination}",
+                    activity_type="hotel" if hotel else "other",
+                    start="16:30",
+                    end="17:00",
+                    cost=0,
+                    notes="Kiem tra hanh ly va hoan tat tra phong.",
+                ),
+            )
+            _append_activity(
+                acts,
+                _simple_activity(
+                    f"Di chuyen roi {trip.destination} ve lai diem xuat phat",
+                    "transport",
+                    "19:45",
+                    "23:30",
+                    _estimate_arrival_transport_cost(trip, payload),
+                    None,
+                    "Tinh chi phi quay ve/roi diem du lich cho ca nhom.",
+                ),
+            )
+
+        day["activities"] = _sort_and_trim_overlaps(acts)
+
+
+def _enrich_experience_route(
+    data: dict,
+    trip: Trip,
+    candidates: list[dict],
+    total_days: int,
+    payload: GenerateDaysRequest,
+) -> list[str]:
+    """Fill realistic sightseeing/cafe slots using candidate distance clusters."""
+    days = data.get("days") if isinstance(data, dict) else []
+    if not isinstance(days, list):
+        return []
+
+    attractions = [
+        candidate for candidate in candidates
+        if candidate.get("category") == "attraction" and candidate.get("ref")
+    ]
+    cafes = [
+        candidate for candidate in candidates
+        if candidate.get("category") == "cafe" and candidate.get("ref")
+    ]
+    if not attractions:
+        return ["Khong co du lieu diem tham quan phu hop de chen them trai nghiem trong lich trinh."]
+
+    traveler_count = max(trip.num_travelers or 1, 1)
+    used_refs = {
+        activity.get("location_ref")
+        for day in days
+        for activity in day.get("activities", [])
+        if _sanitize_type(activity.get("type")) == "attraction" and activity.get("location_ref")
+    }
+    warnings: list[str] = []
+
+    for day in days:
+        day_number = int(day.get("day_number") or 0)
+        if not 1 <= day_number <= total_days:
+            continue
+
+        acts = [activity for activity in day.get("activities", []) if isinstance(activity, dict)]
+        slots = _experience_slots_for_day(day_number, total_days, payload)
+        if not slots:
+            continue
+
+        existing_count = sum(1 for activity in acts if _sanitize_type(activity.get("type")) == "attraction")
+        target = _target_attractions_for_day(day_number, total_days, payload, len(attractions))
+        needed = max(target - existing_count, 0)
+        if needed <= 0:
+            day["activities"] = _sort_and_trim_overlaps(acts)
+            continue
+
+        available = [candidate for candidate in attractions if candidate.get("ref") not in used_refs]
+        future_minimum = _future_minimum_attractions(day_number, total_days, payload, len(attractions))
+        required_now = max(
+            _minimum_required_attractions_for_day(day_number, total_days, payload, len(attractions)) - existing_count,
+            0,
+        )
+        selectable_count = max(len(available) - future_minimum, required_now)
+        selected = _select_clustered_attractions(available, min(needed, selectable_count), payload.pace)
+        if not selected and existing_count == 0:
+            warnings.append(f"Ngay {day_number} chua co diem tham quan vi khong con candidate phu hop.")
+
+        for slot, candidate in zip(slots, selected):
+            start, end = slot
+            _append_activity(
+                acts,
+                _candidate_activity(
+                    candidate,
+                    fallback_title=f"Tham quan diem noi bat tai {trip.destination}",
+                    activity_type="attraction",
+                    start=start,
+                    end=end,
+                    cost=80_000 * traveler_count,
+                    notes=_cluster_note(candidate, selected),
+                ),
+            )
+            used_refs.add(candidate.get("ref"))
+
+        if day_number < total_days and payload.pace != "relaxed":
+            cafe = _next_unused_candidate(cafes, used_refs)
+            if cafe:
+                _append_activity(
+                    acts,
+                    _candidate_activity(
+                        cafe,
+                        fallback_title=f"Cafe/di dao toi tai {trip.destination}",
+                        activity_type="meal",
+                        start="19:45",
+                        end="20:45",
+                        cost=70_000 * traveler_count,
+                        notes="Hoat dong nhe buoi toi de lich trinh co them trai nghiem vui choi nhung van ve homestay nghi som.",
+                    ),
+                )
+
+        day["activities"] = _sort_and_trim_overlaps(acts)
+
+    return _merge_unique(warnings)
+
+
+def _experience_slots_for_day(
+    day_number: int,
+    total_days: int,
+    payload: GenerateDaysRequest,
+) -> list[tuple[str, str]]:
+    departure_min, _travel_minutes, arrival_day_offset, arrival_min = _arrival_plan(payload)
+    del departure_min
+    arrival_day = min(max(1 + arrival_day_offset, 1), total_days)
+    if day_number < arrival_day:
+        return []
+
+    earliest = 0
+    if day_number == arrival_day:
+        earliest = min(arrival_min + 45, 23 * 60 + 59)
+    latest = 20 * 60 + 45
+    if day_number == total_days:
+        latest = 16 * 60 + 30
+
+    if latest - earliest < 90:
+        return []
+
+    base_slots = [
+        ("09:15", "10:45"),
+        ("10:55", "12:05"),
+        ("14:10", "15:40"),
+        ("15:50", "17:20"),
+    ]
+    return [
+        (start, end)
+        for start, end in base_slots
+        if (_minutes(start) or 0) >= earliest and (_minutes(end) or 0) <= latest
+    ]
+
+
+def _target_attractions_for_day(
+    day_number: int,
+    total_days: int,
+    payload: GenerateDaysRequest,
+    available_attractions: int,
+) -> int:
+    slots = _experience_slots_for_day(day_number, total_days, payload)
+    if not slots or available_attractions <= 0:
+        return 0
+
+    if payload.pace == "relaxed":
+        target = 1
+    elif payload.pace == "packed":
+        target = 3
+    else:
+        target = 3 if len(slots) >= 3 else 2
+
+    return min(target, len(slots), available_attractions)
+
+
+def _minimum_required_attractions_for_day(
+    day_number: int,
+    total_days: int,
+    payload: GenerateDaysRequest,
+    available_attractions: int,
+) -> int:
+    slots = _experience_slots_for_day(day_number, total_days, payload)
+    if not slots or available_attractions <= 0:
+        return 0
+    if day_number == total_days:
+        return 1
+    if len(slots) >= 3 and payload.pace in {"balanced", "packed"} and available_attractions >= 2:
+        return 2
+    return 1
+
+
+def _future_minimum_attractions(
+    current_day: int,
+    total_days: int,
+    payload: GenerateDaysRequest,
+    available_attractions: int,
+) -> int:
+    return sum(
+        _minimum_required_attractions_for_day(day_number, total_days, payload, available_attractions)
+        for day_number in range(current_day + 1, total_days + 1)
+    )
+
+
+def _select_clustered_attractions(candidates: list[dict], target: int, pace: str) -> list[dict]:
+    if target <= 0 or not candidates:
+        return []
+
+    sorted_candidates = sorted(candidates, key=_candidate_priority_key)
+    anchor = sorted_candidates[0]
+    if target == 1:
+        return [anchor]
+
+    with_distance = [
+        (candidate, _candidate_distance_meters(anchor, candidate))
+        for candidate in sorted_candidates[1:]
+    ]
+    with_distance.sort(key=lambda item: (item[1] if item[1] is not None else 10_000_000, _candidate_priority_key(item[0])))
+    nearest_distance = next((distance for _candidate, distance in with_distance if distance is not None), None)
+
+    if nearest_distance is None:
+        max_count = min(target, 2)
+        limit = None
+    elif nearest_distance <= 3_000:
+        max_count = target if pace != "relaxed" else min(target, 2)
+        limit = 3_000
+    elif nearest_distance <= 8_000:
+        max_count = min(target, 2)
+        limit = 8_000
+    else:
+        max_count = 1
+        limit = None
+
+    selected = [anchor]
+    for candidate, distance in with_distance:
+        if len(selected) >= max_count:
+            break
+        if limit is not None and (distance is None or distance > limit):
+            continue
+        selected.append(candidate)
+    return selected
+
+
+def _candidate_priority_key(candidate: dict) -> tuple[int, float, int, int, str]:
+    return (
+        0 if candidate.get("must_visit_match") else 1,
+        -float(candidate.get("score") or 0),
+        0 if candidate.get("rating") else 1,
+        0 if candidate.get("photo_url") else 1,
+        _normalize_text(str(candidate.get("name") or "")),
+    )
+
+
+def _candidate_distance_meters(first: dict, second: dict) -> float | None:
+    try:
+        lat1 = float(first["lat"])
+        lng1 = float(first["lng"])
+        lat2 = float(second["lat"])
+        lng2 = float(second["lng"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return _haversine_meters(lat1, lng1, lat2, lng2)
+
+
+def _haversine_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    radius = 6_371_000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _cluster_note(candidate: dict, selected: list[dict]) -> str:
+    if len(selected) <= 1:
+        return "Diem tham quan chinh trong ngay, giu lich trinh thong thoang."
+    distances = [
+        _candidate_distance_meters(candidate, other)
+        for other in selected
+        if other is not candidate
+    ]
+    nearest = min((distance for distance in distances if distance is not None), default=None)
+    if nearest is not None and nearest <= 3_000:
+        return "Nam trong cum diem gan nhau nen co the ghep 2-3 diem trong cung ngay."
+    if nearest is not None and nearest <= 8_000:
+        return "Khoang cach vua phai, chi ghep it diem de tranh lich qua day."
+    return "Duoc chon theo do uu tien, can can doi thoi gian di chuyen."
+
+
+def _next_unused_candidate(candidates: list[dict], used_refs: set[str | None]) -> dict | None:
+    for candidate in sorted(candidates, key=_candidate_priority_key):
+        ref = candidate.get("ref")
+        if ref and ref not in used_refs:
+            used_refs.add(ref)
+            return candidate
+    return None
+
+
+def _drop_repeated_attractions(activities: list[dict], used_refs: set[str]) -> list[dict]:
+    result: list[dict] = []
+    for activity in activities:
+        ref = activity.get("location_ref")
+        if _sanitize_type(activity.get("type")) == "attraction" and ref:
+            if ref in used_refs:
+                continue
+            used_refs.add(ref)
+        result.append(activity)
+    return result
+
+
+def _append_meal_if_missing(
+    activities: list[dict],
+    candidate: dict | None,
+    destination: str,
+    meal_name: str,
+    start: str,
+    end: str,
+    cost: int,
+) -> None:
+    slot_start = _minutes(start) or 0
+    slot_end = _minutes(end) or 0
+    has_meal = any(
+        _sanitize_type(a.get("type")) == "meal"
+        and _activity_overlaps(a, slot_start - 45, slot_end + 45)
+        for a in activities
+    )
+    if has_meal:
+        return
+    _append_activity(
+        activities,
+        _candidate_activity(
+            candidate,
+            fallback_title=f"An {meal_name} tai {destination}",
+            activity_type="meal",
+            start=start,
+            end=end,
+            cost=cost,
+        ),
+    )
+
+
+def _append_activity(activities: list[dict], activity: dict) -> None:
+    start = _minutes(activity.get("start_time"))
+    end = _minutes(activity.get("end_time"))
+    if start is not None and end is not None:
+        for existing in activities:
+            existing_start = _minutes(existing.get("start_time"))
+            existing_end = _minutes(existing.get("end_time"))
+            if existing_start is None or existing_end is None:
+                continue
+            if start < existing_end and end > existing_start:
+                return
+
+    title_key = _normalize_text(str(activity.get("title") or ""))
+    if title_key and any(_normalize_text(str(a.get("title") or "")) == title_key for a in activities):
+        return
+    activities.append(activity)
+
+
+def _activity_overlaps(activity: dict, start: int, end: int) -> bool:
+    activity_start = _minutes(activity.get("start_time"))
+    activity_end = _minutes(activity.get("end_time"))
+    if activity_start is None or activity_end is None:
+        return False
+    return activity_start < end and activity_end > start
+
+
+def _sort_and_trim_overlaps(activities: list[dict]) -> list[dict]:
+    sorted_acts = sorted(
+        activities,
+        key=lambda item: (_minutes(item.get("start_time")) if _minutes(item.get("start_time")) is not None else 9999),
+    )
+    result: list[dict] = []
+    intervals: list[tuple[int, int]] = []
+    for activity in sorted_acts:
+        start = _minutes(activity.get("start_time"))
+        end = _minutes(activity.get("end_time"))
+        if start is None or end is None or end <= start:
+            continue
+        if any(start < old_end and end > old_start for old_start, old_end in intervals):
+            continue
+        intervals.append((start, end))
+        result.append(activity)
+    return result
+
+
+def _estimate_arrival_transport_cost(trip: Trip, payload: GenerateDaysRequest) -> int:
+    traveler_count = max(trip.num_travelers or 1, 1)
+    text = _normalize_text(f"{payload.arrival_transport or ''} {payload.transport_mode or ''}")
+    if "may bay" in text or "flight" in text:
+        return 1_200_000 * traveler_count
+    if "o to" in text or "car" in text:
+        return 350_000 * traveler_count
+    if "xe may" in text or "motorbike" in text:
+        return 180_000 * traveler_count
+    if "tau" in text:
+        return 350_000 * traveler_count
+    return 250_000 * traveler_count
+
+
+def _estimate_lodging_cost(trip: Trip) -> int:
+    traveler_count = max(trip.num_travelers or 1, 1)
+    rooms = max((traveler_count + 1) // 2, 1)
+    return 250_000 * rooms
 
 
 def _build_fallback_itinerary(trip: Trip, candidates: list[dict], *, total_days: int, pace: str) -> dict:
@@ -653,6 +1542,7 @@ def _candidate_activity(
     start: str,
     end: str,
     cost: int,
+    notes: str | None = None,
 ) -> dict:
     title = candidate["name"] if candidate else fallback_title
     return {
@@ -665,11 +1555,19 @@ def _candidate_activity(
         "location_ref": candidate.get("ref") if candidate else None,
         "reason": "Phu hop voi lich trinh va du lieu dia diem thuc te." if candidate else None,
         "travel_note": "Da sap xep theo khung gio can bang.",
-        "notes": None,
+        "notes": notes,
     }
 
 
-def _simple_activity(title: str, activity_type: str, start: str, end: str, cost: int, location_ref: str | None) -> dict:
+def _simple_activity(
+    title: str,
+    activity_type: str,
+    start: str,
+    end: str,
+    cost: int,
+    location_ref: str | None,
+    notes: str | None = None,
+) -> dict:
     return {
         "title": title,
         "description": None,
@@ -680,14 +1578,60 @@ def _simple_activity(title: str, activity_type: str, start: str, end: str, cost:
         "location_ref": location_ref,
         "reason": None,
         "travel_note": None,
-        "notes": None,
+        "notes": notes,
     }
 
 
-def _fit_itinerary_to_budget(data: dict, budget: int | None) -> None:
+def _apply_realistic_costs(data: dict, trip: Trip, budget_mode: str) -> None:
+    traveler_count = max(trip.num_travelers or 1, 1)
+    lodging_cost = _estimate_lodging_cost(trip)
+
+    for day in data.get("days", []):
+        for activity in day.get("activities", []):
+            activity_type = _sanitize_type(activity.get("type"))
+            title = _normalize_text(str(activity.get("title") or ""))
+            current = _sanitize_cost(activity.get("estimated_cost")) or 0
+            start_minutes = _minutes(activity.get("start_time")) or 0
+            floor = 0
+
+            if activity_type == "meal":
+                if start_minutes < 600:
+                    floor = 50_000 * traveler_count
+                elif start_minutes < 900:
+                    floor = 120_000 * traveler_count
+                else:
+                    floor = 150_000 * traveler_count
+            elif activity_type == "transport":
+                if any(key in title for key in ["den", "roi", "ve lai", "xuat phat"]):
+                    floor = max(current, 250_000 * traveler_count)
+                else:
+                    floor = 80_000 * traveler_count
+            elif activity_type == "hotel":
+                if any(key in title for key in ["nghi dem", "homestay", "khach san"]):
+                    floor = lodging_cost
+            elif activity_type == "attraction":
+                floor = 30_000 * traveler_count
+            elif "du phong" in title or "buffer" in title:
+                floor = 50_000 * traveler_count
+
+            if floor and current < floor:
+                activity["estimated_cost"] = floor
+
+
+def _budget_cap(budget: int | None, budget_mode: str = "flexible_15") -> int | None:
     if not budget:
+        return None
+    if budget_mode == "strict":
+        return int(budget)
+    if budget_mode == "comfort":
+        return int(budget * 1.3)
+    return int(budget * 1.15)
+
+
+def _fit_itinerary_to_budget(data: dict, budget: int | None, budget_mode: str = "flexible_15") -> None:
+    cap = _budget_cap(budget, budget_mode)
+    if not cap:
         return
-    cap = int(budget * 1.15)
     total = sum(
         _sanitize_cost(activity.get("estimated_cost")) or 0
         for day in data.get("days", [])
@@ -703,12 +1647,72 @@ def _fit_itinerary_to_budget(data: dict, budget: int | None) -> None:
                 activity["estimated_cost"] = int(cost * ratio)
 
 
+def _trim_optional_experiences_to_budget(
+    data: dict,
+    budget: int | None,
+    budget_mode: str,
+    candidates_by_ref: dict[str, dict],
+    payload: GenerateDaysRequest,
+) -> str | None:
+    cap = _budget_cap(budget, budget_mode)
+    if budget_mode != "strict" or not cap:
+        return None
+
+    def total_cost() -> int:
+        return sum(
+            _sanitize_cost(activity.get("estimated_cost")) or 0
+            for day in data.get("days", [])
+            for activity in day.get("activities", [])
+        )
+
+    if total_cost() <= cap:
+        return None
+
+    removed = 0
+    for day in data.get("days", []):
+        activities = [activity for activity in day.get("activities", []) if isinstance(activity, dict)]
+        attraction_count = sum(1 for activity in activities if _sanitize_type(activity.get("type")) == "attraction")
+        removable: list[dict] = []
+        for activity in activities:
+            activity_type = _sanitize_type(activity.get("type"))
+            ref = activity.get("location_ref")
+            is_must_visit = bool(candidates_by_ref.get(ref, {}).get("must_visit_match")) if ref else False
+            if is_must_visit:
+                continue
+            if activity_type == "attraction" and attraction_count > _minimum_required_attractions_for_day(
+                int(day.get("day_number") or 0),
+                len(data.get("days", [])),
+                payload,
+                sum(1 for candidate in candidates_by_ref.values() if candidate.get("category") == "attraction"),
+            ):
+                removable.append(activity)
+            elif activity_type == "meal" and ref and candidates_by_ref.get(ref, {}).get("category") == "cafe":
+                removable.append(activity)
+
+        removable.sort(key=lambda activity: _minutes(activity.get("start_time")) or 0, reverse=True)
+        for activity in removable:
+            if total_cost() <= cap:
+                break
+            if _sanitize_type(activity.get("type")) == "attraction":
+                attraction_count -= 1
+            activities.remove(activity)
+            removed += 1
+        day["activities"] = _sort_and_trim_overlaps(activities)
+        if total_cost() <= cap:
+            break
+
+    if removed:
+        return "Ngan sach strict qua chat nen he thong da rut bot diem phu/cafe toi, giu lai flow khep kin va diem uu tien."
+    return None
+
+
 def _build_generation_summary(
     data: dict,
     *,
     candidates_by_ref: dict[str, dict],
     must_visit: list[str],
     budget: int | None,
+    budget_mode: str = "flexible_15",
     candidate_places_count: int,
     warnings: list[str],
 ) -> ItineraryGenerationSummary:
@@ -733,13 +1737,15 @@ def _build_generation_summary(
     included_keys = {_normalize_text(item) for item in included}
     missing = [place for place in must_visit if _normalize_text(place) not in included_keys]
 
-    budget_limit = int(budget * 1.15) if budget else None
+    budget_limit = _budget_cap(budget, budget_mode)
     budget_percent = round((total_cost / budget) * 100) if budget else None
     summary_warnings = list(warnings)
     if missing:
         summary_warnings.append("Mot so dia diem nguoi dung muon di chua duoc dua vao lich trinh.")
     if budget_limit and total_cost > budget_limit:
-        summary_warnings.append("Tong chi phi uoc tinh vuot qua muc linh hoat 15%.")
+        summary_warnings.append("Tong chi phi uoc tinh vuot qua gioi han ngan sach da chon.")
+    if budget and total_cost < int(budget * 0.55):
+        summary_warnings.append("Chi phi lich trinh dang thap hon ngan sach; co the can kiem tra lai chi phi ve xe, luu tru hoac ve tham quan.")
 
     return ItineraryGenerationSummary(
         total_estimated_cost=total_cost,

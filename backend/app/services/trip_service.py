@@ -10,8 +10,11 @@ from sqlalchemy.orm import selectinload
 from app.models.activity import Activity
 from app.models.budget import BudgetItem
 from app.models.trip import DayPlan, Trip
+from app.models.trip_share import TripParticipant
 from app.models.user import User
 from app.schemas.trip import CategoryBudgetBrief, CreateTripRequest, UpdateTripRequest
+from app.services.trip_share_service import attach_access
+from app.services import trip_history_service
 
 
 async def list_trips(
@@ -20,23 +23,35 @@ async def list_trips(
     status: str | None,
     page: int,
     limit: int,
+    scope: str = "owned",
 ) -> tuple[list[Trip], int]:
-    """Danh sach chuyen di cua user, filter theo status, co phan trang."""
-    base_query = select(Trip).where(Trip.user_id == user.id)
-    count_query = select(func.count()).select_from(Trip).where(Trip.user_id == user.id)
+    """Danh sach chuyen di theo quyen truy cap cua user."""
+    trips: list[Trip] = []
 
-    if status:
-        base_query = base_query.where(Trip.status == status)
-        count_query = count_query.where(Trip.status == status)
+    if scope in {"owned", "all"}:
+        owned_query = select(Trip).where(Trip.user_id == user.id).options(selectinload(Trip.user))
+        if status:
+            owned_query = owned_query.where(Trip.status == status)
+        owned_result = await db.execute(owned_query)
+        trips.extend(attach_access(trip, "owner") for trip in owned_result.scalars().all())
 
-    total = (await db.execute(count_query)).scalar_one()
+    if scope in {"shared", "all"}:
+        shared_query = (
+            select(Trip, TripParticipant.role)
+            .join(TripParticipant, TripParticipant.trip_id == Trip.id)
+            .where(TripParticipant.user_id == user.id)
+            .options(selectinload(Trip.user))
+        )
+        if status:
+            shared_query = shared_query.where(Trip.status == status)
+        shared_result = await db.execute(shared_query)
+        for trip, role in shared_result.all():
+            trips.append(attach_access(trip, role))
 
-    result = await db.execute(
-        base_query.order_by(Trip.created_at.desc()).offset((page - 1) * limit).limit(limit)
-    )
-    trips = list(result.scalars().all())
-
-    return trips, total
+    trips.sort(key=lambda trip: trip.created_at, reverse=True)
+    total = len(trips)
+    start = (page - 1) * limit
+    return trips[start:start + limit], total
 
 
 async def create_trip(db: AsyncSession, user: User, payload: CreateTripRequest) -> Trip:
@@ -63,6 +78,17 @@ async def create_trip(db: AsyncSession, user: User, payload: CreateTripRequest) 
         cover_image_url=cover_image_url,
     )
     db.add(trip)
+    await db.flush()
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=trip.id,
+        actor_user_id=user.id,
+        entity_type="trip",
+        entity_id=trip.id,
+        action="created",
+        summary=f"Da tao chuyen di \"{trip.title}\"",
+        metadata={"title": trip.title, "destination": trip.destination},
+    )
     await db.commit()
     await db.refresh(trip)
     return trip
@@ -74,7 +100,7 @@ async def get_trip_with_days(db: AsyncSession, trip_id: uuid.UUID) -> Trip:
     Dung cho GET /trips/{id}.
     """
     result = await db.execute(
-        select(Trip).where(Trip.id == trip_id).options(selectinload(Trip.day_plans))
+        select(Trip).where(Trip.id == trip_id).options(selectinload(Trip.day_plans), selectinload(Trip.user))
     )
     trip = result.scalar_one()
 
@@ -93,8 +119,12 @@ async def get_trip_with_days(db: AsyncSession, trip_id: uuid.UUID) -> Trip:
     return trip
 
 
-async def update_trip(db: AsyncSession, trip: Trip, payload: UpdateTripRequest) -> Trip:
+async def update_trip(db: AsyncSession, trip: Trip, payload: UpdateTripRequest, actor: User) -> Trip:
     """Cap nhat tung field duoc gui len (PUT nhung semantics giong PATCH theo spec)."""
+    access_role = getattr(trip, "_access_role", "owner")
+    access_type = getattr(trip, "_access_type", "owner" if access_role == "owner" else "shared")
+    tracked_fields = list(trip_history_service.TRIP_FIELD_LABELS.keys())
+    before = trip_history_service.snapshot_fields(trip, tracked_fields)
     update_data = payload.model_dump(exclude_unset=True)
     destination_changed = "destination" in update_data and update_data["destination"] != trip.destination
     for field, value in update_data.items():
@@ -110,16 +140,46 @@ async def update_trip(db: AsyncSession, trip: Trip, payload: UpdateTripRequest) 
         except Exception:
             pass
 
+    await db.flush()
+    after = trip_history_service.snapshot_fields(trip, tracked_fields)
+    changes = trip_history_service.diff_snapshots(
+        before,
+        after,
+        trip_history_service.TRIP_FIELD_LABELS,
+    )
+    if changes:
+        await trip_history_service.record_history_event(
+            db,
+            trip_id=trip.id,
+            actor_user_id=actor.id,
+            entity_type="trip",
+            entity_id=trip.id,
+            action="updated",
+            summary=f"Da cap nhat thong tin chuyen di \"{trip.title}\"",
+            changes=changes,
+        )
     await db.commit()
     await db.refresh(trip)
+    trip._access_role = access_role  # type: ignore[attr-defined]
+    trip._access_type = access_type  # type: ignore[attr-defined]
     return trip
 
 
-async def delete_trip(db: AsyncSession, trip: Trip) -> None:
+async def delete_trip(db: AsyncSession, trip: Trip, actor: User) -> None:
     """
     Xoa trip - cascade tu dong xoa day_plans/activities/chat_history/
     ai_suggestions/budget_items nho relationship cascade='all, delete-orphan'.
     """
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=trip.id,
+        actor_user_id=actor.id,
+        entity_type="trip",
+        entity_id=trip.id,
+        action="deleted",
+        summary=f"Da xoa chuyen di \"{trip.title}\"",
+        metadata={"title": trip.title, "destination": trip.destination},
+    )
     await db.delete(trip)
     await db.commit()
 

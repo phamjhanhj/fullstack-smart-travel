@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.deps import get_current_user, get_owned_trip
+from app.core.deps import get_current_user, get_trip_edit_access, get_trip_read_access
 from app.core.rate_limit import rate_limit
 from app.core.response import envelope
 from app.db.session import get_db
@@ -35,7 +35,7 @@ chat_router = APIRouter(prefix="/trips/{trip_id}/chat", tags=["AI Chat"])
 @chat_router.post("", dependencies=[Depends(rate_limit("ai_chat", settings.RATE_LIMIT_AI_PER_MINUTE))])
 async def send_message(
     payload: SendMessageRequest,
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_edit_access),
     db: AsyncSession = Depends(get_db),
 ):
     if payload.stream:
@@ -59,7 +59,7 @@ async def send_message(
 @chat_router.get("/history")
 async def get_chat_history(
     limit: int = Query(default=50, ge=1, le=200),
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):
     messages = await ai_service.get_chat_history(db, trip.id, limit)
@@ -72,7 +72,7 @@ suggestions_trip_router = APIRouter(prefix="/trips/{trip_id}/suggestions", tags=
 @suggestions_trip_router.get("")
 async def list_suggestions(
     status: SuggestionStatus | None = Query(default=None),
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):
     suggestions = await ai_service.list_suggestions(db, trip.id, status)
@@ -89,8 +89,8 @@ async def update_suggestion_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    suggestion = await ai_service.get_suggestion_owned_or_404(db, suggestion_id, current_user.id)
-    activities_created = await ai_service.update_suggestion_status(db, suggestion, payload.status)
+    suggestion = await ai_service.get_suggestion_editable_or_404(db, suggestion_id, current_user.id)
+    activities_created = await ai_service.update_suggestion_status(db, suggestion, payload.status, current_user)
 
     message = "Da ap dung goi y vao lich trinh" if payload.status == "accepted" else "Da bo qua goi y"
     data = UpdateSuggestionStatusResponse(

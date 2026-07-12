@@ -16,6 +16,23 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=128)
     full_name: str = Field(min_length=2, max_length=100)
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: EmailStr) -> str:
+        normalized = str(value).strip().lower()
+        domain = normalized.rsplit("@", 1)[-1]
+        if "." not in domain:
+            raise ValueError("email domain must include a dot")
+        return normalized
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_full_name(cls, value: str) -> str:
+        cleaned = " ".join(value.strip().split())
+        if len(cleaned) < 2:
+            raise ValueError("full_name must contain at least 2 characters")
+        return cleaned
+
 
 class RegisterResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -30,6 +47,15 @@ class RegisterResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: EmailStr) -> str:
+        normalized = str(value).strip().lower()
+        domain = normalized.rsplit("@", 1)[-1]
+        if "." not in domain:
+            raise ValueError("email domain must include a dot")
+        return normalized
 
 
 class LoginUserInfo(BaseModel):

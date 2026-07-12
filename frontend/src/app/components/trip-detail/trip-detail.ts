@@ -16,12 +16,18 @@ import {
   AiSuggestionResponse,
   ActivityType,
   CreateActivityRequest,
+  UpdateActivityRequest,
   BudgetSummaryResponse,
   BudgetItemResponse,
   BudgetCategory,
   LocationResponse,
   LocationCategory,
   ItineraryGenerationSummary,
+  GenerateDaysRequest,
+  TripParticipant,
+  TripInvite,
+  TripShareRole,
+  TripHistoryEvent,
 } from '../../services/trip.service';
 
 import { PlacePhotoService, BestRatedPlace } from '../../services/place-photo.service';
@@ -31,7 +37,7 @@ import {
   resolveTravelCoverImage,
 } from '../../services/travel-cover-images';
 import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, timeout } from 'rxjs/operators';
 import { OsrmService } from '../../services/osrm.service';
 
 export interface RouteSegment {
@@ -133,13 +139,17 @@ export class TripDetailComponent implements OnInit {
   readonly isLoadingDetail = signal<boolean>(true);
   readonly isLoadingDays = signal<boolean>(true);
   readonly isGenerating = signal<boolean>(false);
+  readonly isGenerateOptionsOpen = signal<boolean>(false);
   readonly generationProgressMessage = signal<string | null>(null);
   readonly generationSummary = signal<ItineraryGenerationSummary | null>(null);
+  readonly generationOptionsError = signal<string | null>(null);
   readonly errorMsg = signal<string | null>(null);
 
   // Chat Form/State
   readonly chatInput = signal<string>('');
   readonly isSendingMessage = signal<boolean>(false);
+  readonly isChatOpen = signal<boolean>(true);
+  readonly activeRightTab = signal<'chat' | 'history'>('chat');
 
   // Sub-tabs switcher state
   readonly activeSubTab = signal<'itinerary' | 'route' | 'budget' | 'explore' | 'settings'>('itinerary');
@@ -150,6 +160,22 @@ export class TripDetailComponent implements OnInit {
   readonly isDeleting = signal<boolean>(false);
   readonly settingsSuccessMsg = signal<string | null>(null);
   readonly settingsErrorMsg = signal<string | null>(null);
+  readonly shareParticipants = signal<TripParticipant[]>([]);
+  readonly shareInvites = signal<TripInvite[]>([]);
+  readonly shareSuccessMsg = signal<string | null>(null);
+  readonly shareErrorMsg = signal<string | null>(null);
+  readonly isLoadingShares = signal<boolean>(false);
+  readonly isSubmittingShare = signal<boolean>(false);
+  readonly latestInviteUrl = signal<string | null>(null);
+
+  // Trip history drawer state
+  readonly isHistoryOpen = signal<boolean>(false);
+  readonly historyItems = signal<TripHistoryEvent[]>([]);
+  readonly isLoadingHistory = signal<boolean>(false);
+  readonly historyErrorMsg = signal<string | null>(null);
+  readonly historyPage = signal<number>(1);
+  readonly historyTotal = signal<number>(0);
+  readonly historyLimit = 30;
 
   // Explore Tab State Signals
   readonly exploreLocations = signal<LocationResponse[]>([]);
@@ -177,7 +203,8 @@ export class TripDetailComponent implements OnInit {
   // Activity Modal State
   readonly isActivityModalOpen = signal<boolean>(false);
   readonly selectedDayId = signal<string | null>(null);
-  readonly selectedActivityId = signal<string | null>(null); // For future editing support
+  readonly selectedActivityId = signal<string | null>(null);
+  readonly selectedActivity = signal<ActivityResponse | null>(null);
   readonly isSubmittingActivity = signal<boolean>(false);
   readonly activityError = signal<string | null>(null);
 
@@ -193,6 +220,29 @@ export class TripDetailComponent implements OnInit {
     end_time: ['', [Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)]],
     estimated_cost: [null as number | null, [Validators.min(0)]],
     notes: [''],
+  });
+
+  readonly generateOptionsForm = this.fb.nonNullable.group({
+    pace: ['balanced' as 'relaxed' | 'balanced' | 'packed', [Validators.required]],
+    budget_mode: ['flexible_15' as 'strict' | 'flexible_15' | 'comfort', [Validators.required]],
+    prioritize_user_places: ['balanced' as 'balanced' | 'high', [Validators.required]],
+    transport_mode: ['mixed' as 'walking' | 'motorbike' | 'car' | 'taxi' | 'public_transport' | 'mixed', [Validators.required]],
+    departure_location: [''],
+    departure_time: ['18:00', [Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)]],
+    estimated_travel_hours: [6 as number | null, [Validators.min(0)]],
+    arrival_transport: ['xe khách'],
+    daily_start_time: ['08:30', [Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)]],
+    daily_end_time: ['21:30', [Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)]],
+    must_visit_text: [''],
+    avoid_places_text: [''],
+    interest_foodie: [true],
+    interest_culture: [true],
+    interest_nature: [false],
+    interest_cafe: [false],
+    interest_beaches: [false],
+    interest_adventure: [false],
+    dietary_notes: [''],
+    mobility_notes: [''],
   });
 
   // Form for Budget Item Adding / Editing
@@ -213,6 +263,12 @@ export class TripDetailComponent implements OnInit {
     budget: ['' as any],
     num_travelers: [1, [Validators.required, Validators.min(1)]],
     status: ['draft' as 'draft' | 'active' | 'completed', [Validators.required]],
+  });
+
+  readonly shareForm = this.fb.nonNullable.group({
+    email: [''],
+    role: ['viewer' as TripShareRole, [Validators.required]],
+    expires_in_days: [7, [Validators.required, Validators.min(1), Validators.max(30)]],
   });
 
   ngOnInit(): void {
@@ -255,6 +311,9 @@ export class TripDetailComponent implements OnInit {
           if (t.destination) {
             this.fetchDestinationImage(t.destination);
           }
+          if (this.canManageShares()) {
+            this.fetchShares();
+          }
         }
       },
       error: (err) => {
@@ -292,6 +351,12 @@ export class TripDetailComponent implements OnInit {
           // Sort days by day_number
           const sortedDays = res.data.sort((a, b) => a.day_number - b.day_number);
           this.days.set(sortedDays);
+          if (this.activeSubTab() === 'route') {
+            if (this.routeDayIndex() >= sortedDays.length) {
+              this.routeDayIndex.set(0);
+            }
+            setTimeout(() => this.renderRouteForDay(this.routeDayIndex()), 100);
+          }
         }
       },
       error: () => {
@@ -305,7 +370,7 @@ export class TripDetailComponent implements OnInit {
     this.tripService.getChatHistory(this.tripId).subscribe({
       next: (res) => {
         if (res && res.data) {
-          this.chatHistory.set(res.data);
+          this.chatHistory.set(this.filterLegacyAutoSummaryThread(res.data));
           this.scrollToBottom();
         }
       },
@@ -323,6 +388,36 @@ export class TripDetailComponent implements OnInit {
 
   // AI Auto Itinerary Generation
   onGenerateItinerary(): void {
+    if (!this.canEditTrip()) return;
+    this.openGenerateOptions();
+  }
+
+  openGenerateOptions(): void {
+    if (!this.canEditTrip()) return;
+    if (this.isGenerating()) return;
+    this.generationOptionsError.set(null);
+    this.isGenerateOptionsOpen.set(true);
+  }
+
+  closeGenerateOptions(): void {
+    if (this.isGenerating()) return;
+    this.isGenerateOptionsOpen.set(false);
+    this.generationOptionsError.set(null);
+  }
+
+  onSubmitGenerateOptions(): void {
+    if (this.generateOptionsForm.invalid) {
+      this.generateOptionsForm.markAllAsTouched();
+      this.generationOptionsError.set('Vui lòng kiểm tra lại định dạng giờ trước khi tạo lịch trình.');
+      return;
+    }
+
+    this.isGenerateOptionsOpen.set(false);
+    this.runGenerateItinerary(this.buildGeneratePayload());
+  }
+
+  private runGenerateItinerary(payload: GenerateDaysRequest): void {
+    if (!this.canEditTrip()) return;
     this.isGenerating.set(true);
     this.generationSummary.set(null);
     this.generationProgressMessage.set('Dang tim dia diem phu hop...');
@@ -332,14 +427,17 @@ export class TripDetailComponent implements OnInit {
     setTimeout(() => {
       if (this.isGenerating()) this.generationProgressMessage.set('Dang kiem tra ngan sach...');
     }, 2400);
-    this.tripService.generateDays(this.tripId, true).subscribe({
+    this.tripService.generateDays(this.tripId, payload).subscribe({
       next: (res) => {
         this.isGenerating.set(false);
         this.generationProgressMessage.set(null);
         this.generationSummary.set(res.data?.summary || null);
+        this.routeDayIndex.set(0);
+        this.clearRouteLayers();
+        this.routeSegments.set([]);
+        this.routeTotalDistance.set(0);
+        this.routeTotalDuration.set(0);
         this.fetchItinerary();
-        // Ask AI assistant for a welcome advice as well
-        this.sendMessageToAi("Hãy tóm tắt lịch trình bạn vừa thiết kế cho chuyến đi của tôi.");
       },
       error: (err) => {
         this.isGenerating.set(false);
@@ -349,8 +447,246 @@ export class TripDetailComponent implements OnInit {
     });
   }
 
+  canEditTrip(): boolean {
+    const role = this.trip()?.role;
+    return role === 'owner' || role === 'editor';
+  }
+
+  canManageShares(): boolean {
+    return this.trip()?.role === 'owner';
+  }
+
+  fetchShares(): void {
+    if (!this.canManageShares()) return;
+    this.isLoadingShares.set(true);
+    this.shareErrorMsg.set(null);
+    this.tripService.listTripShares(this.tripId).subscribe({
+      next: (res) => {
+        this.isLoadingShares.set(false);
+        this.shareParticipants.set(res.data?.participants || []);
+        this.shareInvites.set(res.data?.invites || []);
+      },
+      error: (err) => {
+        this.isLoadingShares.set(false);
+        this.shareErrorMsg.set(err?.error?.message || 'Khong the tai danh sach chia se.');
+      },
+    });
+  }
+
+  openHistory(): void {
+    if (this.isChatOpen() && this.activeRightTab() === 'history') {
+      this.isChatOpen.set(false);
+    } else {
+      this.activeRightTab.set('history');
+      this.isChatOpen.set(true);
+      this.loadHistory(true);
+    }
+  }
+
+  closeHistory(): void {
+    this.isChatOpen.set(false);
+  }
+
+  loadHistory(reset = false): void {
+    if (!this.tripId || this.isLoadingHistory()) return;
+    const nextPage = reset ? 1 : this.historyPage() + 1;
+    this.isLoadingHistory.set(true);
+    this.historyErrorMsg.set(null);
+    this.tripService.listTripHistory(this.tripId, nextPage, this.historyLimit).subscribe({
+      next: (res) => {
+        this.isLoadingHistory.set(false);
+        const data = res.data;
+        if (!data) return;
+        this.historyPage.set(data.page);
+        this.historyTotal.set(data.total);
+        this.historyItems.set(reset ? data.items : [...this.historyItems(), ...data.items]);
+      },
+      error: (err) => {
+        this.isLoadingHistory.set(false);
+        this.historyErrorMsg.set(err?.error?.message || 'Khong the tai lich su chuyen di.');
+      },
+    });
+  }
+
+  loadMoreHistory(): void {
+    if (!this.hasMoreHistory()) return;
+    this.loadHistory(false);
+  }
+
+  hasMoreHistory(): boolean {
+    return this.historyItems().length < this.historyTotal();
+  }
+
+  getHistoryEntityLabel(entityType: string): string {
+    const labels: Record<string, string> = {
+      trip: 'Chuyen di',
+      itinerary: 'Lich trinh',
+      activity: 'Hoat dong',
+      budget_item: 'Chi tieu',
+      share_invite: 'Chia se',
+      participant: 'Thanh vien',
+      ai_suggestion: 'AI',
+    };
+    return labels[entityType] || entityType;
+  }
+
+  formatHistoryValue(value: any): string {
+    if (value === null || value === undefined || value === '') return 'Trong';
+    if (typeof value === 'boolean') return value ? 'Co' : 'Khong';
+    if (typeof value === 'object') return JSON.stringify(value);
+    const text = String(value);
+    return text.length > 90 ? `${text.slice(0, 90)}...` : text;
+  }
+
+  getHistoryActorName(item: TripHistoryEvent): string {
+    return item.actor?.full_name || item.actor?.email || 'He thong';
+  }
+
+  getHistoryActorInitials(item: TripHistoryEvent): string {
+    const name = this.getHistoryActorName(item).trim();
+    return name ? name.substring(0, 2).toUpperCase() : 'HT';
+  }
+
+  private buildGeneratePayload(): GenerateDaysRequest {
+    const val = this.generateOptionsForm.getRawValue();
+    return {
+      overwrite: true,
+      must_visit: this.parsePlanningList(val.must_visit_text),
+      avoid_places: this.parsePlanningList(val.avoid_places_text),
+      interest_weights: this.buildInterestWeights(val),
+      pace: val.pace,
+      budget_mode: val.budget_mode,
+      prioritize_user_places: val.prioritize_user_places,
+      transport_mode: val.transport_mode,
+      departure_location: val.departure_location || null,
+      departure_time: val.departure_time || null,
+      estimated_travel_hours: val.estimated_travel_hours ?? null,
+      arrival_transport: val.arrival_transport || null,
+      daily_start_time: val.daily_start_time || null,
+      daily_end_time: val.daily_end_time || null,
+      dietary_notes: val.dietary_notes || null,
+      mobility_notes: val.mobility_notes || null,
+      ai: true,
+    };
+  }
+
+  private parsePlanningList(value: string): string[] {
+    return value
+      .split(/[\n,;]+/)
+      .map((item) => item.trim())
+      .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index)
+      .slice(0, 20);
+  }
+
+  private buildInterestWeights(value: ReturnType<typeof this.generateOptionsForm.getRawValue>): Record<string, number> {
+    const weights: Record<string, number> = {};
+    if (value.interest_foodie) weights['foodie'] = 8;
+    if (value.interest_culture) weights['culture'] = 7;
+    if (value.interest_nature) weights['nature'] = 7;
+    if (value.interest_cafe) weights['cafe'] = 6;
+    if (value.interest_beaches) weights['beaches'] = 7;
+    if (value.interest_adventure) weights['adventure'] = 6;
+    return weights;
+  }
+
+  private filterLegacyAutoSummaryThread(messages: ChatHistoryItem[]): ChatHistoryItem[] {
+    const filtered: ChatHistoryItem[] = [];
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
+      if (this.isLegacyAutoSummaryPrompt(message)) {
+        if (messages[i + 1]?.role === 'assistant') {
+          i += 1;
+        }
+        continue;
+      }
+      filtered.push(message);
+    }
+    return filtered;
+  }
+
+  private isLegacyAutoSummaryPrompt(message: ChatHistoryItem): boolean {
+    if (message.role !== 'user') return false;
+    const normalized = message.message
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return normalized.includes('hay tom tat lich trinh') && normalized.includes('vua thiet ke');
+  }
+
+  onCreateShareInvite(): void {
+    if (!this.canManageShares() || this.shareForm.invalid) return;
+    const value = this.shareForm.getRawValue();
+    this.isSubmittingShare.set(true);
+    this.shareErrorMsg.set(null);
+    this.shareSuccessMsg.set(null);
+    this.latestInviteUrl.set(null);
+
+    this.tripService.createTripInvite(this.tripId, {
+      email: value.email.trim() || null,
+      role: value.role,
+      expires_in_days: value.expires_in_days,
+    }).subscribe({
+      next: (res) => {
+        this.isSubmittingShare.set(false);
+        const invite = res.data;
+        this.shareSuccessMsg.set(
+          value.email.trim()
+            ? 'Da tao loi moi. Nguoi nhan can chap nhan o chuong thong bao de duoc chia se.'
+            : 'Da tao link moi chia se.'
+        );
+        if (invite?.accept_url) {
+          this.latestInviteUrl.set(`${window.location.origin}${invite.accept_url}`);
+        }
+        this.shareForm.patchValue({ email: '' });
+        this.fetchShares();
+      },
+      error: (err) => {
+        this.isSubmittingShare.set(false);
+        this.shareErrorMsg.set(err?.error?.message || 'Khong the tao loi moi chia se.');
+      },
+    });
+  }
+
+  copyLatestInviteUrl(): void {
+    const url = this.latestInviteUrl();
+    if (!url) return;
+    navigator.clipboard?.writeText(url).then(() => {
+      this.shareSuccessMsg.set('Da copy link moi.');
+    });
+  }
+
+  onUpdateParticipantRole(participant: TripParticipant, role: TripShareRole): void {
+    if (!this.canManageShares() || participant.role === role) return;
+    this.tripService.updateTripParticipant(this.tripId, participant.id, role).subscribe({
+      next: () => this.fetchShares(),
+      error: (err) => this.shareErrorMsg.set(err?.error?.message || 'Khong the cap nhat quyen.'),
+    });
+  }
+
+  onRevokeParticipant(participantId: string): void {
+    if (!this.canManageShares()) return;
+    this.tripService.revokeTripParticipant(this.tripId, participantId).subscribe({
+      next: () => this.fetchShares(),
+      error: (err) => this.shareErrorMsg.set(err?.error?.message || 'Khong the thu hoi quyen.'),
+    });
+  }
+
+  onRevokeInvite(inviteId: string): void {
+    if (!this.canManageShares()) return;
+    this.tripService.revokeTripInvite(inviteId).subscribe({
+      next: () => this.fetchShares(),
+      error: (err) => this.shareErrorMsg.set(err?.error?.message || 'Khong the huy loi moi.'),
+    });
+  }
+
+  getTripRoleLabel(role: string | null | undefined): string {
+    if (role === 'owner') return 'Chu chuyen di';
+    return role === 'editor' ? 'Duoc chia se: Sua' : 'Duoc chia se: Xem';
+  }
+
   // Send Chat Message to AI
   onSendChatMessage(): void {
+    if (!this.canEditTrip()) return;
     const text = this.chatInput().trim();
     if (!text || this.isSendingMessage()) return;
 
@@ -417,6 +753,7 @@ export class TripDetailComponent implements OnInit {
 
   // Accept / Reject AI Suggestion
   onAcceptSuggestion(suggestionId: string): void {
+    if (!this.canEditTrip()) return;
     this.tripService.updateSuggestionStatus(suggestionId, 'accepted').subscribe({
       next: () => {
         // Remove suggestion from active list
@@ -430,6 +767,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   onRejectSuggestion(suggestionId: string): void {
+    if (!this.canEditTrip()) return;
     this.tripService.updateSuggestionStatus(suggestionId, 'rejected').subscribe({
       next: () => {
         this.activeSuggestions.update((list) => list.filter((s) => s.id !== suggestionId));
@@ -438,6 +776,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   onActivityDrop(event: CdkDragDrop<ActivityResponse[]>, dayPlanId: string): void {
+    if (!this.canEditTrip()) return;
     if (event.previousIndex === event.currentIndex) return;
 
     const day = this.days().find((d) => d.id === dayPlanId);
@@ -471,7 +810,10 @@ export class TripDetailComponent implements OnInit {
 
   // Manual Activities Add/Edit
   openActivityModal(dayId: string): void {
+    if (!this.canEditTrip()) return;
     this.selectedDayId.set(dayId);
+    this.selectedActivityId.set(null);
+    this.selectedActivity.set(null);
     this.activityForm.reset({
       title: '',
       description: '',
@@ -485,12 +827,33 @@ export class TripDetailComponent implements OnInit {
     this.isActivityModalOpen.set(true);
   }
 
+  openEditActivityModal(dayId: string, activity: ActivityResponse): void {
+    if (!this.canEditTrip()) return;
+    this.selectedDayId.set(dayId);
+    this.selectedActivityId.set(activity.id);
+    this.selectedActivity.set(activity);
+    this.activityForm.reset({
+      title: activity.title || '',
+      description: activity.description || '',
+      type: (activity.type || 'other') as ActivityType,
+      start_time: activity.start_time || '',
+      end_time: activity.end_time || '',
+      estimated_cost: activity.estimated_cost,
+      notes: activity.notes || '',
+    });
+    this.activityError.set(null);
+    this.isActivityModalOpen.set(true);
+  }
+
   closeActivityModal(): void {
     this.isActivityModalOpen.set(false);
     this.selectedDayId.set(null);
+    this.selectedActivityId.set(null);
+    this.selectedActivity.set(null);
   }
 
   onSubmitActivity(): void {
+    if (!this.canEditTrip()) return;
     if (this.activityForm.invalid) {
       this.activityForm.markAllAsTouched();
       return;
@@ -503,7 +866,7 @@ export class TripDetailComponent implements OnInit {
     this.activityError.set(null);
 
     const val = this.activityForm.getRawValue();
-    const payload: CreateActivityRequest = {
+    const payload = {
       title: val.title,
       description: val.description || null,
       type: val.type,
@@ -513,7 +876,27 @@ export class TripDetailComponent implements OnInit {
       notes: val.notes || null,
     };
 
-    this.tripService.addActivity(this.tripId, dayId, payload).subscribe({
+    const activityId = this.selectedActivityId();
+    if (activityId) {
+      this.tripService.updateActivity(activityId, payload as UpdateActivityRequest).pipe(
+        timeout(15000)
+      ).subscribe({
+        next: () => {
+          this.isSubmittingActivity.set(false);
+          this.closeActivityModal();
+          this.fetchItinerary();
+        },
+        error: (err) => {
+          this.isSubmittingActivity.set(false);
+          this.activityError.set(err?.error?.message || 'KhÃ´ng thá»ƒ cáº­p nháº­t hoáº¡t Ä‘á»™ng.');
+        },
+      });
+      return;
+    }
+
+    this.tripService.addActivity(this.tripId, dayId, payload as CreateActivityRequest).pipe(
+      timeout(15000)
+    ).subscribe({
       next: () => {
         this.isSubmittingActivity.set(false);
         this.closeActivityModal();
@@ -527,6 +910,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   onDeleteActivity(activityId: string): void {
+    if (!this.canEditTrip()) return;
     if (!confirm('Bạn có chắc chắn muốn xóa hoạt động này?')) return;
 
     this.tripService.deleteActivity(activityId).subscribe({
@@ -546,6 +930,11 @@ export class TripDetailComponent implements OnInit {
 
   isFieldInvalid(fieldName: string): boolean {
     const field = this.activityForm.get(fieldName);
+    return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  isGenerateFieldInvalid(fieldName: string): boolean {
+    const field = this.generateOptionsForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
@@ -617,6 +1006,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   openBudgetModal(item: BudgetItemResponse | null = null): void {
+    if (!this.canEditTrip()) return;
     this.selectedBudgetItem.set(item);
     this.budgetError.set(null);
 
@@ -647,6 +1037,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   onSubmitBudgetItem(): void {
+    if (!this.canEditTrip()) return;
     if (this.budgetForm.invalid) {
       this.budgetForm.markAllAsTouched();
       return;
@@ -695,6 +1086,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   onDeleteBudgetItem(itemId: string): void {
+    if (!this.canEditTrip()) return;
     if (!confirm('Bạn có chắc chắn muốn xóa khoản chi này?')) return;
 
     this.tripService.deleteBudgetItem(itemId).subscribe({
@@ -872,6 +1264,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   openAddActivityFromExplore(location: LocationResponse): void {
+    if (!this.canEditTrip()) return;
     this.selectedExploreLocation.set(location);
     this.isAddActivityFromExploreOpen.set(true);
   }
@@ -882,6 +1275,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   confirmAddActivityFromExplore(dayId: string): void {
+    if (!this.canEditTrip()) return;
     const loc = this.selectedExploreLocation();
     if (!loc) return;
 
@@ -956,6 +1350,7 @@ export class TripDetailComponent implements OnInit {
 
   // Save modified Trip Settings
   onSaveSettings(): void {
+    if (!this.canManageShares()) return;
     if (this.settingsForm.invalid) return;
 
     const val = this.settingsForm.getRawValue();
@@ -1018,6 +1413,7 @@ export class TripDetailComponent implements OnInit {
 
   // Delete Trip actions
   onOpenDeleteModal(): void {
+    if (!this.canManageShares()) return;
     this.isDeleteModalOpen.set(true);
   }
 
@@ -1026,6 +1422,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   onConfirmDeleteTrip(): void {
+    if (!this.canManageShares()) return;
     this.isDeleting.set(true);
     this.tripService.deleteTrip(this.tripId).subscribe({
       next: () => {

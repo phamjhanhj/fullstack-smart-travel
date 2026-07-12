@@ -9,8 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ActivityType = Literal["meal", "attraction", "hotel", "transport", "other"]
 GeneratePace = Literal["relaxed", "balanced", "packed"]
-GenerateBudgetMode = Literal["flexible_15"]
-GenerateUserPlacePriority = Literal["balanced"]
+GenerateBudgetMode = Literal["strict", "flexible_15", "comfort"]
+GenerateUserPlacePriority = Literal["balanced", "high"]
+GenerateTransportMode = Literal["walking", "motorbike", "car", "taxi", "public_transport", "mixed"]
 
 
 class LocationBrief(BaseModel):
@@ -109,9 +110,32 @@ class ReorderActivitiesRequest(BaseModel):
 class GenerateDaysRequest(BaseModel):
     overwrite: bool = False
     must_visit: list[str] = Field(default_factory=list, max_length=20)
+    avoid_places: list[str] = Field(default_factory=list, max_length=20)
+    interest_weights: dict[str, int] = Field(default_factory=dict)
     pace: GeneratePace = "balanced"
     budget_mode: GenerateBudgetMode = "flexible_15"
     prioritize_user_places: GenerateUserPlacePriority = "balanced"
+    transport_mode: GenerateTransportMode = "mixed"
+    departure_location: str | None = Field(default=None, max_length=120)
+    departure_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    estimated_travel_hours: float | None = Field(default=None, ge=0)
+    arrival_transport: str | None = Field(default=None, max_length=80)
+    daily_start_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    daily_end_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    dietary_notes: str | None = Field(default=None, max_length=500)
+    mobility_notes: str | None = Field(default=None, max_length=500)
+    ai: bool = True
+
+    @field_validator("interest_weights")
+    @classmethod
+    def validate_interest_weights(cls, value: dict[str, int]) -> dict[str, int]:
+        cleaned: dict[str, int] = {}
+        for key, weight in value.items():
+            clean_key = str(key).strip().lower()
+            if not clean_key:
+                continue
+            cleaned[clean_key] = max(0, min(int(weight), 10))
+        return cleaned
 
 
 class DayPlanBrief(BaseModel):

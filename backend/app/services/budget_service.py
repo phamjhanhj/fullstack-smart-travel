@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.budget import BudgetItem
 from app.models.trip import Trip
+from app.services import trip_share_service
+from app.services import trip_history_service
+from app.models.user import User
 from app.schemas.budget import (
     CategoryBudgetSummary,
     CreateBudgetItemRequest,
@@ -57,9 +60,25 @@ async def list_budget_items(db: AsyncSession, trip_id: uuid.UUID, category: str 
     return list(result.scalars().all())
 
 
-async def create_budget_item(db: AsyncSession, trip_id: uuid.UUID, payload: CreateBudgetItemRequest) -> BudgetItem:
+async def create_budget_item(
+    db: AsyncSession,
+    trip_id: uuid.UUID,
+    payload: CreateBudgetItemRequest,
+    actor: User,
+) -> BudgetItem:
     item = BudgetItem(trip_id=trip_id, **payload.model_dump())
     db.add(item)
+    await db.flush()
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=trip_id,
+        actor_user_id=actor.id,
+        entity_type="budget_item",
+        entity_id=item.id,
+        action="created",
+        summary=f"Da them khoan chi \"{item.label}\"",
+        metadata={"label": item.label, "category": item.category},
+    )
     await db.commit()
     await db.refresh(item)
     return item
@@ -78,16 +97,61 @@ async def get_budget_item_owned_or_404(db: AsyncSession, item_id: uuid.UUID, use
     return item
 
 
-async def update_budget_item(db: AsyncSession, item: BudgetItem, payload: UpdateBudgetItemRequest) -> BudgetItem:
+async def get_budget_item_editable_or_404(db: AsyncSession, item_id: uuid.UUID, user_id: uuid.UUID) -> BudgetItem:
+    result = await db.execute(select(BudgetItem).where(BudgetItem.id == item_id))
+    item = result.scalar_one_or_none()
+    if item is None:
+        raise NotFoundError("Khong tim thay khoan chi nay")
+    if not await trip_share_service.user_can_edit_trip(db, item.trip_id, user_id):
+        raise ForbiddenError("Ban khong co quyen chinh sua khoan chi nay")
+    return item
+
+
+async def update_budget_item(
+    db: AsyncSession,
+    item: BudgetItem,
+    payload: UpdateBudgetItemRequest,
+    actor: User,
+) -> BudgetItem:
+    tracked_fields = list(trip_history_service.BUDGET_FIELD_LABELS.keys())
+    before = trip_history_service.snapshot_fields(item, tracked_fields)
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(item, field, value)
 
+    await db.flush()
+    after = trip_history_service.snapshot_fields(item, tracked_fields)
+    changes = trip_history_service.diff_snapshots(
+        before,
+        after,
+        trip_history_service.BUDGET_FIELD_LABELS,
+    )
+    if changes:
+        await trip_history_service.record_history_event(
+            db,
+            trip_id=item.trip_id,
+            actor_user_id=actor.id,
+            entity_type="budget_item",
+            entity_id=item.id,
+            action="updated",
+            summary=f"Da cap nhat khoan chi \"{item.label}\"",
+            changes=changes,
+        )
     await db.commit()
     await db.refresh(item)
     return item
 
 
-async def delete_budget_item(db: AsyncSession, item: BudgetItem) -> None:
+async def delete_budget_item(db: AsyncSession, item: BudgetItem, actor: User) -> None:
+    await trip_history_service.record_history_event(
+        db,
+        trip_id=item.trip_id,
+        actor_user_id=actor.id,
+        entity_type="budget_item",
+        entity_id=item.id,
+        action="deleted",
+        summary=f"Da xoa khoan chi \"{item.label}\"",
+        metadata={"label": item.label, "category": item.category},
+    )
     await db.delete(item)
     await db.commit()

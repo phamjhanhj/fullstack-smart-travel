@@ -9,7 +9,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user, get_owned_trip
+from app.core.deps import get_current_user, get_trip_edit_access, get_trip_read_access
 from app.core.response import envelope, envelope_created
 from app.db.session import get_db
 from app.models.trip import Trip
@@ -28,7 +28,7 @@ trip_budget_router = APIRouter(prefix="/trips/{trip_id}/budget", tags=["Budget"]
 
 @trip_budget_router.get("")
 async def get_budget_summary(
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):
     summary = await budget_service.get_budget_summary(db, trip)
@@ -38,7 +38,7 @@ async def get_budget_summary(
 @trip_budget_router.get("/items")
 async def list_budget_items(
     category: BudgetCategory | None = Query(default=None),
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):
     items = await budget_service.list_budget_items(db, trip.id, category)
@@ -48,10 +48,11 @@ async def list_budget_items(
 @trip_budget_router.post("/items", status_code=201)
 async def add_budget_item(
     payload: CreateBudgetItemRequest,
-    trip: Trip = Depends(get_owned_trip),
+    trip: Trip = Depends(get_trip_edit_access),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    item = await budget_service.create_budget_item(db, trip.id, payload)
+    item = await budget_service.create_budget_item(db, trip.id, payload, current_user)
     return envelope_created(
         data=BudgetItemResponse.model_validate(item),
         message="Them khoan chi thanh cong",
@@ -68,8 +69,8 @@ async def update_budget_item(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    item = await budget_service.get_budget_item_owned_or_404(db, item_id, current_user.id)
-    updated = await budget_service.update_budget_item(db, item, payload)
+    item = await budget_service.get_budget_item_editable_or_404(db, item_id, current_user.id)
+    updated = await budget_service.update_budget_item(db, item, payload, current_user)
     return envelope(
         data=BudgetItemResponse.model_validate(updated),
         message="Cap nhat thanh cong",
@@ -82,6 +83,6 @@ async def delete_budget_item(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    item = await budget_service.get_budget_item_owned_or_404(db, item_id, current_user.id)
-    await budget_service.delete_budget_item(db, item)
+    item = await budget_service.get_budget_item_editable_or_404(db, item_id, current_user.id)
+    await budget_service.delete_budget_item(db, item, current_user)
     return envelope(data=None, message="Da xoa khoan chi")

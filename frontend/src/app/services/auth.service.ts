@@ -71,16 +71,16 @@ export class AuthService {
     fullName: string,
   ): Observable<ResponseEnvelope<UserInfo>> {
     return this.http.post<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/register`, {
-      email,
+      email: email.trim().toLowerCase(),
       password,
-      full_name: fullName,
+      full_name: fullName.trim().replace(/\s+/g, ' '),
     });
   }
 
   login(email: string, password: string): Observable<ResponseEnvelope<LoginData>> {
     return this.http
       .post<ResponseEnvelope<LoginData>>(`${this.baseUrl}/auth/login`, {
-        email,
+        email: email.trim().toLowerCase(),
         password,
       })
       .pipe(

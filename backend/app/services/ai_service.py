@@ -13,12 +13,16 @@ from groq import AsyncGroq
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.exceptions import AppError
 from app.models.activity import Activity
+from app.models.budget import BudgetItem
 from app.models.chat import AiSuggestion, ChatMessage
 from app.models.trip import DayPlan, Trip
+from app.models.user import User
+from app.services import trip_history_service
 
 _groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
@@ -77,6 +81,81 @@ def _build_system_prompt(trip: Trip) -> str:
     )
 
 
+async def _build_trip_context(db: AsyncSession, trip: Trip, max_activities: int = 80) -> str:
+    day_result = await db.execute(
+        select(DayPlan)
+        .where(DayPlan.trip_id == trip.id)
+        .options(selectinload(DayPlan.activities).selectinload(Activity.location))
+        .order_by(DayPlan.day_number)
+    )
+    days = list(day_result.scalars().all())
+
+    budget_result = await db.execute(
+        select(BudgetItem).where(BudgetItem.trip_id == trip.id).order_by(BudgetItem.created_at.desc())
+    )
+    budget_items = list(budget_result.scalars().all())
+
+    lines = [
+        "Ngu canh du lieu hien tai trong he thong. Khi tra loi, hay bam sat du lieu nay neu nguoi dung hoi ve lich trinh, chi phi, hoac muon chinh sua chuyen di.",
+        "Lich trinh hien tai:",
+    ]
+
+    if not days:
+        lines.append("- Chua co day plan nao.")
+    else:
+        activity_count = 0
+        for day in days:
+            lines.append(f"- Ngay {day.day_number} ({day.date.isoformat()}):")
+            if not day.activities:
+                lines.append("  - Chua co hoat dong.")
+                continue
+            for activity in day.activities:
+                if activity_count >= max_activities:
+                    lines.append("  - Da rut gon bot hoat dong do lich trinh qua dai.")
+                    break
+                time_text = _format_activity_time(activity.start_time, activity.end_time)
+                location_text = f" tai {activity.location.name}" if activity.location else ""
+                cost_text = f", chi phi {activity.estimated_cost} VND" if activity.estimated_cost else ""
+                lines.append(
+                    f"  - {time_text}{activity.title}{location_text} "
+                    f"({activity.type or 'other'}{cost_text})."
+                )
+                activity_count += 1
+            if activity_count >= max_activities:
+                break
+
+    total_itinerary_cost = sum(
+        int(activity.estimated_cost or 0)
+        for day in days
+        for activity in day.activities
+    )
+    lines.append(f"Tong chi phi uoc tinh tu lich trinh: {total_itinerary_cost} VND.")
+
+    if budget_items:
+        planned = sum(int(item.planned_amount or 0) for item in budget_items)
+        actual = sum(int(item.actual_amount or 0) for item in budget_items)
+        lines.append(f"Ngan sach items: planned={planned} VND, actual={actual} VND.")
+        for item in budget_items[:12]:
+            lines.append(
+                f"- Budget {item.category}: {item.label}, planned {item.planned_amount} VND, actual {item.actual_amount} VND."
+            )
+    else:
+        lines.append("Chua co budget item chi tiet.")
+
+    lines.append(
+        "Neu de xuat thay doi lich trinh, hay noi ro ngay, hoat dong bi anh huong, ly do, va tac dong den chi phi/thoi gian."
+    )
+    return "\n".join(lines)
+
+
+def _format_activity_time(start_time: str | None, end_time: str | None) -> str:
+    if start_time and end_time:
+        return f"{start_time}-{end_time}: "
+    if start_time:
+        return f"{start_time}: "
+    return ""
+
+
 async def _load_recent_history(db: AsyncSession, trip_id: uuid.UUID, limit: int = 10) -> list[dict[str, str]]:
     """Lay N tin nhan gan nhat de lam context hoi thoai cho Groq (khong phai full history)."""
     result = await db.execute(
@@ -112,9 +191,10 @@ async def send_message_non_stream(
     await _save_message(db, trip.id, "user", user_message)
 
     history = await _load_recent_history(db, trip.id)
+    trip_context = await _build_trip_context(db, trip)
     completion = await _groq_client.chat.completions.create(
         model=settings.GROQ_MODEL,
-        messages=[{"role": "system", "content": _build_system_prompt(trip)}, *history],
+        messages=[{"role": "system", "content": f"{_build_system_prompt(trip)}\n\n{trip_context}"}, *history],
     )
     ai_text = completion.choices[0].message.content or ""
 
@@ -152,11 +232,12 @@ async def send_message_stream(db: AsyncSession, trip: Trip, user_message: str) -
     """
     await _save_message(db, trip.id, "user", user_message)
     history = await _load_recent_history(db, trip.id)
+    trip_context = await _build_trip_context(db, trip)
 
     full_text = ""
     stream = await _groq_client.chat.completions.create(
         model=settings.GROQ_MODEL,
-        messages=[{"role": "system", "content": _build_system_prompt(trip)}, *history],
+        messages=[{"role": "system", "content": f"{_build_system_prompt(trip)}\n\n{trip_context}"}, *history],
         stream=True,
     )
 
@@ -234,7 +315,25 @@ async def get_suggestion_owned_or_404(db: AsyncSession, suggestion_id: uuid.UUID
     return suggestion
 
 
-async def update_suggestion_status(db: AsyncSession, suggestion: AiSuggestion, new_status: str) -> int:
+async def get_suggestion_editable_or_404(db: AsyncSession, suggestion_id: uuid.UUID, user_id: uuid.UUID) -> AiSuggestion:
+    from app.core.exceptions import ForbiddenError, NotFoundError
+    from app.services import trip_share_service
+
+    result = await db.execute(select(AiSuggestion).where(AiSuggestion.id == suggestion_id))
+    suggestion = result.scalar_one_or_none()
+    if suggestion is None:
+        raise NotFoundError("Khong tim thay goi y nay")
+    if not await trip_share_service.user_can_edit_trip(db, suggestion.trip_id, user_id):
+        raise ForbiddenError("Ban khong co quyen cap nhat goi y nay")
+    return suggestion
+
+
+async def update_suggestion_status(
+    db: AsyncSession,
+    suggestion: AiSuggestion,
+    new_status: str,
+    actor: User,
+) -> int:
     """
     PATCH /suggestions/{id}/status.
     Neu accepted va type=itinerary: tu dong tao activities vao day_plan tuong ung.
@@ -275,6 +374,22 @@ async def update_suggestion_status(db: AsyncSession, suggestion: AiSuggestion, n
             db.add(new_activity)
             next_order_index += 1
             activities_created += 1
+
+        if activities_created:
+            await trip_history_service.record_history_event(
+                db,
+                trip_id=suggestion.trip_id,
+                actor_user_id=actor.id,
+                entity_type="ai_suggestion",
+                entity_id=suggestion.id,
+                action="applied",
+                summary=f"Da ap dung goi y AI va them {activities_created} hoat dong",
+                metadata={
+                    "suggestion_type": suggestion.type,
+                    "day_number": day_number,
+                    "activities_created": activities_created,
+                },
+            )
 
     await db.commit()
     return activities_created
@@ -437,9 +552,20 @@ Trip:
 - Budget: {budget_text}
 - Budget rule: total estimated_cost should stay within 115% of budget when budget exists.
 - Pace: {pace}
+- Budget mode: {budget_mode}
+- User place priority: {prioritize_user_places}
+- Preferred transport mode: {transport_mode}
+- Departure location: {departure_location}
+- Departure time: {departure_time}
+- Estimated travel hours to destination: {estimated_travel_hours}
+- Arrival transport to destination: {arrival_transport}
+- Daily active window: {daily_window}
 - User preferences: {preferences}
 - User profile interests: {interests}
 - User requested places, balanced priority: {must_visit}
+- Places to avoid: {avoid_places}
+- Dietary notes: {dietary_notes}
+- Mobility notes: {mobility_notes}
 
 Grounded place candidates:
 {candidate_json}
@@ -454,8 +580,21 @@ Rules:
 4. Each day must have logical, non-overlapping HH:MM start_time and end_time.
 5. Include famous attractions and the user's requested places when route, time, and budget make sense.
 6. Keep travel realistic by grouping nearby places on the same day when possible.
+   - Nearby attractions can be combined into 2-3 visits in one full day.
+   - Far attractions should reduce the number of visits and include more travel/rest buffer.
 7. Costs are VND for the whole group, not per person.
-8. Output schema:
+8. Respect places to avoid, dietary notes, mobility notes, pace, and the daily active window.
+9. For strict budget mode, stay under budget. For flexible_15, stay within 115% of budget. For comfort, prioritize fit and route quality while keeping costs reasonable.
+10. Use departure_time and estimated_travel_hours when provided. If travel crosses midnight, split the timeline into the correct day_number. Never create an activity whose end_time is earlier than or equal to start_time on the same day.
+11. Build a closed-loop day flow, not just a list of places:
+   - Day 1 must start with travel from departure location to the destination. If arrival is next day, Day 1 should mainly contain the departure/travel segment and any realistic meal before departure.
+   - Arrival day must include arrival, homestay/hotel check-in or luggage drop, rest, then meals/activities only if time still makes sense.
+   - Middle/full days must start from lodging, include breakfast, 1-2 morning attractions if close, lunch, rest, 1-2 afternoon attractions if close, return to lodging, dinner, optional cafe/night walk, and overnight rest.
+   - Last day must include checkout, final light attraction/meal if time allows, and travel back/out of the destination.
+12. Avoid repeating the same attraction route on multiple days unless the user explicitly requested it.
+13. Do not produce logistics-only full days. A day with enough time at destination should contain real travel experiences: sightseeing, food, cafe/night walk, local culture, or light entertainment.
+14. Every activity should have realistic group cost. Include arrival/departure transport, local transport, lodging per night, meals, tickets/activities, and small buffer costs.
+15. Output schema:
 {{
   "days": [
     {{
@@ -479,6 +618,16 @@ Rules:
 }}"""
 
 
+def _format_daily_window(start_time: str | None, end_time: str | None) -> str:
+    if start_time and end_time:
+        return f"{start_time} to {end_time}"
+    if start_time:
+        return f"start after {start_time}"
+    if end_time:
+        return f"finish before {end_time}"
+    return "not specified"
+
+
 async def generate_grounded_itinerary_with_ai(
     trip: Trip,
     candidates: list[dict],
@@ -486,6 +635,18 @@ async def generate_grounded_itinerary_with_ai(
     pace: str,
     must_visit: list[str],
     interests: list[str],
+    avoid_places: list[str] | None = None,
+    budget_mode: str = "flexible_15",
+    prioritize_user_places: str = "balanced",
+    transport_mode: str = "mixed",
+    departure_location: str | None = None,
+    departure_time: str | None = None,
+    estimated_travel_hours: float | None = None,
+    arrival_transport: str | None = None,
+    daily_start_time: str | None = None,
+    daily_end_time: str | None = None,
+    dietary_notes: str | None = None,
+    mobility_notes: str | None = None,
     validation_errors: list[str] | None = None,
 ) -> dict:
     """Generate an itinerary constrained to known location candidates."""
@@ -519,9 +680,22 @@ async def generate_grounded_itinerary_with_ai(
         num_travelers=trip.num_travelers,
         budget_text=f"{trip.budget} VND" if trip.budget else "no fixed budget",
         pace=pace,
+        budget_mode=budget_mode,
+        prioritize_user_places=prioritize_user_places,
+        transport_mode=transport_mode,
+        departure_location=departure_location or "not specified",
+        departure_time=departure_time or "not specified",
+        estimated_travel_hours=(
+            f"{estimated_travel_hours:g} hours" if estimated_travel_hours is not None else "not specified"
+        ),
+        arrival_transport=arrival_transport or transport_mode or "not specified",
+        daily_window=_format_daily_window(daily_start_time, daily_end_time),
         preferences=trip.preferences or "none",
         interests=", ".join(interests) if interests else "none",
         must_visit=", ".join(must_visit) if must_visit else "none",
+        avoid_places=", ".join(avoid_places or []) if avoid_places else "none",
+        dietary_notes=dietary_notes or "none",
+        mobility_notes=mobility_notes or "none",
         candidate_json=json.dumps(compact_candidates, ensure_ascii=False),
         validation_errors="; ".join(validation_errors or []) or "none",
     )

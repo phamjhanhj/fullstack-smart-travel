@@ -2,7 +2,7 @@
 
 :host {
   display: block;
-  font-family: 'Inter', -apple-system, system-ui, Roboto, sans-serif;
+  font-family: var(--font-family);
   min-height: 100vh;
 }
 
@@ -709,24 +709,27 @@
   align-items: center;
   text-align: center;
   padding: 64px 24px;
-  border: 1px dashed #dddddd;
+  border: 1px dashed var(--color-border-glass);
   border-radius: 16px;
-  background-color: #f7f7f7;
+  background-color: var(--color-surface-container);
+  backdrop-filter: blur(16px);
 }
 
 .empty-illustration {
   font-size: 54px;
   margin-bottom: 16px;
+  color: var(--color-on-surface-variant);
 }
 
 .empty-state h2 {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 8px 0;
+  color: var(--color-on-surface);
 }
 
 .empty-state p {
-  color: #717171;
+  color: var(--color-on-surface-variant);
   margin: 0 0 20px 0;
   max-width: 380px;
   font-size: 14px;
@@ -909,14 +912,14 @@
 
 .leaflet-container {
   background: transparent !important;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-family);
 }
 
 .leaflet-popup-content-wrapper {
-  background: rgba(28, 31, 42, 0.9) !important;
+  background: var(--color-surface-container) !important;
   backdrop-filter: blur(12px);
-  color: #dfe2f1 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-on-surface) !important;
+  border: 1px solid var(--color-border-glass) !important;
   border-radius: 12px !important;
   padding: 0 !important;
   overflow: hidden;
@@ -928,7 +931,7 @@
 }
 
 .leaflet-popup-tip {
-  background: rgba(28, 31, 42, 0.9) !important;
+  background: var(--color-surface-container) !important;
 }
 
 .custom-emoji-marker {

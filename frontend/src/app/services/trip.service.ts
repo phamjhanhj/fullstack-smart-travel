@@ -3,6 +3,18 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ResponseEnvelope } from './auth.service';
 
+export type TripRole = 'owner' | 'viewer' | 'editor';
+export type TripShareRole = 'viewer' | 'editor';
+export type TripAccessType = 'owner' | 'shared';
+export type TripScope = 'owned' | 'shared' | 'all';
+
+export interface TripOwnerInfo {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
 export interface TripListItem {
   id: string;
   title: string;
@@ -14,6 +26,9 @@ export interface TripListItem {
   status: 'draft' | 'active' | 'completed';
   cover_image_url: string | null;
   created_at: string;
+  owner: TripOwnerInfo;
+  access_type: TripAccessType;
+  role: TripRole;
 }
 
 export interface TripListResponse {
@@ -58,6 +73,90 @@ export interface TripResponse {
   cover_image_url: string | null;
   created_at: string;
   updated_at: string | null;
+  owner: TripOwnerInfo;
+  access_type: TripAccessType;
+  role: TripRole;
+}
+
+export interface TripParticipant {
+  id: string;
+  trip_id: string;
+  role: TripShareRole;
+  user: TripOwnerInfo;
+  invited_by: TripOwnerInfo;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface TripInvite {
+  id: string;
+  trip_id: string;
+  email: string | null;
+  role: TripShareRole;
+  status: 'pending' | 'accepted' | 'revoked' | 'rejected';
+  invited_by: TripOwnerInfo;
+  accepted_by: TripOwnerInfo | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string | null;
+  token: string | null;
+  accept_url: string | null;
+}
+
+export interface TripInviteTripBrief {
+  id: string;
+  title: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  cover_image_url: string | null;
+}
+
+export interface TripInviteNotification extends TripInvite {
+  trip: TripInviteTripBrief;
+}
+
+export interface TripSharesResponse {
+  participants: TripParticipant[];
+  invites: TripInvite[];
+}
+
+export interface CreateTripInviteRequest {
+  email?: string | null;
+  role: TripShareRole;
+  expires_in_days?: number;
+}
+
+export interface AcceptTripInviteResponse {
+  trip_id: string;
+  role: TripShareRole;
+}
+
+export interface TripHistoryChange {
+  field: string;
+  label: string;
+  before: any;
+  after: any;
+}
+
+export interface TripHistoryEvent {
+  id: string;
+  trip_id: string;
+  actor: TripOwnerInfo | null;
+  entity_type: string;
+  entity_id: string | null;
+  action: string;
+  summary: string;
+  changes: TripHistoryChange[];
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface TripHistoryListResponse {
+  items: TripHistoryEvent[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 // Module 4: Day Plans & Activities Interfaces
@@ -133,9 +232,21 @@ export interface DayPlanBrief {
 export interface GenerateDaysRequest {
   overwrite: boolean;
   must_visit?: string[];
+  avoid_places?: string[];
+  interest_weights?: Record<string, number>;
   pace?: 'relaxed' | 'balanced' | 'packed';
-  budget_mode?: 'flexible_15';
-  prioritize_user_places?: 'balanced';
+  budget_mode?: 'strict' | 'flexible_15' | 'comfort';
+  prioritize_user_places?: 'balanced' | 'high';
+  transport_mode?: 'walking' | 'motorbike' | 'car' | 'taxi' | 'public_transport' | 'mixed';
+  departure_location?: string | null;
+  departure_time?: string | null;
+  estimated_travel_hours?: number | null;
+  arrival_transport?: string | null;
+  daily_start_time?: string | null;
+  daily_end_time?: string | null;
+  dietary_notes?: string | null;
+  mobility_notes?: string | null;
+  ai?: boolean;
 }
 
 export interface ItineraryGenerationSummary {
@@ -282,8 +393,8 @@ export class TripService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:8000/api';
 
-  listTrips(status?: string, page = 1, limit = 20): Observable<ResponseEnvelope<TripListResponse>> {
-    let url = `${this.baseUrl}/trips?page=${page}&limit=${limit}`;
+  listTrips(status?: string, page = 1, limit = 20, scope: TripScope = 'owned'): Observable<ResponseEnvelope<TripListResponse>> {
+    let url = `${this.baseUrl}/trips?page=${page}&limit=${limit}&scope=${scope}`;
     if (status) {
       url += `&status=${status}`;
     }
@@ -314,6 +425,81 @@ export class TripService {
     return this.http.delete<ResponseEnvelope<any>>(
       `${this.baseUrl}/trips/${tripId}`
     );
+  }
+
+  listTripShares(tripId: string): Observable<ResponseEnvelope<TripSharesResponse>> {
+    return this.http.get<ResponseEnvelope<TripSharesResponse>>(
+      `${this.baseUrl}/trips/${tripId}/shares`
+    );
+  }
+
+  createTripInvite(tripId: string, payload: CreateTripInviteRequest): Observable<ResponseEnvelope<TripInvite>> {
+    return this.http.post<ResponseEnvelope<TripInvite>>(
+      `${this.baseUrl}/trips/${tripId}/shares/invites`,
+      payload
+    );
+  }
+
+  updateTripParticipant(tripId: string, participantId: string, role: TripShareRole): Observable<ResponseEnvelope<TripParticipant>> {
+    return this.http.patch<ResponseEnvelope<TripParticipant>>(
+      `${this.baseUrl}/trips/${tripId}/shares/participants/${participantId}`,
+      { role }
+    );
+  }
+
+  revokeTripParticipant(tripId: string, participantId: string): Observable<ResponseEnvelope<any>> {
+    return this.http.delete<ResponseEnvelope<any>>(
+      `${this.baseUrl}/trips/${tripId}/shares/participants/${participantId}`
+    );
+  }
+
+  revokeTripInvite(inviteId: string): Observable<ResponseEnvelope<any>> {
+    return this.http.delete<ResponseEnvelope<any>>(
+      `${this.baseUrl}/trip-invites/${inviteId}`
+    );
+  }
+
+  acceptTripInvite(token: string): Observable<ResponseEnvelope<AcceptTripInviteResponse>> {
+    return this.http.post<ResponseEnvelope<AcceptTripInviteResponse>>(
+      `${this.baseUrl}/trip-invites/${token}/accept`,
+      {}
+    );
+  }
+
+  listPendingTripInvites(): Observable<ResponseEnvelope<TripInviteNotification[]>> {
+    return this.http.get<ResponseEnvelope<TripInviteNotification[]>>(
+      `${this.baseUrl}/trip-invites/pending`
+    );
+  }
+
+  acceptEmailTripInvite(inviteId: string): Observable<ResponseEnvelope<AcceptTripInviteResponse>> {
+    return this.http.post<ResponseEnvelope<AcceptTripInviteResponse>>(
+      `${this.baseUrl}/trip-invites/${inviteId}/accept-email`,
+      {}
+    );
+  }
+
+  rejectTripInvite(inviteId: string): Observable<ResponseEnvelope<any>> {
+    return this.http.post<ResponseEnvelope<any>>(
+      `${this.baseUrl}/trip-invites/${inviteId}/reject`,
+      {}
+    );
+  }
+
+  listTripHistory(
+    tripId: string,
+    page = 1,
+    limit = 30,
+    filters?: { entity_type?: string; action?: string },
+  ): Observable<ResponseEnvelope<TripHistoryListResponse>> {
+    let url = `${this.baseUrl}/trips/${tripId}/history?page=${page}&limit=${limit}`;
+    if (filters?.entity_type) {
+      url += `&entity_type=${encodeURIComponent(filters.entity_type)}`;
+    }
+    if (filters?.action) {
+      url += `&action=${encodeURIComponent(filters.action)}`;
+    }
+    return this.http.get<ResponseEnvelope<TripHistoryListResponse>>(url);
   }
 
   // Day plans & activities

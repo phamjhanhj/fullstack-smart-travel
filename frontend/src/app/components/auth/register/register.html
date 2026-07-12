@@ -47,9 +47,21 @@
 
   <!-- Register Form Panel (Right side) -->
   <section class="w-full md:w-2/5 lg:w-1/3 h-full flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop relative bg-bg-slate-deep">
+    <!-- Floating Theme Switcher -->
+    <div class="absolute top-6 right-6 z-20">
+      <button 
+        type="button"
+        (click)="themeService.toggleTheme()" 
+        class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all border-glass cursor-pointer" 
+        [title]="themeService.isDarkMode() ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'"
+      >
+        <span class="material-symbols-outlined">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</span>
+      </button>
+    </div>
+
     <div class="w-full max-w-md z-10">
       <div class="mb-stack-lg text-center md:text-left">
-        <h1 class="font-headline-lg text-headline-lg text-white mb-2">Đăng ký tài khoản</h1>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Đăng ký tài khoản</h1>
         <p class="font-body-md text-body-md text-on-surface-variant">Khởi đầu hành trình du lịch được cá nhân hóa bằng AI.</p>
       </div>
 
@@ -75,7 +87,7 @@
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">person</span>
               <input 
-                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
                 [class.border-status-warning]="isFieldInvalid('full_name')"
                 id="full_name" 
                 formControlName="full_name"
@@ -96,7 +108,7 @@
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
               <input 
-                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
                 [class.border-status-warning]="isFieldInvalid('email')"
                 id="email" 
                 formControlName="email"
@@ -117,7 +129,7 @@
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
               <input 
-                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-12 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-12 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
                 [class.border-status-warning]="isFieldInvalid('password')"
                 id="password" 
                 formControlName="password"
@@ -126,7 +138,7 @@
                 autocomplete="new-password"
               />
               <button 
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-white cursor-pointer flex items-center justify-center bg-transparent border-none" 
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer flex items-center justify-center bg-transparent border-none" 
                 type="button"
                 (click)="togglePassword()"
               >
@@ -164,13 +176,13 @@
             <div class="flex-grow border-t border-glass"></div>
           </div>
           <div class="grid grid-cols-2 gap-gutter">
-            <button class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl hover:bg-white/10 transition-colors border-glass cursor-pointer">
+            <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl hover:bg-on-surface/5 transition-colors border-glass cursor-pointer">
               <img alt="Google Logo" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLp30w-SRwfa5NymZBs5Q9t1WZVJZgJ1obxM5Q4Zpq81kIASnL5--pFmZqBU923wxog6Nm31QXkaIoWo_pFhWEWhhLu2V3K0e6Fi1chUq5_OZ4yVy3F8riTiOledPGclbNLyXvf1NXcwLaD-cjlKFahSwbz_LL9bJPOzxvvRBEcql41UY4fN__MXjmrXAAzm0bwegyiFaUUayY2aw5Fl6RJ29LxT7h3ADJT_SgQ48_T_ehk0rd3Z3nswEOim4-TVWQXjIo6LsdZXnB"/>
-              <span class="font-label-md text-label-md text-white">Google</span>
+              <span class="font-label-md text-label-md text-on-surface">Google</span>
             </button>
-            <button class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl hover:bg-white/10 transition-colors border-glass cursor-pointer">
-              <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">apps</span>
-              <span class="font-label-md text-label-md text-white">Apple</span>
+            <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl hover:bg-on-surface/5 transition-colors border-glass cursor-pointer">
+              <span class="material-symbols-outlined text-on-surface" style="font-variation-settings: 'FILL' 1;">apps</span>
+              <span class="font-label-md text-label-md text-on-surface">Apple</span>
             </button>
           </div>
         </div>

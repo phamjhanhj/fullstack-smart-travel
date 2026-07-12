@@ -10,6 +10,8 @@ from app.models.chat import ChatMessage, AiSuggestion
 from app.models.budget import BudgetItem
 from app.models.destination_photo import DestinationPhoto
 from app.models.refresh_token import RefreshToken
+from app.models.trip_share import TripParticipant, TripShareInvite
+from app.models.trip_history import TripHistoryEvent
 
 __all__ = [
     "User",
@@ -22,4 +24,7 @@ __all__ = [
     "BudgetItem",
     "DestinationPhoto",
     "RefreshToken",
+    "TripParticipant",
+    "TripShareInvite",
+    "TripHistoryEvent",
 ]

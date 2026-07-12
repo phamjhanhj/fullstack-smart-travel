@@ -35,6 +35,9 @@ class Trip(Base):
     chat_history: Mapped[list["ChatMessage"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     ai_suggestions: Mapped[list["AiSuggestion"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
     budget_items: Mapped[list["BudgetItem"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    participants: Mapped[list["TripParticipant"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    share_invites: Mapped[list["TripShareInvite"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
+    history_events: Mapped[list["TripHistoryEvent"]] = relationship(back_populates="trip", cascade="all, delete-orphan")
 
 
 class DayPlan(Base):
@@ -57,3 +60,5 @@ from app.models.user import User  # noqa: E402
 from app.models.activity import Activity  # noqa: E402
 from app.models.chat import ChatMessage, AiSuggestion  # noqa: E402
 from app.models.budget import BudgetItem  # noqa: E402
+from app.models.trip_share import TripParticipant, TripShareInvite  # noqa: E402
+from app.models.trip_history import TripHistoryEvent  # noqa: E402
