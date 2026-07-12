@@ -417,3 +417,60 @@ html.light input[type="date"] {
 .leaflet-container a.leaflet-popup-close-button:hover {
   color: #0f172a !important;
 }
+
+/* Global Select Custom Styling */
+select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23908fa0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
+  background-position: right 1rem center !important;
+  background-repeat: no-repeat !important;
+  background-size: 1.25rem !important;
+  padding-right: 2.5rem !important;
+}
+
+/* Hide number input spinners (up/down arrows) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Custom beautiful inputs styled like custom-select */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+input[type="password"],
+textarea {
+  background-color: var(--color-surface-container-low) !important;
+  border: 1px solid var(--color-border-glass) !important;
+  border-radius: 0.75rem !important;
+  color: var(--color-on-surface) !important;
+  transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+input[type="text"]:hover:not(:disabled),
+input[type="number"]:hover:not(:disabled),
+input[type="date"]:hover:not(:disabled),
+input[type="email"]:hover:not(:disabled),
+input[type="password"]:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--color-primary-container) !important;
+}
+
+input[type="text"]:focus:not(:disabled),
+input[type="number"]:focus:not(:disabled),
+input[type="date"]:focus:not(:disabled),
+input[type="email"]:focus:not(:disabled),
+input[type="password"]:focus:not(:disabled),
+textarea:focus:not(:disabled) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.2) !important;
+  outline: none !important;
+}

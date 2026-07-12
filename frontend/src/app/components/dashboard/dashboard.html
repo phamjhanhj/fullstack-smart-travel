@@ -578,14 +578,13 @@
           class="block font-label-md text-label-md text-on-surface-variant mb-1"
           >Điểm đến</label
         >
-        <input
+        <app-custom-select
           id="destination"
-          type="text"
           formControlName="destination"
-          class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+          [items]="provinces"
           placeholder="Bạn muốn đi đâu?"
-          [class.border-status-warning]="isFieldInvalid('destination')"
-        />
+          [isInvalid]="isFieldInvalid('destination')"
+        ></app-custom-select>
         <span
           class="text-status-warning text-xs font-semibold block mt-1"
           *ngIf="isFieldInvalid('destination')"
@@ -602,31 +601,12 @@
             class="block font-label-md text-label-md text-on-surface-variant mb-1"
             >Ngày đi</label
           >
-          <div class="relative flex items-center">
-            <input
-              id="start_date"
-              type="text"
-              formControlName="start_date"
-              (input)="onDateInputChange($event, 'start_date')"
-              placeholder="dd/mm/yyyy"
-              class="w-full bg-surface-container-low border border-glass rounded-xl pl-4 pr-10 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-              [class.border-status-warning]="isFieldInvalid('start_date')"
-            />
-            <button
-              type="button"
-              (click)="openDatePicker(startDatePicker)"
-              class="absolute right-3 bg-transparent border-none text-on-surface-variant hover:text-primary cursor-pointer flex items-center justify-center p-0"
-            >
-              <span class="material-symbols-outlined text-xl">calendar_month</span>
-            </button>
-            <input
-              #startDatePicker
-              type="date"
-              (change)="onNativeDateChange($event, 'start_date')"
-              class="absolute opacity-0 pointer-events-none"
-              style="position: absolute; right: 12px; bottom: -8px; width: 24px; height: 24px;"
-            />
-          </div>
+          <app-custom-date-picker
+            id="start_date"
+            formControlName="start_date"
+            placeholder="dd/mm/yyyy"
+            [isInvalid]="isFieldInvalid('start_date')"
+          ></app-custom-date-picker>
           <span
             class="text-status-warning text-xs font-semibold block mt-1"
             *ngIf="isFieldInvalid('start_date')"
@@ -640,31 +620,13 @@
             class="block font-label-md text-label-md text-on-surface-variant mb-1"
             >Ngày về</label
           >
-          <div class="relative flex items-center">
-            <input
-              id="end_date"
-              type="text"
-              formControlName="end_date"
-              (input)="onDateInputChange($event, 'end_date')"
-              placeholder="dd/mm/yyyy"
-              class="w-full bg-surface-container-low border border-glass rounded-xl pl-4 pr-10 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-              [class.border-status-warning]="isFieldInvalid('end_date')"
-            />
-            <button
-              type="button"
-              (click)="openDatePicker(endDatePicker)"
-              class="absolute right-3 bg-transparent border-none text-on-surface-variant hover:text-primary cursor-pointer flex items-center justify-center p-0"
-            >
-              <span class="material-symbols-outlined text-xl">calendar_month</span>
-            </button>
-            <input
-              #endDatePicker
-              type="date"
-              (change)="onNativeDateChange($event, 'end_date')"
-              class="absolute opacity-0 pointer-events-none"
-              style="position: absolute; right: 12px; bottom: -8px; width: 24px; height: 24px;"
-            />
-          </div>
+          <app-custom-date-picker
+            id="end_date"
+            formControlName="end_date"
+            placeholder="dd/mm/yyyy"
+            [isInvalid]="isFieldInvalid('end_date')"
+            [minDate]="createForm.get('start_date')?.value || ''"
+          ></app-custom-date-picker>
           <span
             class="text-status-warning text-xs font-semibold block mt-1"
             *ngIf="isFieldInvalid('end_date')"

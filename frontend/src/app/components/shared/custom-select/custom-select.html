@@ -1,0 +1,60 @@
+<div class="custom-select-container" #container>
+  <!-- Select Box Trigger -->
+  <div
+    class="select-trigger"
+    [class.disabled]="disabled"
+    [class.open]="isOpen"
+    [class.invalid]="isInvalid"
+    (click)="toggleDropdown()"
+  >
+    <div class="select-value" [class.placeholder]="!selectedValue">
+      {{ selectedValue || placeholder }}
+    </div>
+    <span class="material-symbols-outlined chevron-icon">
+      {{ isOpen ? 'expand_less' : 'expand_more' }}
+    </span>
+  </div>
+
+  <!-- Dropdown Menu -->
+  <div class="dropdown-menu animate-fade-in" *ngIf="isOpen">
+    <!-- Search Box -->
+    <div class="search-box">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        (input)="filterItems()"
+        placeholder="Tìm kiếm..."
+        class="search-input"
+        #searchInput
+        (click)="$event.stopPropagation()"
+      />
+      <span
+        class="material-symbols-outlined clear-icon"
+        *ngIf="searchText"
+        (click)="clearSearch($event)"
+      >
+        close
+      </span>
+    </div>
+
+    <!-- Options List -->
+    <div class="options-list">
+      <div
+        *ngFor="let item of filteredItems"
+        class="option-item"
+        [class.selected]="item === selectedValue"
+        (click)="selectItem(item)"
+      >
+        <span>{{ item }}</span>
+        <span class="material-symbols-outlined check-icon" *ngIf="item === selectedValue">
+          check
+        </span>
+      </div>
+      <!-- Empty State -->
+      <div class="no-results" *ngIf="filteredItems.length === 0">
+        Không tìm thấy kết quả
+      </div>
+    </div>
+  </div>
+</div>

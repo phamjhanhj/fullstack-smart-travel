@@ -1,0 +1,49 @@
+<div class="custom-date-picker" #container>
+  <!-- Input Trigger -->
+  <div
+    class="date-trigger"
+    [class.disabled]="disabled"
+    [class.open]="isOpen"
+    [class.invalid]="isInvalid"
+    (click)="toggleDropdown()"
+  >
+    <div class="date-value" [class.placeholder]="!selectedValue">
+      {{ selectedValue || placeholder }}
+    </div>
+    <span class="material-symbols-outlined calendar-icon">calendar_month</span>
+  </div>
+
+  <!-- Calendar Dropdown -->
+  <div class="calendar-dropdown animate-fade-in" *ngIf="isOpen">
+    <!-- Calendar Header -->
+    <div class="calendar-header">
+      <button type="button" class="nav-btn" (click)="prevMonth($event)">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <span class="month-title">Tháng {{ viewDate.getMonth() + 1 }} {{ viewDate.getFullYear() }}</span>
+      <button type="button" class="nav-btn" (click)="nextMonth($event)">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+
+    <!-- Weekday Headers -->
+    <div class="weekdays-grid">
+      <div *ngFor="let day of weekdays" class="weekday-header">{{ day }}</div>
+    </div>
+
+    <!-- Calendar Days Grid -->
+    <div class="days-grid">
+      <div
+        *ngFor="let day of calendarDays"
+        class="day-cell"
+        [class.other-month]="day.getMonth() !== viewDate.getMonth()"
+        [class.today]="isToday(day)"
+        [class.selected]="isSelected(day)"
+        [class.disabled]="isPastDate(day)"
+        (click)="!isPastDate(day) && selectDay(day, $event)"
+      >
+        {{ day.getDate() }}
+      </div>
+    </div>
+  </div>
+</div>
