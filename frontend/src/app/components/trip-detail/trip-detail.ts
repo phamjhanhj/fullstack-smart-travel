@@ -1638,7 +1638,7 @@ export class TripDetailComponent implements OnInit {
       });
 
       const marker = L.marker([lat, lng], { icon: customIcon }).addTo(this.routeMap);
-      marker.bindPopup(`<div style="font-weight:bold; font-size:14px; color:#fff;">${act.title}</div><div style="font-size:12px; color:rgba(255,255,255,0.7);">${act.location!.name}</div>`);
+      marker.bindPopup(`<div style="font-weight:bold; font-size:14px; color:#1e293b;">${act.title}</div><div style="font-size:12px; color:#4b5563;">${act.location!.name}</div>`);
       this.routeMarkers.push(marker);
 
       this.routeMap.setView([lat, lng], 14);
@@ -1718,9 +1718,9 @@ export class TripDetailComponent implements OnInit {
           
           const popupContent = `
             <div style="padding: 4px;">
-              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: #fff;">#${idx + 1} - ${act.title}</div>
-              <div style="font-size: 12px; color: rgba(255,255,255,0.7);">${act.location?.name || ''}</div>
-              ${act.start_time ? `<div style="font-size: 11px; margin-top: 4px; color: #8083ff;">🕒 ${act.start_time}</div>` : ''}
+              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: #1e293b;">#${idx + 1} - ${act.title}</div>
+              <div style="font-size: 12px; color: #4b5563;">${act.location?.name || ''}</div>
+              ${act.start_time ? `<div style="font-size: 11px; margin-top: 4px; color: #4f46e5;">🕒 ${act.start_time}</div>` : ''}
             </div>
           `;
           marker.bindPopup(popupContent);

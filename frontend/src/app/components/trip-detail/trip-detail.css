@@ -198,28 +198,7 @@ select {
   background-size: 1.25rem;
 }
 
-/* Map Popups custom overrides */
-.leaflet-popup-content-wrapper {
-  background: var(--color-surface-container) !important;
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border-glass);
-  border-radius: 12px !important;
-  color: var(--color-on-surface) !important;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
-}
 
-.leaflet-popup-tip {
-  background: var(--color-surface-container) !important;
-}
-
-.leaflet-container a.leaflet-popup-close-button {
-  color: var(--color-on-surface-variant) !important;
-  padding: 8px !important;
-}
-
-.leaflet-container a.leaflet-popup-close-button:hover {
-  color: white !important;
-}
 
 /* Drag and Drop animations & classes */
 .cdk-drag-preview {
