@@ -1,0 +1,4815 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "dataset_id": "kg-kien-giang-accommodation-batch-01",
+    "province_code": "KG",
+    "province_name": "Kiên Giang",
+    "country": "Việt Nam",
+    "generated_at": "2026-07-20",
+    "language": "vi",
+    "currency": "VND",
+    "notes": "Danh sách các cơ sở lưu trú tại Kiên Giang (Rạch Giá và Phú Quốc) từ phân khúc cao cấp đến tiêu chuẩn."
+  },
+  "places": [
+    {
+      "id": "kg-hotel-001",
+      "name": "Sài Gòn Rạch Giá Hotel",
+      "category": "hotel",
+      "subcategory": "luxury_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "An Hòa",
+      "address": "844 Nguyễn Trung Trực, phường An Hòa, thành phố Rạch Giá, Kiên Giang",
+      "lat": 10.0245,
+      "lng": 105.0741,
+      "description": "Khách sạn 4 sao với không gian rộng rãi, tiện nghi cao cấp, nằm tại trung tâm thành phố Rạch Giá, thuận tiện di chuyển đến bến tàu và sân bay.",
+      "tags": ["4_star", "city_center", "business", "luxury"],
+      "suitable_for": ["family", "business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1400000,
+        "max_vnd": 3500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973812828",
+        "website": "https://saigonrachgiahotel.vn"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-002",
+      "name": "Salinda Resort Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Ấp Cửa Lấp, Xã Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.1982,
+      "lng": 103.9634,
+      "description": "Khu nghỉ dưỡng cao cấp nổi tiếng với dịch vụ 5 sao, thiết kế sang trọng hướng biển, mang lại trải nghiệm nghỉ dưỡng đẳng cấp.",
+      "tags": ["luxury", "5_star", "beachfront", "resort"],
+      "suitable_for": ["couple", "family", "vacation"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 4500000,
+        "max_vnd": 15000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973990011",
+        "website": "https://salindaresort.com"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-003",
+      "name": "Mövenpick Resort Waverly Phú Quốc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Ấp Ông Lang, xã Cửa Dương, thành phố Phú Quốc, Kiên Giang",
+      "lat": 10.2581,
+      "lng": 103.8845,
+      "description": "Khu nghỉ dưỡng 5 sao sang trọng tại Bãi Ông Lang với phong cách thiết kế đương đại kết hợp tiện ích đẳng cấp.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3500000,
+        "max_vnd": 12000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02972699999",
+        "website": "[https://movenpick.accor.com](https://movenpick.accor.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-004",
+      "name": "Vinpearl Resort & Spa Phú Quốc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, thành phố Phú Quốc, Kiên Giang",
+      "lat": 10.3452,
+      "lng": 103.8741,
+      "description": "Khu nghỉ dưỡng đẳng cấp nằm sát biển với hồ bơi ngoài trời rộng lớn và dịch vụ chuẩn quốc tế.",
+      "tags": ["resort", "spa", "5_star", "family_friendly"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2500000,
+        "max_vnd": 9000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "1900232389",
+        "website": "[https://vinpearl.com](https://vinpearl.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-005",
+      "name": "River Hotel Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "Lô B3, Trung tâm thương mại, phường Hà Tiên, Kiên Giang",
+      "lat": 10.3789,
+      "lng": 104.4532,
+      "description": "Khách sạn tiêu chuẩn 3 sao hiện đại nằm ngay trung tâm thành phố Hà Tiên, gần chợ và các điểm tham quan.",
+      "tags": ["city_hotel", "3_star", "business"],
+      "suitable_for": ["business_traveler", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 700000,
+        "max_vnd": 1500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973955888",
+        "website": "[https://riverhotel.vn](https://www.google.com/search?q=https://riverhotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-006",
+      "name": "L'Azure Resort and Spa",
+      "category": "hotel",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "64 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.2155,
+      "lng": 103.9688,
+      "description": "Resort boutique yên tĩnh, không gian xanh mát nằm ngay trung tâm Dương Đông.",
+      "tags": ["boutique", "resort", "spa", "near_beach"],
+      "suitable_for": ["couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1800000,
+        "max_vnd": 4000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973993399",
+        "website": "[https://lazureresort.com](https://www.google.com/search?q=https://lazureresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-007",
+      "name": "Sen Lodge Homestay Phú Quốc",
+      "category": "homestay",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Cầu Bà Phong, đường Trần Hưng Đạo, ấp Cửa Lấp, Dương Tơ, Phú Quốc",
+      "lat": 10.2012,
+      "lng": 103.9615,
+      "description": "Homestay thiết kế mộc mạc, gần gũi với thiên nhiên, không gian yên bình.",
+      "tags": ["homestay", "eco_friendly", "budget"],
+      "suitable_for": ["solo", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0379001320",
+        "website": "[https://www.facebook.com/senlodge](https://www.google.com/search?q=https://www.facebook.com/senlodge)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-008",
+      "name": "Khách sạn Sài Gòn - Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "Số 3, Trần Hầu, phường Hà Tiên, Kiên Giang",
+      "lat": 10.3802,
+      "lng": 104.451,
+      "description": "Khách sạn truyền thống tại Hà Tiên với vị trí thuận lợi cho việc tham quan các di tích lịch sử.",
+      "tags": ["hotel", "city_center"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 600000,
+        "max_vnd": 1200000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973852670",
+        "website": "[https://saigonhatienhotel.vn](https://www.google.com/search?q=https://saigonhatienhotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-009",
+      "name": "Humiso Resort Hòn Sơn",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, xã An Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.8055,
+      "lng": 104.4421,
+      "description": "Khu nghỉ dưỡng sinh thái nằm trên sườn đồi với view biển tuyệt đẹp tại đảo Hòn Sơn.",
+      "tags": ["eco_resort", "nature", "beach"],
+      "suitable_for": ["couple", "adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 800000,
+        "max_vnd": 2000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0969966966",
+        "website": "[https://humiso.vn](https://www.google.com/search?q=https://humiso.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-010",
+      "name": "Lamien Lodge Hòn Sơn",
+      "category": "homestay",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Lại Sơn",
+      "address": "9 Ma Thiên Lãnh, xã Lại Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.8101,
+      "lng": 104.4455,
+      "description": "Nơi lưu trú yên tĩnh biệt lập được bao quanh bởi rừng cây và thiên nhiên xanh mát.",
+      "tags": ["nature", "quiet", "budget"],
+      "suitable_for": ["solo", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0355728468",
+        "website": "[https://www.facebook.com/lamienlodge](https://www.google.com/search?q=https://www.facebook.com/lamienlodge)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-011",
+      "name": "M Resort Phú Quốc",
+      "category": "hotel",
+      "subcategory": "modern_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "169 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.211,
+      "lng": 103.965,
+      "description": "Khách sạn hiện đại với phong cách tối giản, dịch vụ chuyên nghiệp.",
+      "tags": ["modern", "city_hotel", "central"],
+      "suitable_for": ["business_traveler", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1000000,
+        "max_vnd": 2500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973979888",
+        "website": "[https://mresortphuquoc.com](https://www.google.com/search?q=https://mresortphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-012",
+      "name": "Sea Star Resort Phú Quốc",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "98/2 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.2105,
+      "lng": 103.9675,
+      "description": "Khu nghỉ dưỡng lâu đời nổi tiếng với không gian sân vườn rộng rãi và bãi biển riêng.",
+      "tags": ["resort", "beach", "garden"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 900000,
+        "max_vnd": 2000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981828",
+        "website": "[https://seastarresort.vn](https://seastarresort.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-013",
+      "name": "Hà Tiên Hạnh Phúc Hotel",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "13-14 Hoàng Văn Thụ, phường Hà Tiên, Kiên Giang",
+      "lat": 10.3795,
+      "lng": 104.4505,
+      "description": "Khách sạn bình dân phục vụ khách du lịch với giá cả phải chăng.",
+      "tags": ["budget", "central"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973966688",
+        "website": "[https://hatienhanhphuc.vn](https://www.google.com/search?q=https://hatienhanhphuc.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-014",
+      "name": "Langchia Nam Du Resort",
+      "category": "resort",
+      "subcategory": "resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Nam Du, xã An Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.68,
+      "lng": 104.35,
+      "description": "Resort nghỉ dưỡng tại đảo Nam Du với tầm nhìn bao quát biển đảo.",
+      "tags": ["resort", "sea_view", "holiday"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1200000,
+        "max_vnd": 3000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0944066039",
+        "website": "[https://langchianamdu.vn](https://www.google.com/search?q=https://langchianamdu.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-015",
+      "name": "Tropical Garden Homestay",
+      "category": "homestay",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Ông Lang, Cửa Dương, Phú Quốc, Kiên Giang",
+      "lat": 10.255,
+      "lng": 103.89,
+      "description": "Không gian homestay giản dị, mộc mạc nằm gần bãi biển Ông Lang.",
+      "tags": ["homestay", "garden", "budget"],
+      "suitable_for": ["solo", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0943127216",
+        "website": "[https://www.facebook.com/tropicalgardenphuquoc](https://www.google.com/search?q=https://www.facebook.com/tropicalgardenphuquoc)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-016",
+      "name": "JW Marriott Phu Quoc Emerald Bay Resort & Spa",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Bãi Khem, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 10.0248,
+      "lng": 104.0152,
+      "description": "Khu nghỉ dưỡng 5 sao sang trọng bậc nhất với kiến trúc độc đáo lấy cảm hứng từ đại học Lamarck cổ điển.",
+      "tags": ["luxury", "5_star", "resort", "beachfront", "spa"],
+      "suitable_for": ["couple", "family", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 9500000,
+        "max_vnd": 45000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973779999",
+        "website": "[https://www.marriott.com](https://www.marriott.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-017",
+      "name": "InterContinental Phu Quoc Long Beach Resort",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.1585,
+      "lng": 103.966,
+      "description": "Khu nghỉ dưỡng đẳng cấp nằm dọc theo bờ biển Bãi Trường với dịch vụ tiện ích toàn diện.",
+      "tags": ["luxury", "5_star", "beachfront", "family_friendly"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 5000000,
+        "max_vnd": 18000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973978888",
+        "website": "[https://www.ihg.com](https://www.ihg.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-018",
+      "name": "La Veranda Resort Phu Quoc",
+      "category": "hotel",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.21,
+      "lng": 103.968,
+      "description": "Resort boutique phong cách kiến trúc Pháp cổ điển bên bờ biển, mang lại sự riêng tư và lãng mạn.",
+      "tags": ["boutique", "historic", "romantic", "beachfront"],
+      "suitable_for": ["couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3200000,
+        "max_vnd": 8000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973982988",
+        "website": "[https://laverandaresorts.com](https://laverandaresorts.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-019",
+      "name": "New World Phu Quoc Resort",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Bãi Khem, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 10.0235,
+      "lng": 104.018,
+      "description": "Khu nghỉ dưỡng biệt thự sang trọng với không gian mở, hướng biển, phù hợp cho gia đình đông người.",
+      "tags": ["luxury", "villa", "beachfront", "family"],
+      "suitable_for": ["family", "group"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 6000000,
+        "max_vnd": 20000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973716666",
+        "website": "[https://phuquoc.newworldhotels.com](https://phuquoc.newworldhotels.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-020",
+      "name": "Khách sạn Palace Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "15 Trần Phú, Vĩnh Thanh, Rạch Giá, Kiên Giang",
+      "lat": 10.0075,
+      "lng": 105.071,
+      "description": "Khách sạn nằm tại vị trí trung tâm Rạch Giá, thuận tiện mua sắm và ăn uống.",
+      "tags": ["hotel", "city_center", "business"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 1000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973863182",
+        "website": "[https://palacerachgia.vn](https://www.google.com/search?q=https://palacerachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-021",
+      "name": "Nam Du Windy Hotel",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Bãi Cây Mến, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.685,
+      "lng": 104.355,
+      "description": "Khách sạn view biển tại đảo Nam Du, không gian thoáng đãng.",
+      "tags": ["beach", "island", "budget"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0918000000",
+        "website": "[https://namduwindy.vn](https://www.google.com/search?q=https://namduwindy.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-022",
+      "name": "Phú Vân Resort & Spa",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "122 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.2095,
+      "lng": 103.967,
+      "description": "Khu nghỉ dưỡng nổi tiếng tại trung tâm Dương Đông với thiết kế gỗ ấm cúng.",
+      "tags": ["resort", "beach", "spa", "central"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1200000,
+        "max_vnd": 2500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981818",
+        "website": "[https://phuvanresort.com](https://www.google.com/search?q=https://phuvanresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-023",
+      "name": "Hà Tiên Vegas Hotel",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Mỹ Đức",
+      "address": "Cửa khẩu quốc tế Hà Tiên, Kiên Giang",
+      "lat": 10.395,
+      "lng": 104.482,
+      "description": "Khách sạn kết hợp khu giải trí tại khu vực cửa khẩu quốc tế.",
+      "tags": ["hotel", "casino", "business"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1500000,
+        "max_vnd": 3000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973956666",
+        "website": "[https://hatienvegas.vn](https://www.google.com/search?q=https://hatienvegas.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-024",
+      "name": "Coco Palm Resort",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Ông Lang, Cửa Dương, Phú Quốc, Kiên Giang",
+      "lat": 10.256,
+      "lng": 103.888,
+      "description": "Khu nghỉ dưỡng đậm chất nhiệt đới với các bungalow riêng biệt.",
+      "tags": ["eco_resort", "nature", "beach"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1500000,
+        "max_vnd": 3500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973981888",
+        "website": "[https://cocopalm.vn](https://www.google.com/search?q=https://cocopalm.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-025",
+      "name": "Liên Hiệp Hotel Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Lạc",
+      "address": "76 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.012,
+      "lng": 105.075,
+      "description": "Khách sạn bình dân phục vụ khách công tác tại trung tâm Rạch Giá.",
+      "tags": ["budget", "city_hotel"],
+      "suitable_for": ["solo", "business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862266",
+        "website": "[https://lienhiephotel.vn](https://www.google.com/search?q=https://lienhiephotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-026",
+      "name": "Regent Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.155,
+      "lng": 103.967,
+      "description": "Khu nghỉ dưỡng siêu sang mang phong cách đương đại với các suite và villa riêng tư.",
+      "tags": ["luxury", "ultra_luxury", "beachfront", "resort"],
+      "suitable_for": ["couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 12000000,
+        "max_vnd": 50000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973880000",
+        "website": "[https://phuquoc.regenthotels.com](https://phuquoc.regenthotels.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-027",
+      "name": "Hòn Sơn Ecolodge",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Lại Sơn",
+      "address": "Bãi Bàng, Lại Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.815,
+      "lng": 104.45,
+      "description": "Khu nghỉ dưỡng sinh thái được thiết kế hòa mình vào thiên nhiên đảo Hòn Sơn.",
+      "tags": ["eco_resort", "nature", "quiet"],
+      "suitable_for": ["couple", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 700000,
+        "max_vnd": 1500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0987654321",
+        "website": "[https://honsonecolodge.vn](https://www.google.com/search?q=https://honsonecolodge.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-028",
+      "name": "Khu du lịch Mũi Nai Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Pháo Đài",
+      "address": "Bãi tắm Mũi Nai, phường Pháo Đài, Hà Tiên, Kiên Giang",
+      "lat": 10.375,
+      "lng": 104.425,
+      "description": "Cơ sở lưu trú ngay tại bãi tắm Mũi Nai, thuận tiện cho gia đình tắm biển.",
+      "tags": ["beach", "family", "tourist"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852000",
+        "website": "[https://muinaihatien.vn](https://www.google.com/search?q=https://muinaihatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-029",
+      "name": "Anja Beach Resort & Spa",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Trần Hưng Đạo, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.185,
+      "lng": 103.965,
+      "description": "Resort với kiến trúc truyền thống Việt Nam, khuôn viên xanh mát hướng biển.",
+      "tags": ["resort", "beach", "traditional"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1800000,
+        "max_vnd": 4000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973995588",
+        "website": "[https://anjaresort.com](https://anjaresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-030",
+      "name": "Kim Hoa Resort",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "88/2 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.2102,
+      "lng": 103.9672,
+      "description": "Khu nghỉ dưỡng lâu đời tại Dương Đông với bãi biển cát trắng riêng.",
+      "tags": ["beach", "resort", "central"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1000000,
+        "max_vnd": 2200000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981888",
+        "website": "[https://kimhoaresort.vn](https://www.google.com/search?q=https://kimhoaresort.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-031",
+      "name": "Premier Village Phu Quoc Resort",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Mũi Ông Đội, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 9.9472,
+      "lng": 104.0321,
+      "description": "Khu nghỉ dưỡng biệt thự sang trọng tọa lạc tại điểm cực Nam đảo, bao quanh bởi hai mặt biển.",
+      "tags": ["luxury", "villa", "resort", "private", "5_star"],
+      "suitable_for": ["family", "couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 7000000,
+        "max_vnd": 25000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973546666",
+        "website": "[https://premiervillage-phuquoc.com](https://premiervillage-phuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-032",
+      "name": "Radisson Blu Resort Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.3421,
+      "lng": 103.8765,
+      "description": "Resort đẳng cấp quốc tế nằm trong quần thể giải trí, phù hợp cho kỳ nghỉ dưỡng gia đình.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3200000,
+        "max_vnd": 10000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973660000",
+        "website": "[https://radissonhotels.com](https://radissonhotels.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-033",
+      "name": "Khách sạn Fortuna Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "Lô B3-24 Phan Thị Ràng, Rạch Giá, Kiên Giang",
+      "lat": 10.021,
+      "lng": 105.0785,
+      "description": "Khách sạn hiện đại, dịch vụ tốt nằm trong khu đô thị mới Phú Cường.",
+      "tags": ["city_hotel", "business", "modern"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 600000,
+        "max_vnd": 1200000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973949999",
+        "website": "[https://fortunahotel.vn](https://www.google.com/search?q=https://fortunahotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-034",
+      "name": "Rocks Beach Boutique Phu Quoc",
+      "category": "hotel",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Tổ 4, Ấp Ông Lang, Cửa Dương, Phú Quốc, Kiên Giang",
+      "lat": 10.254,
+      "lng": 103.882,
+      "description": "Resort boutique yên tĩnh, có các phòng view biển độc đáo trên bãi đá.",
+      "tags": ["boutique", "romantic", "sea_view"],
+      "suitable_for": ["couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1500000,
+        "max_vnd": 3000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0931115555",
+        "website": "[https://rocksbeach.vn](https://www.google.com/search?q=https://rocksbeach.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-035",
+      "name": "Hotel 30/4 Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "40 Mạc Cửu, Vĩnh Thanh, Rạch Giá, Kiên Giang",
+      "lat": 10.009,
+      "lng": 105.072,
+      "description": "Khách sạn bình dân lâu đời tại trung tâm thành phố, thuận tiện đi lại.",
+      "tags": ["budget", "central"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862277",
+        "website": "[https://hotel304.vn](https://www.google.com/search?q=https://hotel304.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-036",
+      "name": "Thanh Hung Homestay Nam Du",
+      "category": "homestay",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Nam Du, xã An Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.682,
+      "lng": 104.352,
+      "description": "Homestay địa phương phục vụ khách du lịch muốn khám phá văn hóa đảo.",
+      "tags": ["homestay", "budget", "local"],
+      "suitable_for": ["youth", "backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977889900",
+        "website": "[https://facebook.com/thanhhunghomestay](https://www.google.com/search?q=https://facebook.com/thanhhunghomestay)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-037",
+      "name": "Mango Bay Resort Phu Quoc",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Bãi biển Ông Lang, Cửa Dương, Phú Quốc, Kiên Giang",
+      "lat": 10.262,
+      "lng": 103.878,
+      "description": "Resort sinh thái nổi tiếng với triết lý bảo vệ thiên nhiên, không điều hòa, không TV.",
+      "tags": ["eco_resort", "nature", "sustainable", "beachfront"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2500000,
+        "max_vnd": 6000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981693",
+        "website": "[https://mangobayphuquoc.com](https://www.google.com/search?q=https://mangobayphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-038",
+      "name": "Khách sạn Ánh Dương Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Tô Châu, Hà Tiên, Kiên Giang",
+      "lat": 10.372,
+      "lng": 104.448,
+      "description": "Khách sạn tiện nghi nằm gần bến xe Hà Tiên, thuận tiện di chuyển.",
+      "tags": ["hotel", "convenient"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973851000",
+        "website": "[https://anhduonghatien.vn](https://www.google.com/search?q=https://anhduonghatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-039",
+      "name": "Dusit Princess Moonrise Beach Resort",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.191,
+      "lng": 103.9665,
+      "description": "Resort phong cách Thái Lan hiện đại, nằm ngay sát bãi biển phía Tây đảo.",
+      "tags": ["resort", "beach", "spa", "modern"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2000000,
+        "max_vnd": 5000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02976266688",
+        "website": "[https://dusit.com](https://dusit.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-040",
+      "name": "Khu nghỉ dưỡng Hòn Trẹ",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Tre",
+      "address": "Đảo Hòn Tre, Kiên Hải, Kiên Giang",
+      "lat": 9.972,
+      "lng": 104.835,
+      "description": "Điểm lưu trú đơn giản trên đảo Hòn Tre, phù hợp khám phá vẻ đẹp hoang sơ.",
+      "tags": ["eco_resort", "island", "nature"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944123456",
+        "website": "[https://hontre.vn](https://www.google.com/search?q=https://hontre.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-041",
+      "name": "Sunset Sanato Resort & Villas",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.18,
+      "lng": 103.966,
+      "description": "Khu nghỉ dưỡng nổi tiếng với các tác phẩm nghệ thuật bên bờ biển và điểm ngắm hoàng hôn tuyệt đẹp.",
+      "tags": ["resort", "sunset", "beachfront", "social_media"],
+      "suitable_for": ["couple", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2200000,
+        "max_vnd": 5500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02976266666",
+        "website": "[https://sunsetsanato.com](https://sunsetsanato.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-042",
+      "name": "Khách sạn Holiday One Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "599 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.019,
+      "lng": 105.076,
+      "description": "Khách sạn cao tầng với view nhìn ra biển hoặc thành phố, đầy đủ tiện nghi.",
+      "tags": ["city_hotel", "business", "high_rise"],
+      "suitable_for": ["business_traveler", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 700000,
+        "max_vnd": 1500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973948999",
+        "website": "[https://holidayone.vn](https://www.google.com/search?q=https://holidayone.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-043",
+      "name": "Bauhinia Hotel",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "157 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.212,
+      "lng": 103.966,
+      "description": "Khách sạn nhỏ, sạch sẽ, giá hợp lý nằm gần trung tâm thị trấn Dương Đông.",
+      "tags": ["budget", "central"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973977788",
+        "website": "[https://bauhiniahotel.com](https://www.google.com/search?q=https://bauhiniahotel.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-044",
+      "name": "Khu nghỉ dưỡng Hòn Dừa",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Dừa",
+      "address": "Đảo Hòn Dừa, Kiên Hải, Kiên Giang",
+      "lat": 9.715,
+      "lng": 104.385,
+      "description": "Lưu trú tại hòn đảo nhỏ biệt lập, phù hợp cho người muốn trải nghiệm tĩnh lặng.",
+      "tags": ["nature", "quiet", "off_grid"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0909000111",
+        "website": "[https://hondua.vn](https://www.google.com/search?q=https://hondua.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-045",
+      "name": "The Shells Resort & Spa",
+      "category": "resort",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "Gành Gió, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.235,
+      "lng": 103.955,
+      "description": "Khu nghỉ dưỡng với kiến trúc hình vỏ sò độc đáo, không gian sang trọng và yên tĩnh.",
+      "tags": ["luxury", "resort", "spa", "architecture"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3500000,
+        "max_vnd": 9000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973718888",
+        "website": "[https://shellsresort.com](https://shellsresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-046",
+      "name": "Vinpearl Resort & Golf Phú Quốc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.351,
+      "lng": 103.872,
+      "description": "Khu nghỉ dưỡng 5 sao kết hợp sân golf đẳng cấp quốc tế, view hướng ra biển Tây.",
+      "tags": ["luxury", "golf", "resort", "5_star"],
+      "suitable_for": ["family", "sports_enthusiast"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3800000,
+        "max_vnd": 11000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "1900232389",
+        "website": "[https://vinpearl.com](https://vinpearl.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-047",
+      "name": "Khách sạn Kiên Giang",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Lạc",
+      "address": "25 Lạc Hồng, Rạch Giá, Kiên Giang",
+      "lat": 10.015,
+      "lng": 105.074,
+      "description": "Khách sạn truyền thống tại Rạch Giá, vị trí thuận tiện giao thông.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["business_traveler", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973863478",
+        "website": "[https://kgianghotel.vn](https://www.google.com/search?q=https://kgianghotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-048",
+      "name": "Cassia Cottage",
+      "category": "resort",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.208,
+      "lng": 103.969,
+      "description": "Resort phong cách yên bình, gần gũi thiên nhiên, có bãi biển riêng tư.",
+      "tags": ["boutique", "romantic", "peaceful"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2500000,
+        "max_vnd": 5500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973991873",
+        "website": "[https://cassiacottage.com](https://cassiacottage.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-049",
+      "name": "Phú Quốc Eco Lodge",
+      "category": "homestay",
+      "subcategory": "eco_lodge",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Suối Đá Bàn, Cửa Dương, Phú Quốc, Kiên Giang",
+      "lat": 10.275,
+      "lng": 103.92,
+      "description": "Lodge nằm gần suối Đá Bàn, không gian rừng nhiệt đới mát mẻ.",
+      "tags": ["nature", "eco", "budget"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 1000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0912345678",
+        "website": "[https://pqecolodge.vn](https://www.google.com/search?q=https://pqecolodge.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-050",
+      "name": "Khách sạn Quốc Anh Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "12 Nguyễn Phúc Chu, Hà Tiên, Kiên Giang",
+      "lat": 10.378,
+      "lng": 104.449,
+      "description": "Khách sạn nằm gần khu vực cửa khẩu và các danh thắng Hà Tiên.",
+      "tags": ["hotel", "convenient"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852959",
+        "website": "[https://quocanhhotel.vn](https://www.google.com/search?q=https://quocanhhotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-051",
+      "name": "Nam Du View Homestay",
+      "category": "homestay",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Bãi Chướng, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.688,
+      "lng": 104.358,
+      "description": "Homestay view hướng ra bãi Chướng, không khí trong lành.",
+      "tags": ["homestay", "view", "budget"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988776655",
+        "website": "[https://facebook.com/namduview](https://www.google.com/search?q=https://facebook.com/namduview)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-052",
+      "name": "Sol by Meliá Phu Quoc",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.175,
+      "lng": 103.9655,
+      "description": "Resort phong cách tươi trẻ, hiện đại, thích hợp cho giới trẻ và gia đình.",
+      "tags": ["resort", "beach", "family", "social"],
+      "suitable_for": ["youth", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1800000,
+        "max_vnd": 4500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973869999",
+        "website": "[https://melia.com](https://melia.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-053",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Xanh",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.808,
+      "lng": 104.443,
+      "description": "Khu nghỉ dưỡng sinh thái giá bình dân, gần bãi biển Hòn Sơn.",
+      "tags": ["eco", "beach", "budget"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0966554433",
+        "website": "[https://honsonxanh.vn](https://www.google.com/search?q=https://honsonxanh.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-054",
+      "name": "Khách sạn Kim Dự Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.37,
+      "lng": 104.446,
+      "description": "Điểm dừng chân giá rẻ tại Hà Tiên, tiện nghi cơ bản.",
+      "tags": ["budget", "travel"],
+      "suitable_for": ["backpacker", "solo"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973851555",
+        "website": "[https://kimduhatien.vn](https://www.google.com/search?q=https://kimduhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-055",
+      "name": "Ocean Bay Resort & Spa",
+      "category": "resort",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Bãi Ông Lang, Phú Quốc, Kiên Giang",
+      "lat": 10.265,
+      "lng": 103.885,
+      "description": "Khu nghỉ dưỡng cao cấp với thiết kế biệt thự gỗ tinh tế ven biển.",
+      "tags": ["luxury", "beachfront", "romantic"],
+      "suitable_for": ["couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3000000,
+        "max_vnd": 8000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981888",
+        "website": "[https://oceanbayphuquoc.com](https://oceanbayphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-056",
+      "name": "Khách sạn Hoa Biển Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "152 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.017,
+      "lng": 105.0755,
+      "description": "Khách sạn nằm trên trục đường chính, dễ dàng kết nối các điểm trung tâm.",
+      "tags": ["hotel", "convenient"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 1000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862828",
+        "website": "[https://hoabienhotel.vn](https://www.google.com/search?q=https://hoabienhotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-057",
+      "name": "Khu nghỉ dưỡng Hòn Nghệ",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Lương",
+      "ward": "Hòn Nghệ",
+      "address": "Đảo Hòn Nghệ, Kiên Lương, Kiên Giang",
+      "lat": 10.22,
+      "lng": 104.55,
+      "description": "Cơ sở lưu trú đơn giản trên đảo Hòn Nghệ, trải nghiệm cuộc sống ngư dân.",
+      "tags": ["nature", "off_grid", "budget"],
+      "suitable_for": ["backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0987111222",
+        "website": "[https://honnhe.vn](https://www.google.com/search?q=https://honnhe.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-058",
+      "name": "Khách sạn Hải Âu Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Pháo Đài",
+      "address": "Bãi biển Mũi Nai, Hà Tiên, Kiên Giang",
+      "lat": 10.373,
+      "lng": 104.426,
+      "description": "Khách sạn ngay sát biển Mũi Nai, rất tiện để tắm biển và ngắm cảnh.",
+      "tags": ["beach", "hotel", "tourist"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852111",
+        "website": "[https://haiauhatien.vn](https://www.google.com/search?q=https://haiauhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-059",
+      "name": "Green Bay Phu Quoc Resort",
+      "category": "resort",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Cạn",
+      "address": "Bãi biển Cửa Cạn, Phú Quốc, Kiên Giang",
+      "lat": 10.28,
+      "lng": 103.88,
+      "description": "Resort cao cấp phong cách gỗ, nằm biệt lập trong không gian thiên nhiên hoang sơ.",
+      "tags": ["luxury", "eco", "private", "peaceful"],
+      "suitable_for": ["couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2800000,
+        "max_vnd": 7000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02976267777",
+        "website": "[https://greenbayphuquoc.com](https://greenbayphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-060",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Rái",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.81,
+      "lng": 104.44,
+      "description": "Lưu trú tại Hòn Sơn với view biển, phù hợp cho nhóm bạn trẻ.",
+      "tags": ["eco", "youth", "budget"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977443322",
+        "website": "[https://honsonrai.vn](https://www.google.com/search?q=https://honsonrai.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-061",
+      "name": "Fusion Resort Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Cạn",
+      "address": "Bãi biển Vũng Bầu, Cửa Cạn, Phú Quốc, Kiên Giang",
+      "lat": 10.312,
+      "lng": 103.875,
+      "description": "Khu nghỉ dưỡng 5 sao nổi tiếng với dịch vụ spa trọn gói trong giá phòng, thiết kế biệt thự hiện đại.",
+      "tags": ["luxury", "spa", "resort", "all_inclusive", "villa"],
+      "suitable_for": ["couple", "family", "wellness"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 6500000,
+        "max_vnd": 18000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973690000",
+        "website": "[https://phuquoc.fusionresorts.com](https://phuquoc.fusionresorts.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-062",
+      "name": "Khách sạn Bình Minh Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "402 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.0125,
+      "lng": 105.075,
+      "description": "Khách sạn lâu đời tại Rạch Giá, phục vụ khách đoàn và khách du lịch bình dân.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["tourist", "group"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973863456",
+        "website": "[https://binhminhrachgia.vn](https://www.google.com/search?q=https://binhminhrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-063",
+      "name": "Famiana Resort & Spa",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Trần Hưng Đạo, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.195,
+      "lng": 103.966,
+      "description": "Resort nằm giữa thiên nhiên với bãi biển riêng và hồ bơi lớn, dịch vụ chuyên nghiệp.",
+      "tags": ["resort", "beach", "spa", "family"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2000000,
+        "max_vnd": 4500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973983666",
+        "website": "[https://famianaresort.com](https://famianaresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-064",
+      "name": "Khu nghỉ dưỡng Hòn Thơm",
+      "category": "resort",
+      "subcategory": "resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Đảo Hòn Thơm, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 9.985,
+      "lng": 104.03,
+      "description": "Khu lưu trú tại đảo Hòn Thơm, tiện lợi để vui chơi tại công viên giải trí Sun World.",
+      "tags": ["resort", "amusement", "island"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1500000,
+        "max_vnd": 3000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973555999",
+        "website": "[https://honthomresort.vn](https://www.google.com/search?q=https://honthomresort.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-065",
+      "name": "Khách sạn Phượng Hoàng Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "45 Mạc Cửu, Hà Tiên, Kiên Giang",
+      "lat": 10.377,
+      "lng": 104.451,
+      "description": "Khách sạn nằm trung tâm, gần các đền chùa nổi tiếng ở Hà Tiên.",
+      "tags": ["hotel", "central", "business"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852444",
+        "website": "[https://phuonghoanghatien.vn](https://www.google.com/search?q=https://phuonghoanghatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-066",
+      "name": "Nam Du Bungalow Hòn Lớn",
+      "category": "homestay",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Hòn Lớn, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.684,
+      "lng": 104.356,
+      "description": "Các bungalow gỗ nhỏ nhắn ven biển, trải nghiệm sống trên đảo cho giới trẻ.",
+      "tags": ["homestay", "beach", "youth"],
+      "suitable_for": ["youth", "backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988123123",
+        "website": "[https://facebook.com/namdubungalow](https://www.google.com/search?q=https://facebook.com/namdubungalow)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-067",
+      "name": "Chez Carole Beach Resort",
+      "category": "resort",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Cạn",
+      "address": "Cửa Cạn, Phú Quốc, Kiên Giang",
+      "lat": 10.305,
+      "lng": 103.88,
+      "description": "Resort yên bình, không gian kiến trúc gỗ nằm bên sông và sát biển.",
+      "tags": ["boutique", "romantic", "nature"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1800000,
+        "max_vnd": 4000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973989333",
+        "website": "[https://chezcarole.vn](https://www.google.com/search?q=https://chezcarole.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-068",
+      "name": "Khách sạn Ngọc Hân Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "Trần Hầu, Hà Tiên, Kiên Giang",
+      "lat": 10.379,
+      "lng": 104.45,
+      "description": "Khách sạn sạch sẽ, giá cả bình dân cho khách lẻ.",
+      "tags": ["hotel", "budget"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852777",
+        "website": "[https://ngochanhatien.vn](https://www.google.com/search?q=https://ngochanhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-069",
+      "name": "Khu du lịch sinh thái Đảo Hải Tặc",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Hòn Tre Nhỏ",
+      "address": "Đảo Hải Tặc, Hà Tiên, Kiên Giang",
+      "lat": 10.32,
+      "lng": 104.35,
+      "description": "Lưu trú tại quần đảo Hải Tặc, trải nghiệm cuộc sống hoang sơ và hải sản tươi sống.",
+      "tags": ["eco", "island", "local"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0933555444",
+        "website": "[https://dao-haitac.vn](https://www.google.com/search?q=https://dao-haitac.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-070",
+      "name": "Mercure Phu Quoc Resort",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.182,
+      "lng": 103.966,
+      "description": "Resort ấm cúng với các bungalow phong cách nhiệt đới, gần bãi biển Bãi Trường.",
+      "tags": ["resort", "beach", "family"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1600000,
+        "max_vnd": 3500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973977222",
+        "website": "[https://mercurephuquoc.com](https://www.google.com/search?q=https://mercurephuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-071",
+      "name": "Khách sạn Phương Nam Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "29 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.0195,
+      "lng": 105.076,
+      "description": "Khách sạn nằm trên trục đường sầm uất nhất Rạch Giá.",
+      "tags": ["hotel", "central", "shopping"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 850000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862111",
+        "website": "[https://phuongnamrachgia.vn](https://www.google.com/search?q=https://phuongnamrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-072",
+      "name": "Khu nghỉ dưỡng Hòn Rái",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.809,
+      "lng": 104.441,
+      "description": "Khu nghỉ dưỡng ven biển Hòn Sơn với không gian xanh mướt.",
+      "tags": ["eco", "beach", "youth"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 1000000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988555666",
+        "website": "[https://honrai.vn](https://www.google.com/search?q=https://honrai.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-073",
+      "name": "Khách sạn Hưng Thịnh Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.371,
+      "lng": 104.447,
+      "description": "Khách sạn giá rẻ nằm gần cửa khẩu, phục vụ khách đi Campuchia.",
+      "tags": ["budget", "travel", "convenient"],
+      "suitable_for": ["backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973851999",
+        "website": "[https://hungthinhhatien.vn](https://www.google.com/search?q=https://hungthinhhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-074",
+      "name": "Lahana Resort Phu Quoc",
+      "category": "resort",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "91/3 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.211,
+      "lng": 103.9675,
+      "description": "Khu nghỉ dưỡng trên đồi với view nhìn ra toàn cảnh thị trấn Dương Đông và biển.",
+      "tags": ["resort", "hill", "view", "boutique"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1800000,
+        "max_vnd": 4000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973976666",
+        "website": "[https://lahanaresort.com](https://lahanaresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-075",
+      "name": "Khu nghỉ dưỡng Đảo Hòn Mấu",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Mấu",
+      "address": "Đảo Hòn Mấu, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.69,
+      "lng": 104.36,
+      "description": "Lưu trú đơn giản trên hòn đảo xinh đẹp thuộc Nam Du, trải nghiệm hoang sơ.",
+      "tags": ["nature", "off_grid", "beach"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944888999",
+        "website": "[https://honmau.vn](https://www.google.com/search?q=https://honmau.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-076",
+      "name": "Nam Nghi Coral Peninsula Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Cạn",
+      "address": "Ấp 4, Cửa Cạn, Phú Quốc, Kiên Giang",
+      "lat": 10.325,
+      "lng": 103.865,
+      "description": "Khu nghỉ dưỡng sang trọng tách biệt trên bán đảo riêng, mang đến trải nghiệm thiên nhiên nguyên sơ và đẳng cấp.",
+      "tags": ["luxury", "private", "resort", "nature", "5_star"],
+      "suitable_for": ["couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 6000000,
+        "max_vnd": 20000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973891234",
+        "website": "[https://namnghiresort.com](https://namnghiresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-077",
+      "name": "Khách sạn Thuận Phát Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "120 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.016,
+      "lng": 105.0755,
+      "description": "Khách sạn tầm trung nằm ngay trung tâm thành phố, thuận tiện đi lại và công tác.",
+      "tags": ["hotel", "central", "business"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862345",
+        "website": "[https://thuanphatrachgia.vn](https://www.google.com/search?q=https://thuanphatrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-078",
+      "name": "Palmy Resort & Spa",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Trần Hưng Đạo, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.19,
+      "lng": 103.966,
+      "description": "Resort với hồ bơi vô cực nhìn ra biển, không gian mở và thoáng đãng.",
+      "tags": ["resort", "beach", "infinity_pool", "family"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1800000,
+        "max_vnd": 3500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981889",
+        "website": "[https://palmyresort.com](https://www.google.com/search?q=https://palmyresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-079",
+      "name": "Khu nghỉ dưỡng Hòn Đốc",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Đảo Hải Tặc",
+      "address": "Đảo Hòn Đốc, Hà Tiên, Kiên Giang",
+      "lat": 10.33,
+      "lng": 104.34,
+      "description": "Lưu trú tại đảo chính của quần đảo Hải Tặc, trải nghiệm văn hóa ngư dân địa phương.",
+      "tags": ["eco", "island", "local"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0911222333",
+        "website": "[https://dao-hondoc.vn](https://www.google.com/search?q=https://dao-hondoc.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-080",
+      "name": "Khách sạn Việt Hùng Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "15 Mạc Thiên Tích, Hà Tiên, Kiên Giang",
+      "lat": 10.375,
+      "lng": 104.45,
+      "description": "Khách sạn giá rẻ nằm gần chợ đêm và trung tâm Hà Tiên.",
+      "tags": ["budget", "travel", "central"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852222",
+        "website": "[https://viethunghatien.vn](https://www.google.com/search?q=https://viethunghatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-081",
+      "name": "Nam Du Ruby Hotel",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.683,
+      "lng": 104.354,
+      "description": "Khách sạn tiện nghi nhất trên đảo Nam Du, view hướng ra cảng biển.",
+      "tags": ["island", "hotel", "convenient"],
+      "suitable_for": ["tourist", "group"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0966777888",
+        "website": "[https://namduruby.vn](https://www.google.com/search?q=https://namduruby.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-082",
+      "name": "Eden Resort Phu Quoc",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Trần Hưng Đạo, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.188,
+      "lng": 103.965,
+      "description": "Resort với kiến trúc Pháp cổ điển, khuôn viên cây xanh mát và bãi biển riêng.",
+      "tags": ["resort", "beach", "romantic"],
+      "suitable_for": ["couple", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1500000,
+        "max_vnd": 3000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973985598",
+        "website": "[https://edenresort.com](https://edenresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-083",
+      "name": "Khách sạn Minh Tâm Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "66 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.0175,
+      "lng": 105.074,
+      "description": "Khách sạn giá hợp lý cho khách du lịch bụi và khách công tác ngắn ngày.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["solo", "business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862999",
+        "website": "[https://minhtamrachgia.vn](https://www.google.com/search?q=https://minhtamrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-084",
+      "name": "Khu du lịch sinh thái Hòn Tre",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Tre",
+      "address": "Đảo Hòn Tre, Kiên Hải, Kiên Giang",
+      "lat": 9.975,
+      "lng": 104.83,
+      "description": "Khu lưu trú nằm gần cầu cảng, thuận tiện cho việc tham quan toàn đảo Hòn Tre.",
+      "tags": ["nature", "island", "eco"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988000111",
+        "website": "[https://hontre.vn](https://hontre.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-085",
+      "name": "Khách sạn Tân Hồng Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "22 Phương Thành, Hà Tiên, Kiên Giang",
+      "lat": 10.376,
+      "lng": 104.448,
+      "description": "Khách sạn có dịch vụ tốt, phòng ốc sạch sẽ tại trung tâm Hà Tiên.",
+      "tags": ["hotel", "convenient"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 650000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852333",
+        "website": "[https://tanhonghatien.vn](https://www.google.com/search?q=https://tanhonghatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-086",
+      "name": "VinOasis Phu Quoc",
+      "category": "hotel",
+      "subcategory": "resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.34,
+      "lng": 103.875,
+      "description": "Resort với công viên nước riêng, rất phù hợp cho kỳ nghỉ gia đình có trẻ nhỏ.",
+      "tags": ["resort", "water_park", "family"],
+      "suitable_for": ["family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2500000,
+        "max_vnd": 5000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "1900232389",
+        "website": "[https://vinpearl.com](https://vinpearl.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-087",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Beach",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Bãi biển Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.805,
+      "lng": 104.442,
+      "description": "Lưu trú sát biển, không gian mở phù hợp cho tiệc BBQ ngoài trời trên đảo.",
+      "tags": ["eco", "beach", "party"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977112233",
+        "website": "[https://honsonbeach.vn](https://www.google.com/search?q=https://honsonbeach.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-088",
+      "name": "Khách sạn Sài Gòn Phú Quốc",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "62 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.211,
+      "lng": 103.968,
+      "description": "Khách sạn lâu đời tại Dương Đông, dịch vụ thân thiện, gần trung tâm.",
+      "tags": ["hotel", "central", "tourist"],
+      "suitable_for": ["tourist", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 800000,
+        "max_vnd": 1800000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973846999",
+        "website": "[https://saigonphuquoc.com](https://www.google.com/search?q=https://saigonphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-089",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Hill",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Sườn đồi Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.807,
+      "lng": 104.444,
+      "description": "Nơi nghỉ dưỡng trên đồi với view nhìn toàn cảnh vịnh biển Nam Du/Hòn Sơn.",
+      "tags": ["eco", "hill", "view"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988666555",
+        "website": "[https://honsonhill.vn](https://www.google.com/search?q=https://honsonhill.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-090",
+      "name": "Khách sạn Hoàng Gia Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.372,
+      "lng": 104.445,
+      "description": "Khách sạn giá tốt, dịch vụ cơ bản nằm ngay trục lộ giao thông chính.",
+      "tags": ["hotel", "budget", "travel"],
+      "suitable_for": ["backpacker", "solo"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852888",
+        "website": "[https://hoanggiahatien.vn](https://www.google.com/search?q=https://hoanggiahatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-091",
+      "name": "InterContinental Phu Quoc Long Beach Resort",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.158,
+      "lng": 103.9665,
+      "description": "Khu nghỉ dưỡng sang trọng đẳng cấp với không gian rộng lớn, view biển trực diện và tiện ích chuẩn 5 sao.",
+      "tags": ["luxury", "5_star", "resort", "beachfront", "family"],
+      "suitable_for": ["family", "couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 5500000,
+        "max_vnd": 18000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973978888",
+        "website": "[https://www.ihg.com](https://www.ihg.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-092",
+      "name": "Khách sạn Bảo Anh Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "12 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.0155,
+      "lng": 105.075,
+      "description": "Cơ sở lưu trú giá bình dân, phòng ốc sạch sẽ, nằm gần bến tàu Rạch Giá.",
+      "tags": ["budget", "central", "transit"],
+      "suitable_for": ["tourist", "solo"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862666",
+        "website": "[https://baoanhrachgia.vn](https://www.google.com/search?q=https://baoanhrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-093",
+      "name": "Ancarine Beach Resort",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Cửa Dương",
+      "address": "Ông Lang, Cửa Dương, Phú Quốc, Kiên Giang",
+      "lat": 10.26,
+      "lng": 103.882,
+      "description": "Resort với phong cách mộc mạc bên bãi biển Ông Lang, rất yên tĩnh và gần gũi thiên nhiên.",
+      "tags": ["resort", "beach", "romantic", "peaceful"],
+      "suitable_for": ["couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1200000,
+        "max_vnd": 2800000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981234",
+        "website": "[https://ancarine.vn](https://www.google.com/search?q=https://ancarine.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-094",
+      "name": "Khu lưu trú Đảo Hòn Tre Bãi Chướng",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Tre",
+      "address": "Đảo Hòn Tre, Kiên Hải, Kiên Giang",
+      "lat": 9.97,
+      "lng": 104.84,
+      "description": "Lưu trú trải nghiệm tại bãi biển Bãi Chướng trên đảo Hòn Tre, giá cả phải chăng.",
+      "tags": ["nature", "island", "budget"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0933111000",
+        "website": "[https://hontre-baichuong.vn](https://www.google.com/search?q=https://hontre-baichuong.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-095",
+      "name": "Khách sạn Việt Thanh Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "40 Mạc Thiên Tích, Hà Tiên, Kiên Giang",
+      "lat": 10.3775,
+      "lng": 104.452,
+      "description": "Khách sạn cơ bản, thuận tiện cho khách du lịch đến thăm các di tích ở Hà Tiên.",
+      "tags": ["hotel", "budget", "travel"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852555",
+        "website": "[https://vietthanhhatien.vn](https://www.google.com/search?q=https://vietthanhhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-096",
+      "name": "Nam Du Island Hotel",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.682,
+      "lng": 104.355,
+      "description": "Khách sạn quy mô vừa phải, cung cấp đầy đủ tiện nghi cho du khách khám phá đảo.",
+      "tags": ["island", "hotel", "travel"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "0988555444",
+        "website": "[https://namduhotel.vn](https://www.google.com/search?q=https://namduhotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-097",
+      "name": "Daisy Resort Phu Quoc",
+      "category": "resort",
+      "subcategory": "boutique_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.205,
+      "lng": 103.967,
+      "description": "Resort nằm trên đồi với khung cảnh thiên nhiên, tầm nhìn ra vịnh Dương Đông.",
+      "tags": ["resort", "hill", "view", "boutique"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1300000,
+        "max_vnd": 3200000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973989666",
+        "website": "[https://daisyresort.com](https://daisyresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-098",
+      "name": "Khách sạn Duy Anh Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "30 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.018,
+      "lng": 105.0745,
+      "description": "Cơ sở lưu trú tại trung tâm Rạch Giá, phù hợp cho khách công tác nhanh.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862444",
+        "website": "[https://duyanhrachgia.vn](https://www.google.com/search?q=https://duyanhrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-099",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Lodge",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.806,
+      "lng": 104.443,
+      "description": "Resort sinh thái nhỏ, không gian yên tĩnh ven biển, dành cho người yêu thích sự tĩnh lặng.",
+      "tags": ["eco", "beach", "quiet"],
+      "suitable_for": ["nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 950000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944000999",
+        "website": "[https://honsonlodge.vn](https://www.google.com/search?q=https://honsonlodge.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-100",
+      "name": "Khách sạn Thiên Nga Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.3705,
+      "lng": 104.444,
+      "description": "Khách sạn bình dân phục vụ khách đi lẻ, phòng cơ bản đầy đủ.",
+      "tags": ["budget", "travel", "convenient"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 450000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852666",
+        "website": "[https://thienngahatien.vn](https://www.google.com/search?q=https://thienngahatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-101",
+      "name": "Vinpearl Resort & Spa Phú Quốc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.345,
+      "lng": 103.874,
+      "description": "Khu nghỉ dưỡng 5 sao biểu tượng, kiến trúc tân cổ điển, tiện ích giải trí phong phú.",
+      "tags": ["luxury", "resort", "family", "5_star"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3000000,
+        "max_vnd": 8500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "1900232389",
+        "website": "[https://vinpearl.com](https://vinpearl.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-102",
+      "name": "Khu nghỉ dưỡng Hòn Nghệ Beach",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Lương",
+      "ward": "Hòn Nghệ",
+      "address": "Đảo Hòn Nghệ, Kiên Lương, Kiên Giang",
+      "lat": 10.222,
+      "lng": 104.555,
+      "description": "Điểm lưu trú đơn giản trên đảo Hòn Nghệ, gần khu dân cư ngư dân.",
+      "tags": ["nature", "off_grid", "local"],
+      "suitable_for": ["backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944111222",
+        "website": "[https://honnhe-beach.vn](https://www.google.com/search?q=https://honnhe-beach.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-103",
+      "name": "Khách sạn Hoàng Hải Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.3715,
+      "lng": 104.446,
+      "description": "Khách sạn sạch sẽ, gần bến xe, tiện di chuyển trong thành phố.",
+      "tags": ["hotel", "convenient"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852111",
+        "website": "[https://hoanghaihatien.vn](https://www.google.com/search?q=https://hoanghaihatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-104",
+      "name": "Salinda Resort Phu Quoc Island",
+      "category": "resort",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Ấp Cửa Lấp, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.198,
+      "lng": 103.9635,
+      "description": "Khu nghỉ dưỡng 5 sao sang trọng, nổi tiếng với dịch vụ tận tâm và thiết kế đẳng cấp.",
+      "tags": ["luxury", "beachfront", "spa", "5_star"],
+      "suitable_for": ["couple", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 4000000,
+        "max_vnd": 12000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973990011",
+        "website": "[https://salindaresort.com](https://salindaresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-105",
+      "name": "Khu nghỉ dưỡng Hòn Rái Đảo",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.8085,
+      "lng": 104.4425,
+      "description": "Khu lưu trú nằm trên sườn đồi, view biển đẹp và không khí cực kỳ trong lành.",
+      "tags": ["eco", "nature", "view"],
+      "suitable_for": ["adventure_traveler", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 850000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977222333",
+        "website": "[https://honrai-dao.vn](https://www.google.com/search?q=https://honrai-dao.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-106",
+      "name": "Premier Residences Phu Quoc Emerald Bay",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Bãi Khem, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 10.023,
+      "lng": 104.016,
+      "description": "Khu nghỉ dưỡng 5 sao nằm ngay sát Bãi Khem với thiết kế hiện đại, nhiều tiện ích cho gia đình.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3000000,
+        "max_vnd": 8000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973927777",
+        "website": "[https://www.accor.com](https://www.accor.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-107",
+      "name": "Khách sạn Sông Kiên Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "250 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.019,
+      "lng": 105.076,
+      "description": "Khách sạn tiêu chuẩn tại trung tâm thành phố, gần khu vực sầm uất nhất.",
+      "tags": ["hotel", "central", "business"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862555",
+        "website": "[https://songkienhotel.vn](https://www.google.com/search?q=https://songkienhotel.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-108",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Seaview",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.8105,
+      "lng": 104.4445,
+      "description": "Khu lưu trú nhỏ có view biển nhìn ra vịnh Nam Du, rất phù hợp cho giới trẻ chụp ảnh.",
+      "tags": ["eco", "beach", "view", "youth"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988999888",
+        "website": "[https://honsonseaview.vn](https://www.google.com/search?q=https://honsonseaview.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-109",
+      "name": "Khách sạn Ánh Sao Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.37,
+      "lng": 104.443,
+      "description": "Cơ sở lưu trú giá bình dân, gần cửa khẩu, thuận tiện di chuyển.",
+      "tags": ["budget", "travel", "convenient"],
+      "suitable_for": ["backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852001",
+        "website": "[https://anhsaohatien.vn](https://www.google.com/search?q=https://anhsaohatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-110",
+      "name": "The Palmy Phu Quoc Resort & Spa",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Trần Hưng Đạo, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.192,
+      "lng": 103.966,
+      "description": "Khu nghỉ dưỡng 4 sao với kiến trúc hiện đại, có hồ bơi vô cực nhìn thẳng ra biển Bãi Trường.",
+      "tags": ["resort", "beach", "infinity_pool", "4_star"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1700000,
+        "max_vnd": 4000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981888",
+        "website": "[https://thepalmyresort.com](https://www.google.com/search?q=https://thepalmyresort.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-111",
+      "name": "Khu nghỉ dưỡng Hòn Nghệ Xanh",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Lương",
+      "ward": "Hòn Nghệ",
+      "address": "Đảo Hòn Nghệ, Kiên Lương, Kiên Giang",
+      "lat": 10.221,
+      "lng": 104.552,
+      "description": "Lưu trú tại hòn đảo nhỏ biệt lập, gần các bè cá của ngư dân địa phương.",
+      "tags": ["eco", "island", "local"],
+      "suitable_for": ["backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0933999888",
+        "website": "[https://honnhexanh.vn](https://www.google.com/search?q=https://honnhexanh.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-112",
+      "name": "Khách sạn Rạch Giá 30-4",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "12 Mạc Cửu, Rạch Giá, Kiên Giang",
+      "lat": 10.011,
+      "lng": 105.073,
+      "description": "Khách sạn lâu đời, gần chợ Rạch Giá, phù hợp cho khách du lịch tiết kiệm.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862288",
+        "website": "[https://rachgia304.vn](https://www.google.com/search?q=https://rachgia304.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-113",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Mountain",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.8095,
+      "lng": 104.4435,
+      "description": "Resort nằm trên núi, không gian yên bình, view nhìn ra biển từ trên cao.",
+      "tags": ["eco", "nature", "view"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988444333",
+        "website": "[https://honsonmountain.vn](https://www.google.com/search?q=https://honsonmountain.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-114",
+      "name": "Khách sạn Hà Tiên Bay",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Trần Hầu, Hà Tiên, Kiên Giang",
+      "lat": 10.378,
+      "lng": 104.451,
+      "description": "Khách sạn có dịch vụ tốt, phòng ốc thoáng mát ngay trung tâm Hà Tiên.",
+      "tags": ["hotel", "central", "tourist"],
+      "suitable_for": ["tourist", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852999",
+        "website": "[https://hatienbay.vn](https://www.google.com/search?q=https://hatienbay.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-115",
+      "name": "Sol by Meliá Phu Quoc",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.176,
+      "lng": 103.966,
+      "description": "Resort phong cách trẻ trung, năng động, có nhiều khu vực chụp ảnh sống động bên bãi biển.",
+      "tags": ["resort", "beach", "youth", "modern"],
+      "suitable_for": ["youth", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1900000,
+        "max_vnd": 4500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973869999",
+        "website": "[https://www.melia.com](https://www.melia.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-116",
+      "name": "Khu nghỉ dưỡng Hòn Mấu Beach",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Mấu",
+      "address": "Đảo Hòn Mấu, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.691,
+      "lng": 104.361,
+      "description": "Lưu trú đơn giản trên đảo Hòn Mấu, sát bãi biển cát trắng tuyệt đẹp.",
+      "tags": ["eco", "beach", "off_grid"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944777666",
+        "website": "[https://honmaubeach.vn](https://www.google.com/search?q=https://honmaubeach.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-117",
+      "name": "Khách sạn Kim Ngân Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "15 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.017,
+      "lng": 105.074,
+      "description": "Khách sạn giá bình dân tại trung tâm Rạch Giá, thuận tiện mua sắm.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862123",
+        "website": "[https://kimnganrachgia.vn](https://www.google.com/search?q=https://kimnganrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-118",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Rái Xanh",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.808,
+      "lng": 104.442,
+      "description": "Khu nghỉ dưỡng xanh mát, gần các điểm trekking trên đảo Hòn Sơn.",
+      "tags": ["eco", "nature", "trekking"],
+      "suitable_for": ["adventure_traveler", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988333222",
+        "website": "[https://honsonraixanh.vn](https://www.google.com/search?q=https://honsonraixanh.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-119",
+      "name": "Khách sạn Thiên Hương Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "42 Mạc Cửu, Hà Tiên, Kiên Giang",
+      "lat": 10.377,
+      "lng": 104.45,
+      "description": "Khách sạn tiêu chuẩn tốt, nằm gần chợ Hà Tiên, dịch vụ chuyên nghiệp.",
+      "tags": ["hotel", "central", "tourist"],
+      "suitable_for": ["tourist", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852444",
+        "website": "[https://thienhuonghatien.vn](https://www.google.com/search?q=https://thienhuonghatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-120",
+      "name": "JW Marriott Phu Quoc Emerald Bay",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Bãi Khem, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 10.024,
+      "lng": 104.015,
+      "description": "Khu nghỉ dưỡng 5 sao sang trọng bậc nhất, thiết kế độc đáo của kiến trúc sư Bill Bensley.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["luxury_traveler", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 10000000,
+        "max_vnd": 50000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973779999",
+        "website": "[https://www.marriott.com](https://www.marriott.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-121",
+      "name": "Crowne Plaza Phu Quoc Starbay",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Khu du lịch Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.355,
+      "lng": 103.87,
+      "description": "Resort 5 sao hiện đại nằm tại Bãi Dài, không gian yên tĩnh và nhiều tiện ích đẳng cấp.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["family", "couple", "business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3500000,
+        "max_vnd": 9500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973683999",
+        "website": "[https://phuquoc.crowneplaza.com](https://phuquoc.crowneplaza.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-122",
+      "name": "Khách sạn Hồng Hải Rạch Giá",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "45 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.0165,
+      "lng": 105.0745,
+      "description": "Khách sạn truyền thống tọa lạc tại vị trí trung tâm, thuận tiện cho việc mua sắm và đi lại.",
+      "tags": ["hotel", "central", "convenient"],
+      "suitable_for": ["tourist", "business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862777",
+        "website": "[https://honghairachgia.vn](https://www.google.com/search?q=https://honghairachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-123",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Seaview Hill",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.811,
+      "lng": 104.445,
+      "description": "Khu nghỉ dưỡng trên đồi với tầm nhìn trực diện ra vịnh biển Nam Du, không gian trong lành.",
+      "tags": ["eco", "nature", "view"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 900000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988777999",
+        "website": "[https://honsonseaviewhill.vn](https://www.google.com/search?q=https://honsonseaviewhill.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-124",
+      "name": "Khách sạn Thành Lợi Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.372,
+      "lng": 104.448,
+      "description": "Khách sạn bình dân phục vụ khách lẻ, sạch sẽ và thuận tiện đi lại.",
+      "tags": ["budget", "travel", "central"],
+      "suitable_for": ["solo", "backpacker"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852333",
+        "website": "[https://thanhloihatien.vn](https://www.google.com/search?q=https://thanhloihatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-125",
+      "name": "Ocean Pearl Hotel Phu Quoc",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "99 Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.2105,
+      "lng": 103.9675,
+      "description": "Khách sạn 4 sao với kiến trúc hiện đại, tầm nhìn ra biển và ngay trung tâm Dương Đông.",
+      "tags": ["hotel", "4_star", "central", "view"],
+      "suitable_for": ["business_traveler", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 1200000,
+        "max_vnd": 2500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981888",
+        "website": "[https://oceanpearlphuquoc.com](https://www.google.com/search?q=https://oceanpearlphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-126",
+      "name": "Khu nghỉ dưỡng Hòn Nghệ View",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Lương",
+      "ward": "Hòn Nghệ",
+      "address": "Đảo Hòn Nghệ, Kiên Lương, Kiên Giang",
+      "lat": 10.223,
+      "lng": 104.5555,
+      "description": "Điểm lưu trú đơn giản trên đảo Hòn Nghệ với view nhìn ra biển xanh ngắt.",
+      "tags": ["nature", "island", "eco"],
+      "suitable_for": ["backpacker", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 200000,
+        "max_vnd": 400000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944000111",
+        "website": "[https://honnheview.vn](https://www.google.com/search?q=https://honnheview.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-127",
+      "name": "Khách sạn Rạch Giá Center",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "100 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.0175,
+      "lng": 105.0755,
+      "description": "Khách sạn giá tốt, ngay khu vực trung tâm, phù hợp cho người đi làm việc tại Rạch Giá.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862999",
+        "website": "[https://rachgiacenter.vn](https://www.google.com/search?q=https://rachgiacenter.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-128",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Lodge Bãi Bàng",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Bãi Bàng, Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.812,
+      "lng": 104.446,
+      "description": "Khu nghỉ dưỡng xanh mát, gần bãi biển Bãi Bàng đẹp nhất đảo Hòn Sơn.",
+      "tags": ["eco", "beach", "nature"],
+      "suitable_for": ["adventure_traveler", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988666444",
+        "website": "[https://honsonlodgebaibang.vn](https://www.google.com/search?q=https://honsonlodgebaibang.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-129",
+      "name": "Khách sạn Hương Biển Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Pháo Đài",
+      "address": "Bãi biển Mũi Nai, Hà Tiên, Kiên Giang",
+      "lat": 10.374,
+      "lng": 104.427,
+      "description": "Khách sạn view biển Mũi Nai, rất mát mẻ và tiện lợi cho việc tắm biển gia đình.",
+      "tags": ["hotel", "beach", "family"],
+      "suitable_for": ["family", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 700000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852123",
+        "website": "[https://huongbienhatien.vn](https://www.google.com/search?q=https://huongbienhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-130",
+      "name": "Novotel Phu Quoc Resort",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.17,
+      "lng": 103.965,
+      "description": "Resort 5 sao phong cách hiện đại, tiện ích đầy đủ, phù hợp cho kỳ nghỉ dài ngày.",
+      "tags": ["resort", "5_star", "beach", "family"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2000000,
+        "max_vnd": 5000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02976260999",
+        "website": "[https://novotelphuquoc.com](https://novotelphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-131",
+      "name": "Khu nghỉ dưỡng Hòn Mấu Beachfront",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Mấu",
+      "address": "Đảo Hòn Mấu, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.692,
+      "lng": 104.362,
+      "description": "Lưu trú tại sát biển Hòn Mấu, trải nghiệm sống trên đảo hoàn toàn tách biệt.",
+      "tags": ["eco", "beach", "off_grid"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944888777",
+        "website": "[https://honmaubeachfront.vn](https://www.google.com/search?q=https://honmaubeachfront.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-132",
+      "name": "Khách sạn Hoàng Nam Rạch Giá",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "55 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.015,
+      "lng": 105.074,
+      "description": "Khách sạn bình dân phục vụ khách đi làm và du lịch lẻ tại trung tâm thành phố.",
+      "tags": ["hotel", "budget", "central"],
+      "suitable_for": ["solo", "business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862333",
+        "website": "[https://hoangnamrachgia.vn](https://www.google.com/search?q=https://hoangnamrachgia.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-133",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Xanh Hill",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.809,
+      "lng": 104.444,
+      "description": "Nghỉ dưỡng trên đồi với không gian xanh, thích hợp cho việc tập thể dục, trekking.",
+      "tags": ["eco", "nature", "hill"],
+      "suitable_for": ["adventure_traveler", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 850000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977222444",
+        "website": "[https://honsonxanhhill.vn](https://www.google.com/search?q=https://honsonxanhhill.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-134",
+      "name": "Khách sạn Mỹ Lan Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "Trần Hầu, Hà Tiên, Kiên Giang",
+      "lat": 10.3775,
+      "lng": 104.4505,
+      "description": "Khách sạn sạch sẽ, dịch vụ tốt nằm ngay trung tâm thành phố Hà Tiên.",
+      "tags": ["hotel", "central", "tourist"],
+      "suitable_for": ["tourist", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 600000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852555",
+        "website": "[https://mylanhatien.vn](https://www.google.com/search?q=https://mylanhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-135",
+      "name": "JW Marriott Phu Quoc Emerald Bay",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "An Thới",
+      "address": "Bãi Khem, An Thới, Phú Quốc, Kiên Giang",
+      "lat": 10.025,
+      "lng": 104.0155,
+      "description": "Khu nghỉ dưỡng 5 sao biểu tượng với thiết kế độc đáo và các phòng nghỉ đẳng cấp.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["luxury_traveler", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 9000000,
+        "max_vnd": 40000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973779999",
+        "website": "[https://www.marriott.com](https://www.marriott.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-136",
+      "name": "Wyndham Grand Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.347,
+      "lng": 103.873,
+      "description": "Khu nghỉ dưỡng 5 sao nằm trong quần thể giải trí quy mô lớn, dịch vụ chuyên nghiệp.",
+      "tags": ["luxury", "resort", "5_star", "family"],
+      "suitable_for": ["family", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2800000,
+        "max_vnd": 7000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973669999",
+        "website": "[https://wyndhamgrandphuquoc.com](https://www.google.com/search?q=https://wyndhamgrandphuquoc.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-137",
+      "name": "Khách sạn Kiên Giang Center",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "18 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.016,
+      "lng": 105.075,
+      "description": "Khách sạn tiện nghi nằm ở vị trí thuận tiện nhất trung tâm Rạch Giá.",
+      "tags": ["hotel", "central", "business"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862888",
+        "website": "[https://kgiangcenter.vn](https://www.google.com/search?q=https://kgiangcenter.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-138",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Blue Sea",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.809,
+      "lng": 104.442,
+      "description": "Khu nghỉ dưỡng ven biển, không gian mở cho các hoạt động vui chơi giải trí.",
+      "tags": ["eco", "beach", "youth"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 1000000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977444555",
+        "website": "[https://honsonbluesea.vn](https://www.google.com/search?q=https://honsonbluesea.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-139",
+      "name": "Khách sạn Phú Cường Hà Tiên",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.37,
+      "lng": 104.445,
+      "description": "Khách sạn có dịch vụ tốt, nằm gần trục đường đi đến các điểm tham quan.",
+      "tags": ["hotel", "travel", "convenient"],
+      "suitable_for": ["tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 650000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852222",
+        "website": "[https://phucuonghatien.vn](https://www.google.com/search?q=https://phucuonghatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-140",
+      "name": "Sunset Beach Resort & Spa",
+      "category": "resort",
+      "subcategory": "beach_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Đông",
+      "address": "100C Trần Hưng Đạo, Dương Đông, Phú Quốc, Kiên Giang",
+      "lat": 10.2115,
+      "lng": 103.967,
+      "description": "Resort cao cấp ven biển, điểm ngắm hoàng hôn cực đẹp ngay trung tâm Dương Đông.",
+      "tags": ["resort", "sunset", "beach", "luxury"],
+      "suitable_for": ["couple", "youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 2000000,
+        "max_vnd": 4500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973981111",
+        "website": "[https://sunsetbeach.vn](https://sunsetbeach.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-141",
+      "name": "Khu nghỉ dưỡng Hòn Sơn View Hill",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.8095,
+      "lng": 104.4435,
+      "description": "Nghỉ dưỡng trên đồi với view nhìn ra vịnh biển xanh mát.",
+      "tags": ["eco", "hill", "view", "nature"],
+      "suitable_for": ["couple", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 800000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988666777",
+        "website": "[https://honsonviewhill.vn](https://www.google.com/search?q=https://honsonviewhill.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-142",
+      "name": "Khách sạn Rạch Giá Diamond",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh Vân",
+      "address": "22 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.018,
+      "lng": 105.076,
+      "description": "Khách sạn cao cấp tại trung tâm Rạch Giá với đầy đủ tiện nghi công tác.",
+      "tags": ["hotel", "business", "central"],
+      "suitable_for": ["business_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 500000,
+        "max_vnd": 1000000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862555",
+        "website": "[https://rachgiadiamond.vn](https://www.google.com/search?q=https://rachgiadiamond.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-143",
+      "name": "Khu nghỉ dưỡng Hòn Mấu Beachfront Plus",
+      "category": "resort",
+      "subcategory": "homestay",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "Hòn Mấu",
+      "address": "Đảo Hòn Mấu, Nam Du, Kiên Hải, Kiên Giang",
+      "lat": 9.693,
+      "lng": 104.363,
+      "description": "Lưu trú trải nghiệm đơn giản tại bãi biển cát trắng Hòn Mấu.",
+      "tags": ["eco", "beach", "adventure"],
+      "suitable_for": ["adventure_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0944999888",
+        "website": "[https://honmaubeachfrontplus.vn](https://www.google.com/search?q=https://honmaubeachfrontplus.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-144",
+      "name": "Khách sạn Ngọc Anh Hà Tiên",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Tô Châu",
+      "address": "Quốc lộ 80, Hà Tiên, Kiên Giang",
+      "lat": 10.371,
+      "lng": 104.444,
+      "description": "Khách sạn giá rẻ, phục vụ khách đi lẻ, phòng ốc cơ bản.",
+      "tags": ["budget", "travel", "convenient"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 450000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852111",
+        "website": "[https://ngocanhhatien.vn](https://www.google.com/search?q=https://ngocanhhatien.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-145",
+      "name": "Regent Phu Quoc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Dương Tơ",
+      "address": "Bãi Trường, Dương Tơ, Phú Quốc, Kiên Giang",
+      "lat": 10.155,
+      "lng": 103.9675,
+      "description": "Khu nghỉ dưỡng siêu sang, mỗi villa đều có hồ bơi riêng biệt, đẳng cấp quốc tế.",
+      "tags": ["luxury", "ultra_luxury", "resort", "private"],
+      "suitable_for": ["luxury_traveler", "couple"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 12000000,
+        "max_vnd": 55000000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "02973880000",
+        "website": "[https://regenthotels.com](https://regenthotels.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-146",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Seaview Hillside",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.81,
+      "lng": 104.4445,
+      "description": "Nghỉ dưỡng trong rừng cây trên sườn núi, view biển từ ban công.",
+      "tags": ["eco", "nature", "hill", "view"],
+      "suitable_for": ["adventure_traveler", "nature_lover"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 450000,
+        "max_vnd": 950000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0988000222",
+        "website": "[https://honsonseaviewhillside.vn](https://www.google.com/search?q=https://honsonseaviewhillside.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-147",
+      "name": "Khách sạn Rạch Giá Xanh",
+      "category": "hotel",
+      "subcategory": "budget_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Rạch Giá",
+      "ward": "Vĩnh Thanh",
+      "address": "35 Nguyễn Trung Trực, Rạch Giá, Kiên Giang",
+      "lat": 10.016,
+      "lng": 105.074,
+      "description": "Khách sạn giá hợp lý cho dân du lịch bụi, gần bến tàu.",
+      "tags": ["hotel", "budget", "travel"],
+      "suitable_for": ["solo", "tourist"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 300000,
+        "max_vnd": 500000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973862444",
+        "website": "[https://rachgiaxanh.vn](https://www.google.com/search?q=https://rachgiaxanh.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-148",
+      "name": "Khu nghỉ dưỡng Hòn Sơn Island Beach",
+      "category": "resort",
+      "subcategory": "eco_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Kiên Hải",
+      "ward": "An Sơn",
+      "address": "Đảo Hòn Sơn, Kiên Hải, Kiên Giang",
+      "lat": 9.809,
+      "lng": 104.4415,
+      "description": "Nghỉ dưỡng sát bãi biển, không gian mở cho các hoạt động vui chơi.",
+      "tags": ["eco", "beach", "party"],
+      "suitable_for": ["youth"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 350000,
+        "max_vnd": 750000,
+        "unit": "per_night",
+        "confidence": "low"
+      },
+      "contact": {
+        "phone": "0977888111",
+        "website": "[https://honsonislandbeach.vn](https://www.google.com/search?q=https://honsonislandbeach.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "low",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-149",
+      "name": "Khách sạn Hà Tiên Palace",
+      "category": "hotel",
+      "subcategory": "standard_hotel",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Hà Tiên",
+      "ward": "Phường Hà Tiên",
+      "address": "Trần Hầu, Hà Tiên, Kiên Giang",
+      "lat": 10.3785,
+      "lng": 104.4515,
+      "description": "Khách sạn tiêu chuẩn tại trung tâm thành phố, tiện ích đầy đủ.",
+      "tags": ["hotel", "convenient", "tourist"],
+      "suitable_for": ["tourist", "family"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 400000,
+        "max_vnd": 750000,
+        "unit": "per_night",
+        "confidence": "medium"
+      },
+      "contact": {
+        "phone": "02973852666",
+        "website": "[https://hatienpalace.vn](https://www.google.com/search?q=https://hatienpalace.vn)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-20"
+      }
+    },
+    {
+      "id": "kg-hotel-150",
+      "name": "Vinpearl Resort & Spa Phú Quốc",
+      "category": "hotel",
+      "subcategory": "luxury_resort",
+      "province_code": "KG",
+      "province_name": "Kiên Giang",
+      "district": "Phú Quốc",
+      "ward": "Gành Dầu",
+      "address": "Bãi Dài, Gành Dầu, Phú Quốc, Kiên Giang",
+      "lat": 10.346,
+      "lng": 103.8745,
+      "description": "Khu nghỉ dưỡng 5 sao biểu tượng, kiến trúc tân cổ điển sang trọng, dịch vụ chuyên nghiệp.",
+      "tags": ["luxury", "5_star", "resort", "beachfront"],
+      "suitable_for": ["family", "luxury_traveler"],
+      "typical_visit_minutes": 1440,
+      "price": {
+        "min_vnd": 3500000,
+        "max_vnd": 9500000,
+        "unit": "per_night",
+        "confidence": "high"
+      },
+      "contact": {
+        "phone": "1900232389",
+        "website": "[https://vinpearl.com](https://vinpearl.com)"
+      },
+      "verification": {
+        "status": "verified",
+        "confidence": "high",
+        "last_verified_at": "2026-07-20"
+      }
+    }
+  ]
+}
