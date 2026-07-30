@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef, ElementRef, ViewChild, OnChanges, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, Input, forwardRef, ElementRef, ViewChild, OnChanges, OnInit, OnDestroy, inject, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -21,6 +21,10 @@ export class CustomSelectComponent implements ControlValueAccessor, OnChanges, O
   @Input() placeholder: string = 'Chọn...';
   @Input() disabled: boolean = false;
   @Input() isInvalid: boolean = false;
+
+  @HostBinding('class.is-open') get hostIsOpen(): boolean {
+    return this.isOpen;
+  }
 
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
   @ViewChild('container') container!: ElementRef;

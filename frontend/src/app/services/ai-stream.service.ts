@@ -1,10 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { API_BASE_URL } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AiStreamService {
-  private readonly baseUrl = 'http://localhost:8000/api';
+  private readonly baseUrl = inject(API_BASE_URL);
 
   async streamMessage(
     tripId: string,

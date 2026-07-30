@@ -1,0 +1,296 @@
+<main class="min-h-screen text-on-surface px-[80px] py-stack-lg space-y-8" *ngIf="trip() as publication">
+
+  <!-- HERO BANNER -->
+  <section
+    class="hero rounded-3xl overflow-hidden relative border border-border-glass bg-surface-container shadow-2xl mb-8"
+  >
+    <div class="hero-content relative z-10 p-8 md:p-12 max-w-5xl">
+      <div class="flex items-center gap-3 flex-wrap mb-4">
+        <span class="official-badge px-3 py-1 rounded-full bg-status-success/20 border border-status-success/40 text-status-success text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
+          <span class="material-symbols-outlined text-sm">verified</span>
+          Lịch trình thực tế do tác giả xác nhận
+        </span>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold border bg-surface-variant/60 text-on-surface-variant border-border-glass">
+          {{ publication.destination }}
+        </span>
+      </div>
+
+      <h1 class="text-3xl md:text-5xl font-black tracking-tight mb-4 leading-tight text-on-surface">
+        {{ publication.title }}
+      </h1>
+      
+      <p class="text-base md:text-lg max-w-3xl leading-relaxed mb-6 text-on-surface-variant">
+        {{ publication.summary }}
+      </p>
+
+      <div class="hero-meta flex flex-wrap gap-4 text-sm font-medium mb-8">
+        <div class="meta-chip px-4 py-2 rounded-xl border flex items-center gap-2 font-semibold bg-surface/70 text-on-surface border-border-glass">
+          <span class="material-symbols-outlined text-primary text-base">location_on</span>
+          {{ publication.destination }}
+        </div>
+        <div class="meta-chip px-4 py-2 rounded-xl border flex items-center gap-2 font-semibold bg-surface/70 text-on-surface border-border-glass">
+          <span class="material-symbols-outlined text-primary text-base">calendar_today</span>
+          {{ publication.duration_days }} ngày
+        </div>
+        <div class="meta-chip px-4 py-2 rounded-xl border flex items-center gap-2 font-semibold bg-surface/70 text-on-surface border-border-glass">
+          <span class="material-symbols-outlined text-primary text-base">payments</span>
+          {{ money(publication.actual_cost_per_person) }} / người
+        </div>
+        <div class="meta-chip px-4 py-2 rounded-xl border flex items-center gap-2 font-semibold bg-surface/70 text-on-surface border-border-glass">
+          <span class="material-symbols-outlined text-status-warning text-base">star</span>
+          {{ publication.overall_rating != null ? publication.overall_rating : 'Chưa có đánh giá' }}
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-4 flex-wrap pt-4 border-t border-border-glass">
+        <div class="author flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center font-bold text-primary text-base">
+            {{ (publication.author.full_name || 'A')[0] }}
+          </div>
+          <div>
+            <div class="text-xs text-on-surface-variant">Chia sẻ bởi</div>
+            <div class="text-sm font-bold text-on-surface">{{ publication.author.full_name || 'Người dùng Aether' }}</div>
+          </div>
+          <button *ngIf="publication.author.id !== auth.currentUser()?.id" type="button" (click)="toggleFollow()" class="px-3 py-1.5 rounded-lg border border-primary/40 text-primary text-xs font-bold">{{ followingAuthor() ? 'Đang theo dõi' : 'Theo dõi' }}</button>
+        </div>
+
+        <div class="action-buttons flex items-center gap-3 flex-wrap justify-end">
+          <button
+            (click)="save()"
+            [disabled]="saving()"
+            [class.saved]="publication.is_saved"
+            class="btn-save px-5 py-2.5 rounded-xl border font-bold text-sm transition-all flex items-center gap-2 cursor-pointer bg-surface-variant/40 hover:bg-surface-variant border-border-glass text-on-surface"
+          >
+            <span class="material-symbols-outlined text-primary text-base">{{ publication.is_saved ? 'bookmark' : 'bookmark_add' }}</span>
+            {{ saving() ? 'Đang cập nhật...' : (publication.is_saved ? 'Đã lưu — Bấm để bỏ lưu' : 'Lưu lịch trình') }}
+          </button>
+          <button
+            *ngIf="publication.allow_clone"
+            (click)="openImport('full_trip')"
+            class="btn-clone px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold text-sm transition-all shadow-lg shadow-primary/25 flex items-center gap-2 cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-base">content_copy</span>
+            Dùng toàn bộ lịch trình
+          </button>
+        <div *ngIf="saveMessage()" class="save-feedback w-full text-sm font-semibold flex items-center justify-end gap-2 flex-wrap">
+          <span class="material-symbols-outlined text-base">{{ publication.is_saved ? 'check_circle' : 'info' }}</span>
+          <span>{{ saveMessage() }}</span>
+          <a *ngIf="publication.is_saved" routerLink="/community" [queryParams]="{ view: 'saved' }" class="underline">Xem lịch trình đã lưu</a>
+        </div>
+        <div *ngIf="publication.is_saved" class="w-full flex flex-wrap justify-end gap-2 mt-2">
+          <select [(ngModel)]="selectedCollectionId" class="rounded-lg border border-border-glass bg-surface-container px-3 py-2 text-xs">
+            <option value="">Chọn bộ sưu tập</option><option *ngFor="let collection of collections()" [value]="collection.id">{{ collection.name }} ({{ collection.item_count }})</option>
+          </select>
+          <button type="button" (click)="addToCollection()" [disabled]="!selectedCollectionId" class="px-3 py-2 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50">Thêm vào bộ sưu tập</button>
+          <input [(ngModel)]="newCollectionName" placeholder="Tên bộ sưu tập mới" class="rounded-lg border border-border-glass bg-surface-container px-3 py-2 text-xs" />
+          <button type="button" (click)="createCollection()" [disabled]="!newCollectionName.trim()" class="px-3 py-2 rounded-lg border border-primary/40 text-primary text-xs font-bold disabled:opacity-50">Tạo mới</button>
+          <p *ngIf="collectionMessage()" class="w-full text-right text-xs text-primary m-0">{{ collectionMessage() }}</p>
+        </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto rounded-3xl border border-border-glass bg-surface-container/60 p-6 md:p-8" *ngIf="feedback() as communityFeedback">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div><h2 class="text-xl font-bold m-0">Đánh giá và bình luận</h2><p class="text-sm text-on-surface-variant m-0 mt-1">{{ communityFeedback.rating_average || 'Chưa có' }}/5 · {{ communityFeedback.rating_count }} đánh giá</p></div>
+      <div class="flex gap-1"><button *ngFor="let star of [1,2,3,4,5]" type="button" (click)="submitRating(star)" class="bg-transparent border-none cursor-pointer p-0"><span class="material-symbols-outlined" [ngClass]="star <= selectedRating ? 'text-amber-400' : 'text-on-surface-variant'">star</span></button></div>
+    </div>
+    <div class="flex gap-2 mb-5"><textarea [(ngModel)]="commentText" rows="2" maxlength="2000" placeholder="Chia sẻ trải nghiệm của bạn..." class="flex-1 rounded-xl border border-border-glass bg-surface px-3 py-2 text-sm"></textarea><button type="button" (click)="submitComment()" [disabled]="!commentText.trim()" class="self-end px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50">Gửi</button></div>
+    <p *ngIf="feedbackMessage()" class="text-xs text-primary">{{ feedbackMessage() }}</p>
+    <div class="space-y-3"><article *ngFor="let comment of communityFeedback.comments" class="rounded-xl border border-border-glass p-4"><div class="flex items-center gap-2"><strong class="text-sm">{{ comment.user.full_name }}</strong><span *ngIf="comment.is_verified_trip" class="text-[10px] rounded-full px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Đã hoàn thành chuyến đi</span></div><p class="text-sm text-on-surface-variant mb-0 mt-2">{{ comment.content }}</p></article><p *ngIf="!communityFeedback.comments.length" class="text-sm text-on-surface-variant">Chưa có bình luận nào.</p></div>
+  </section>
+
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-4 md:px-0">
+    
+    <!-- TIMELINE COLUMN -->
+    <section class="timeline lg:col-span-2 space-y-8">
+      <article class="day-card bg-surface/60 border border-border-glass rounded-2xl p-6 shadow-xl backdrop-blur-md" *ngFor="let day of publication.snapshot_json.days">
+        <div class="day-heading flex items-center justify-between border-b border-border-glass pb-4 mb-6">
+          <div>
+            <span class="text-xs font-black tracking-widest text-primary uppercase">NGÀY {{ day.day_number }}</span>
+            <h2 class="text-xl md:text-2xl font-bold text-on-surface mt-1">{{ day.title }}</h2>
+          </div>
+          <button *ngIf="publication.allow_partial_import" (click)="openImport('day', day)" class="px-3.5 py-1.5 rounded-lg border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">add</span>
+            Thêm ngày này
+          </button>
+        </div>
+
+        <div class="activities-list space-y-6">
+          <div class="activity-item grid grid-cols-[60px_1fr] gap-4 items-start" *ngFor="let activity of day.activities">
+            <div class="time text-right pt-1">
+              <span class="text-sm font-bold text-on-surface block">{{ activity.start_time || '—' }}</span>
+              <small class="text-xs text-on-surface-variant block mt-0.5">{{ activity.end_time }}</small>
+            </div>
+
+            <div class="activity-card bg-surface-variant/30 border border-border-glass hover:border-primary/40 transition-all rounded-xl p-5 relative">
+              <div class="activity-top flex items-start justify-between gap-4 mb-2">
+                <div>
+                  <span [class]="verdictClass(activity.author_verdict)" class="inline-block mb-2">
+                    {{ verdictLabel(activity.author_verdict) }}
+                  </span>
+                  <h3 class="text-base md:text-lg font-bold text-on-surface">{{ activity.title }}</h3>
+                </div>
+                <button *ngIf="publication.allow_partial_import" (click)="openImport('activity', day, activity)" class="px-3 py-1 rounded-lg border border-border-glass bg-surface-variant/50 hover:bg-surface-variant text-xs font-semibold text-on-surface-variant cursor-pointer flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">add</span>
+                  Thêm
+                </button>
+              </div>
+
+              <p class="address text-xs text-on-surface-variant flex items-center gap-1 mb-3" *ngIf="activity.address">
+                <span class="material-symbols-outlined text-sm text-primary">location_on</span>
+                {{ activity.address }}
+              </p>
+
+              <div class="facts flex flex-wrap gap-3 text-xs text-on-surface-variant mb-3">
+                <span *ngIf="activity.rating" class="flex items-center gap-1 text-status-warning font-medium">
+                  <span class="material-symbols-outlined text-xs">star</span> {{ activity.rating }}/5
+                </span>
+                <span *ngIf="activity.actual_cost != null" class="font-semibold text-on-surface">
+                  💰 {{ money(activity.actual_cost) }}
+                </span>
+                <span *ngIf="activity.best_time" class="text-on-surface-variant">
+                  🕒 {{ activity.best_time }}
+                </span>
+              </div>
+
+              <blockquote class="note-quote border-l-3 border-primary bg-surface/50 p-3 rounded-r-xl text-xs text-on-surface-variant italic" *ngIf="activity.next_traveler_note">
+                “{{ activity.next_traveler_note }}”
+                <small class="block font-semibold not-italic text-primary/80 mt-1.5">— Ghi chú từ tác giả</small>
+              </blockquote>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- SIDEBAR COLUMN -->
+    <aside class="sidebar space-y-6">
+      <div class="side-card bg-surface/60 border border-border-glass rounded-2xl p-6 shadow-xl backdrop-blur-md">
+        <h3 class="text-base font-bold text-on-surface mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">payments</span>
+          Chi phí thực tế
+        </h3>
+        <div class="text-2xl font-black text-primary mb-1">{{ money(publication.actual_total_cost) }}</div>
+        <p class="text-xs text-on-surface-variant">
+          {{ publication.cost_is_verified ? '✓ Tác giả đã kiểm tra & xác nhận chi phí' : 'Mức chi phí tham khảo' }}
+        </p>
+      </div>
+
+      <div class="side-card bg-surface/60 border border-border-glass rounded-2xl p-6 shadow-xl backdrop-blur-md" *ngIf="publication.snapshot_json.review.best_places.length">
+        <h3 class="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-status-warning">recommend</span>
+          Điểm đáng đi nhất
+        </h3>
+        <ul class="space-y-2 text-xs text-on-surface-variant">
+          <li *ngFor="let place of publication.snapshot_json.review.best_places" class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            {{ place }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="side-card bg-surface/60 border border-border-glass rounded-2xl p-6 shadow-xl backdrop-blur-md" *ngIf="publication.snapshot_json.review.best_foods.length">
+        <h3 class="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-status-warning">restaurant</span>
+          Đặc sản nên thử
+        </h3>
+        <ul class="space-y-2 text-xs text-on-surface-variant">
+          <li *ngFor="let food of publication.snapshot_json.review.best_foods" class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-status-success"></span>
+            {{ food }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="side-card bg-surface/60 border border-border-glass rounded-2xl p-6 shadow-xl backdrop-blur-md" *ngIf="publication.snapshot_json.review.tips as tips">
+        <h3 class="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">lightbulb</span>
+          Lời khuyên chung
+        </h3>
+        <p class="text-xs text-on-surface-variant leading-relaxed">{{ tips }}</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- IMPORT MODAL -->
+  <div class="modal-backdrop fixed inset-x-0 bottom-0 top-16 bg-black/80 backdrop-blur-sm grid place-items-center p-4 z-[100]" *ngIf="isImportOpen()" (click)="isImportOpen.set(false)">
+    <section class="import-modal relative w-full max-w-lg bg-surface border border-border-glass rounded-2xl p-6 shadow-2xl" (click)="$event.stopPropagation()">
+      <button class="close absolute right-4 top-4 text-on-surface-variant hover:text-on-surface text-xl font-bold bg-transparent border-0 cursor-pointer" (click)="isImportOpen.set(false)">×</button>
+      
+      <h2 class="text-xl font-bold text-on-surface mb-2">
+        {{ importMode === 'full_trip' ? 'Dùng toàn bộ lịch trình' : importMode === 'day' ? 'Thêm ngày vào chuyến' : 'Thêm địa điểm vào chuyến' }}
+      </h2>
+      <p class="text-xs text-on-surface-variant mb-6">
+        Lịch trình được sao chép độc lập vào tài khoản của bạn.
+      </p>
+
+      <ng-container *ngIf="importMode === 'full_trip'; else partialImport">
+        <div class="space-y-4 mb-6">
+          <label class="block text-xs font-bold text-on-surface">Tên chuyến mới
+            <input type="text" class="w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-border-glass bg-surface-container-high text-on-surface text-sm" [(ngModel)]="newTripTitle" />
+          </label>
+          <label class="block text-xs font-bold text-on-surface">Ngày bắt đầu
+            <input type="date" class="w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-border-glass bg-surface-container-high text-on-surface text-sm" [(ngModel)]="startDate" />
+          </label>
+        </div>
+      </ng-container>
+
+      <ng-template #partialImport>
+        <div class="space-y-4 mb-6">
+          <label class="block text-xs font-bold text-on-surface">Chuyến đi của bạn
+            <select class="w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-border-glass bg-surface-container-high text-on-surface text-sm" [(ngModel)]="targetTripId" (change)="onTargetTripChange()">
+              <option value="">Chọn chuyến đi</option>
+              <option *ngFor="let item of targetTrips()" [value]="item.id">{{ item.title }}</option>
+            </select>
+          </label>
+          <label class="block text-xs font-bold text-on-surface">Ngày muốn thêm
+            <select class="w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-border-glass bg-surface-container-high text-on-surface text-sm" [(ngModel)]="targetDayId">
+              <option value="">Chọn ngày</option>
+              <option *ngFor="let day of targetDays()" [value]="day.id">Ngày {{ day.day_number }} — {{ day.date | date:'dd/MM/yyyy' }}</option>
+            </select>
+          </label>
+        </div>
+      </ng-template>
+
+      <div class="import-error p-3 rounded-xl bg-status-danger/20 border border-status-danger/40 text-status-danger text-xs mb-4" *ngIf="importError()">
+        {{ importError() }}
+      </div>
+      
+      <div class="preview p-3.5 rounded-xl bg-status-success/15 border border-status-success/30 text-xs mb-6" *ngIf="importPreview() as result">
+        <strong class="text-status-success block font-bold mb-1">{{ result.items.length }} hoạt động sẵn sàng</strong>
+        <p class="text-on-surface-variant">Chi phí thêm dự kiến: {{ money(result.estimated_added_cost) }}</p>
+      </div>
+
+      <div class="actions flex justify-end gap-3 pt-4 border-t border-border-glass">
+        <button (click)="preview()" class="px-4 py-2 rounded-xl border border-border-glass bg-surface-variant/40 hover:bg-surface-variant text-on-surface font-semibold text-xs transition-colors cursor-pointer">
+          Kiểm tra trước
+        </button>
+        <button (click)="confirmImport()" [disabled]="importing()" class="px-5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold text-xs transition-colors cursor-pointer">
+          {{ importing() ? 'Đang thêm...' : 'Xác nhận thêm' }}
+        </button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div *ngIf="loading()" class="page-state min-h-screen grid place-items-center text-on-surface-variant font-medium">
+  <div class="flex items-center gap-3">
+    <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+    Đang tải lịch trình...
+  </div>
+</div>
+
+<div *ngIf="error()" class="page-state min-h-screen grid place-items-center text-status-danger font-medium p-4 text-center">
+  <div class="max-w-md bg-surface/80 border border-status-danger/30 rounded-2xl p-6 backdrop-blur-md">
+    <span class="material-symbols-outlined text-4xl text-status-danger mb-2">error_outline</span>
+    <h3 class="text-lg font-bold text-on-surface mb-1">Không thể tải bài viết</h3>
+    <p class="text-xs text-on-surface-variant mb-4">{{ error() }}</p>
+    <a routerLink="/community" class="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold text-decoration-none">
+      Quay lại Cộng đồng
+    </a>
+  </div>
+</div>

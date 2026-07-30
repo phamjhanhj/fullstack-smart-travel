@@ -26,11 +26,12 @@ trip_shares_router = APIRouter(prefix="/trips/{trip_id}/shares", tags=["Trip Sha
 trip_invites_router = APIRouter(prefix="/trip-invites", tags=["Trip Sharing"])
 
 
-def _invite_response(invite, token: str | None = None) -> TripInviteResponse:
+def _invite_response(invite, token: str | None = None, email_sent: bool | None = None) -> TripInviteResponse:
     data = TripInviteResponse.model_validate(invite)
     if token:
         data.token = token
         data.accept_url = f"/trip-invites/{token}"
+    data.email_sent = email_sent
     return data
 
 
@@ -59,8 +60,8 @@ async def create_invite(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    invite, token = await trip_share_service.create_invite(db, trip, current_user, payload)
-    return envelope_created(data=_invite_response(invite, token), message="Da tao loi moi chia se")
+    invite, token, email_sent = await trip_share_service.create_invite(db, trip, current_user, payload)
+    return envelope_created(data=_invite_response(invite, token, email_sent), message="Da tao loi moi chia se")
 
 
 @trip_invites_router.get("/pending")

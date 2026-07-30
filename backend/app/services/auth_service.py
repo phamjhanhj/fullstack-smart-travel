@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import uuid
+import secrets
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
 from jose import JWTError
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -20,35 +22,120 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
+from app.models.account_token import AccountToken
 from app.schemas.auth import RegisterRequest
+from app.services import email_service
 
 
 async def register_user(db: AsyncSession, payload: RegisterRequest) -> User:
-    """Dang ky tai khoan moi - kiem tra email da ton tai chua truoc khi tao."""
-    normalized_email = payload.email.lower()
-    existing = await db.execute(select(User).where(func.lower(User.email) == normalized_email))
+    """Dang ky tai khoan moi voi ten dang nhap duy nhat."""
+    normalized_username = payload.username.lower()
+    existing = await db.execute(select(User).where(func.lower(User.username) == normalized_username))
     if existing.scalar_one_or_none() is not None:
+        raise AppError("Ten dang nhap da duoc su dung", status_code=400)
+
+    normalized_email = str(payload.email).lower()
+    existing_email = await db.execute(select(User).where(func.lower(User.email) == normalized_email))
+    if existing_email.scalar_one_or_none() is not None:
         raise AppError("Email da duoc su dung", status_code=400)
 
     user = User(
+        username=normalized_username,
         email=normalized_email,
         password_hash=hash_password(payload.password),
         full_name=payload.full_name,
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise AppError("Ten dang nhap hoac email da duoc su dung", status_code=400)
     await db.refresh(user)
     return user
 
 
-async def authenticate_user(db: AsyncSession, email: str, password: str) -> User:
-    """Xac thuc email/password. Raise 401 neu sai (khong tiet lo email co ton tai hay khong)."""
-    result = await db.execute(select(User).where(func.lower(User.email) == email.lower()))
+async def authenticate_user(db: AsyncSession, login: str, password: str) -> User:
+    """Xac thuc bang username hoac email ma khong tiet lo tai khoan co ton tai hay khong."""
+    normalized_login = login.lower()
+    result = await db.execute(
+        select(User).where(
+            (func.lower(User.username) == normalized_login)
+            | (func.lower(User.email) == normalized_login)
+        )
+    )
     user = result.scalar_one_or_none()
 
     if user is None or not verify_password(password, user.password_hash):
-        raise UnauthorizedError("Email hoac mat khau khong dung")
+        raise UnauthorizedError("Ten dang nhap, email hoac mat khau khong dung")
 
+    if user.email and user.email_verified_at is None:
+        raise AppError("Email chua duoc xac minh", status_code=403)
+
+    return user
+
+
+async def send_verification_for_user(db: AsyncSession, user: User) -> None:
+    if not user.email or user.email_verified_at is not None:
+        return
+    now = datetime.now(timezone.utc)
+    await db.execute(
+        update(AccountToken)
+        .where(
+            AccountToken.user_id == user.id,
+            AccountToken.token_type == "email_verification",
+            AccountToken.used_at.is_(None),
+        )
+        .values(used_at=now)
+    )
+    token = secrets.token_urlsafe(48)
+    db.add(
+        AccountToken(
+            user_id=user.id,
+            token_hash=_hash_token(token),
+            token_type="email_verification",
+            expires_at=now + timedelta(hours=24),
+        )
+    )
+    await db.commit()
+    await email_service.send_verification_email(user.email, user.full_name, token)
+
+
+async def resend_verification(db: AsyncSession, login: str) -> None:
+    result = await db.execute(
+        select(User).where(
+            (func.lower(User.username) == login.lower())
+            | (func.lower(User.email) == login.lower())
+        )
+    )
+    user = result.scalar_one_or_none()
+    if user is not None:
+        await send_verification_for_user(db, user)
+
+
+async def verify_email(db: AsyncSession, token: str) -> User:
+    now = datetime.now(timezone.utc)
+    result = await db.execute(
+        select(AccountToken).where(
+            AccountToken.token_hash == _hash_token(token),
+            AccountToken.token_type == "email_verification",
+            AccountToken.used_at.is_(None),
+        )
+    )
+    stored = result.scalar_one_or_none()
+    expires_at = stored.expires_at if stored else None
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if stored is None or expires_at is None or expires_at < now:
+        raise AppError("Lien ket xac minh khong hop le hoac da het han")
+    user_result = await db.execute(select(User).where(User.id == stored.user_id))
+    user = user_result.scalar_one_or_none()
+    if user is None:
+        raise AppError("Tai khoan khong ton tai")
+    user.email_verified_at = now
+    stored.used_at = now
+    await db.commit()
+    await db.refresh(user)
     return user
 
 

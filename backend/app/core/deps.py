@@ -20,6 +20,24 @@ from app.models.user import User
 from app.services import trip_share_service
 
 
+async def get_optional_current_user(
+    authorization: str | None = Header(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """Return the signed-in user when a valid access token is present, otherwise None."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    token = authorization.removeprefix("Bearer ").strip()
+    try:
+        payload = decode_token(token)
+        if payload.get("type") != "access":
+            return None
+        user_id = uuid.UUID(payload["sub"])
+    except (JWTError, KeyError, ValueError):
+        return None
+    result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
+
 async def get_current_user(
     authorization: str | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
@@ -93,6 +111,6 @@ async def get_trip_owner_access(
 
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
     admin_emails = settings.admin_email_set
-    if not admin_emails or current_user.email.lower() not in admin_emails:
+    if not admin_emails or (current_user.email or "").lower() not in admin_emails:
         raise ForbiddenError("Ban khong co quyen truy cap chuc nang quan tri")
     return current_user

@@ -1,112 +1,164 @@
 @import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-:root {
+:root,
+html.dark {
+  color-scheme: dark;
   /* Core variables */
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  --color-primary: #ff385c;
-  --color-primary-hover: #e00b41;
-  --color-primary-disabled: #ffd1da;
   
-  /* Primary Tint / Accents (Dark Mode) */
-  --color-primary-tint: #c0c1ff;
-  --color-primary-container: #8083ff;
-  --color-secondary: #d0bcff;
-  --color-tertiary: #4edea3;
-  --color-tertiary-container: #00885d;
+  /* Primary & Accent (Dark Mode) - Quy tắc #3B82F6 */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-disabled: #1e3a8a;
   
-  /* Surface colors */
-  --color-background: #0f131d;
-  --color-bg-slate-light: #111827;
-  --color-bg-slate-deep: #0b0f19;
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
   
-  --color-surface: #0f131d;
-  --color-surface-container: #1c1f2a;
-  --color-surface-container-low: #171b26;
-  --color-surface-container-high: #262a35;
-  --color-surface-container-highest: #313540;
-  --color-surface-container-lowest: #0a0e18;
+  --color-primary-tint: #60a5fa;
+  --color-primary-container: #1e40af;
+  --color-secondary: #93c5fd;
+  --color-tertiary: #34d399;
+  --color-tertiary-container: #065f46;
   
-  /* Foreground colors */
-  --color-on-surface: #dfe2f1;
-  --color-on-surface-variant: #c7c4d7;
-  --color-outline: #908fa0;
-  --color-outline-variant: #464554;
-  --color-border-glass: rgba(255, 255, 255, 0.1);
+  /* Status Colors */
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  
+  /* Surface colors (Dark Mode: #111318 & Container: #1F2025) */
+  --color-background: #111318;
+  --color-bg-slate-light: #181a20;
+  --color-bg-slate-deep: #0e0f13;
+  
+  --color-surface: #111318;
+  --color-surface-dim: #181a20;
+  --color-surface-container: #1f2025;
+  --color-surface-container-low: #181a20;
+  --color-surface-container-high: #282a30;
+  --color-surface-container-highest: #33353c;
+  --color-surface-container-lowest: #111318;
+  
+  /* Foreground colors (Dark Mode: Main Text #E2E2E6, Sub Text #C4C6D0) */
+  --color-on-surface: #e2e2e6;
+  --color-on-surface-variant: #c4c6d0;
+  --color-outline: #8e9099;
+  --color-outline-variant: #44474e;
+  --color-border-glass: rgba(255, 255, 255, 0.08);
 
-  /* Glassmorphism overrides */
-  --color-glass-card-bg: rgba(31, 41, 55, 0.4);
-  --color-glass-card-border: rgba(24, 18, 18, 0.08);
-  --color-glass-card-hover-border: rgba(192, 193, 255, 0.25);
-  --color-glass-panel-bg: rgba(17, 24, 39, 0.7);
-  --color-glass-panel-border: rgba(255, 255, 255, 0.1);
-  --color-hero-gradient: linear-gradient(rgba(11, 15, 25, 0.6), rgba(11, 15, 25, 0.8));
+  /* Component & Glassmorphism overrides */
+  --color-glass-card-bg: #1f2025;
+  --color-glass-card-border: rgba(255, 255, 255, 0.08);
+  --color-glass-card-hover-border: rgba(59, 130, 246, 0.4);
+  --color-glass-panel-bg: #181a20;
+  --color-glass-panel-border: rgba(255, 255, 255, 0.08);
+  --color-hero-gradient: linear-gradient(rgba(17, 19, 24, 0.6), rgba(17, 19, 24, 0.9));
   
-  /* Legacy styles.css variables mapped */
-  --color-ink: #dfe2f1;
-  --color-body: #c7c4d7;
-  --color-muted: #908fa0;
-  --color-hairline: rgba(255, 255, 255, 0.1);
-  --color-border-strong: rgba(255, 255, 255, 0.2);
-  --color-canvas: #0b0f19;
-  --color-surface-soft: #0b0f19;
-  --color-surface-strong: #1c1f2a;
-  --color-error-text: #ffb4ab;
-  --color-error-bg: rgba(255, 180, 171, 0.1);
+  /* Mapped variables */
+  --color-ink: #e2e2e6;
+  --color-body: #c4c6d0;
+  --color-muted: #8e9099;
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --color-canvas: #181a20;
+  --color-surface-soft: #111318;
+  --color-surface-strong: #1f2025;
+  --color-error-text: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
   --color-success-text: #10b981;
   --color-success-bg: rgba(16, 185, 129, 0.1);
-  --shadow-tier: rgba(255, 255, 255, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.4) 0 4px 12px 0;
+  --shadow-tier: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 html.light {
-  /* Primary Tint / Accents (Ethereal Clarity overrides) */
-  --color-primary-tint: #4648d4;       /* primary */
-  --color-primary-container: #6063ee;  /* primary-container */
-  --color-secondary: #712ae2;          /* secondary */
-  --color-tertiary: #904900;           /* tertiary */
-  --color-tertiary-container: #b55d00;  /* tertiary-container */
+  color-scheme: light;
   
-  /* Surface colors */
-  --color-background: #fcf8ff;         /* background */
-  --color-bg-slate-light: #e4e1ed;     /* surface-variant */
-  --color-bg-slate-deep: #ffffff;      /* surface-container-lowest */
+  /* Primary & Accent (Light Mode) - Quy tắc #3B82F6 */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-disabled: #bfdbfe;
   
-  --color-surface: #fcf8ff;            /* surface */
-  --color-surface-container: #efecf8;  /* surface-container */
-  --color-surface-container-low: #f5f2fe; /* surface-container-low */
-  --color-surface-container-high: #e9e6f3; /* surface-container-high */
-  --color-surface-container-highest: #e4e1ed; /* surface-container-highest */
-  --color-surface-container-lowest: #ffffff; /* surface-container-lowest */
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
   
-  /* Foreground colors */
-  --color-on-surface: #1b1b23;         /* on-surface */
-  --color-on-surface-variant: #464554; /* on-surface-variant */
-  --color-outline: #767586;            /* outline */
-  --color-outline-variant: #c7c4d7;    /* outline-variant */
-  --color-border-glass: rgba(70, 72, 212, 0.08); /* light violet tinted transparent border */
+  --color-primary-tint: #2563eb;
+  --color-primary-container: #dbeafe;
+  --color-secondary: #1d4ed8;
+  --color-tertiary: #059669;
+  --color-tertiary-container: #d1fae5;
+  
+  /* Status Colors */
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  
+  /* Surface colors (Light Mode: Main #FAF8FF, Dim/Sidebar #F2F3FF) */
+  --color-background: #faf8ff;
+  --color-bg-slate-light: #f2f3ff;
+  --color-bg-slate-deep: #ffffff;
+  
+  --color-surface: #faf8ff;
+  --color-surface-dim: #f2f3ff;
+  --color-surface-container: #f2f3ff;
+  --color-surface-container-low: #f7f6ff;
+  --color-surface-container-high: #eae8f7;
+  --color-surface-container-highest: #e0def0;
+  --color-surface-container-lowest: #ffffff;
+  
+  /* Foreground colors (Light Mode: Main Text #1A1C1E, Sub Text #44474E) */
+  --color-on-surface: #1a1c1e;
+  --color-on-surface-variant: #44474e;
+  --color-outline: #74777f;
+  --color-outline-variant: #c4c6d0;
+  --color-border-glass: rgba(0, 0, 0, 0.08);
 
-  /* Glassmorphism overrides */
-  --color-glass-card-bg: rgba(255, 255, 255, 0.8);
-  --color-glass-card-border: rgba(70, 72, 212, 0.08);
-  --color-glass-card-hover-border: rgba(70, 72, 212, 0.16);
-  --color-glass-panel-bg: rgba(255, 255, 255, 0.85);
-  --color-glass-panel-border: rgba(70, 72, 212, 0.08);
-  --color-hero-gradient: linear-gradient(rgba(252, 248, 255, 0.5), rgba(252, 248, 255, 0.85));
+  /* Component & Glassmorphism overrides */
+  --color-glass-card-bg: #ffffff;
+  --color-glass-card-border: #e2e8f0;
+  --color-glass-card-hover-border: #3b82f6;
+  --color-glass-panel-bg: #f2f3ff;
+  --color-glass-panel-border: #e2e8f0;
+  --color-hero-gradient: linear-gradient(rgba(250, 248, 255, 0.5), rgba(250, 248, 255, 0.9));
   
-  /* Legacy styles.css variables mapped */
-  --color-ink: #1b1b23;
-  --color-body: #464554;
-  --color-muted: #767586;
-  --color-hairline: rgba(70, 72, 212, 0.08);
-  --color-border-strong: rgba(27, 27, 35, 0.12);
+  /* Mapped variables */
+  --color-ink: #1a1c1e;
+  --color-body: #44474e;
+  --color-muted: #74777f;
+  --color-hairline: #e2e8f0;
+  --color-border-strong: rgba(26, 28, 30, 0.15);
   --color-canvas: #ffffff;
-  --color-surface-soft: #fcf8ff;
-  --color-surface-strong: #e9e6f3;
-  --color-error-text: #ba1a1a;         /* error */
-  --color-error-bg: rgba(186, 26, 26, 0.08);
-  --color-success-text: #0f9d58;
-  --color-success-bg: rgba(15, 157, 88, 0.08);
-  --shadow-tier: 0 10px 30px -10px rgba(70, 72, 212, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --color-surface-soft: #faf8ff;
+  --color-surface-strong: #f2f3ff;
+  --color-error-text: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.08);
+  --color-success-text: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.08);
+  --shadow-tier: 0 4px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+/* Custom 6px Scrollbar (Light & Dark) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 * {
@@ -420,9 +472,9 @@ html.light input[type="date"] {
 
 /* Global Select Custom Styling */
 select {
-  appearance: none !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
+  appearance: none !important;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23908fa0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") !important;
   background-position: right 1rem center !important;
   background-repeat: no-repeat !important;
@@ -441,36 +493,112 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Custom beautiful inputs styled like custom-select */
+/* Custom beautiful inputs & form controls theme adaptivity */
+input:not([type]),
 input[type="text"],
 input[type="number"],
 input[type="date"],
 input[type="email"],
 input[type="password"],
+input[type="url"],
+input[type="search"],
+select,
 textarea {
-  background-color: var(--color-surface-container-low) !important;
+  background-color: var(--color-surface-container-high) !important;
   border: 1px solid var(--color-border-glass) !important;
   border-radius: 0.75rem !important;
   color: var(--color-on-surface) !important;
+  color-scheme: dark;
   transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-input[type="text"]:hover:not(:disabled),
-input[type="number"]:hover:not(:disabled),
-input[type="date"]:hover:not(:disabled),
-input[type="email"]:hover:not(:disabled),
-input[type="password"]:hover:not(:disabled),
-textarea:hover:not(:disabled) {
-  border-color: var(--color-primary-container) !important;
+html.light input:not([type]),
+html.light input[type="text"],
+html.light input[type="number"],
+html.light input[type="date"],
+html.light input[type="email"],
+html.light input[type="password"],
+html.light input[type="url"],
+html.light input[type="search"],
+html.light select,
+html.light textarea {
+  background-color: var(--color-surface-container-lowest) !important;
+  border: 1px solid var(--color-outline-variant) !important;
+  color: var(--color-on-surface) !important;
+  color-scheme: light;
 }
 
-input[type="text"]:focus:not(:disabled),
-input[type="number"]:focus:not(:disabled),
-input[type="date"]:focus:not(:disabled),
-input[type="email"]:focus:not(:disabled),
-input[type="password"]:focus:not(:disabled),
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--color-primary) !important;
+}
+
+input:focus:not(:disabled),
+select:focus:not(:disabled),
 textarea:focus:not(:disabled) {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.2) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
   outline: none !important;
 }
+
+/* Option dropdown styling for light and dark themes */
+option {
+  background-color: #1c1f2a !important;
+  color: #dfe2f1 !important;
+}
+
+html.light option {
+  background-color: #ffffff !important;
+  color: #1b1b23 !important;
+}
+
+/* Webkit autofill fix for Chrome/Edge/Safari */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-on-surface) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface-container-high) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+html.light input:-webkit-autofill,
+html.light input:-webkit-autofill:hover, 
+html.light input:-webkit-autofill:focus, 
+html.light input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-on-surface) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-surface-container-lowest) inset !important;
+}
+
+/* Explicit Import Modal Form Styling */
+.import-modal input,
+.import-modal select {
+  background-color: #1c1f2a !important;
+  color: #dfe2f1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+html.light .import-modal input,
+html.light .import-modal select {
+  background-color: #ffffff !important;
+  color: #1b1b23 !important;
+  border: 1px solid #c7c4d7 !important;
+}
+
+/* Global Modal & Scrim positioning: Ensure popups start below top navbar header (h-16 / 64px) */
+.modal-scrim,
+.modal-backdrop {
+  top: 64px !important;
+  height: calc(100vh - 64px) !important;
+}
+
+@media (max-width: 768px) {
+  .modal-scrim,
+  .modal-backdrop {
+    top: 64px !important;
+    bottom: 64px !important;
+    height: calc(100vh - 128px) !important;
+  }
+}
+

@@ -52,7 +52,9 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_validation_error(request: Request, exc: RequestValidationError):
         fields = {str(error.get("loc", [""])[-1]) for error in exc.errors()}
         message = "Validation error"
-        if "email" in fields:
+        if "username" in fields:
+            message = "Ten dang nhap khong hop le"
+        elif "email" in fields:
             message = "Email khong hop le"
         elif "password" in fields:
             message = "Mat khau khong hop le"

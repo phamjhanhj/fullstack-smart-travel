@@ -1,0 +1,206 @@
+<main class="max-w-[1440px] mx-auto px-margin-mobile md:px-[80px] py-8 min-h-screen text-on-surface">
+  <!-- Header Section -->
+  <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative mb-8">
+    <div>
+      <h1 class="font-headline-xl text-headline-xl mb-2 gradient-text">Cộng đồng Lịch trình</h1>
+      <p class="font-body-lg text-body-lg text-on-surface-variant">Khám phá những chuyến đi thực tế được chia sẻ bởi cộng đồng Aether Travel.</p>
+    </div>
+    <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-2 border border-border-glass shadow-sm">
+      <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+      <span class="font-label-md text-label-md text-on-surface font-semibold">Lịch trình đã xác minh</span>
+    </div>
+  </header>
+
+  <!-- Filters & Navigation Bar (Light & Dark Theme Compatible) -->
+  <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 sticky top-16 z-40 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-md py-4">
+    <div class="flex items-center gap-1.5 glass-panel p-1 rounded-full border border-border-glass">
+      <button
+        type="button"
+        (click)="setView('explore')"
+        [class.bg-primary]="view() === 'explore'"
+        [class.text-white]="view() === 'explore'"
+        [class.shadow-md]="view() === 'explore'"
+        [class.text-on-surface-variant]="view() !== 'explore'"
+        [class.hover:text-on-surface]="view() !== 'explore'"
+        class="px-6 py-2 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer"
+      >
+        Khám phá
+      </button>
+      <button
+        type="button"
+        (click)="setView('saved')"
+        [class.bg-primary]="view() === 'saved'"
+        [class.text-white]="view() === 'saved'"
+        [class.shadow-md]="view() === 'saved'"
+        [class.text-on-surface-variant]="view() !== 'saved'"
+        [class.hover:text-on-surface]="view() !== 'saved'"
+        class="px-6 py-2 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer"
+      >
+        Đã lưu
+      </button>
+      <button type="button" (click)="setView('recommended')" [class.bg-primary]="view() === 'recommended'" [class.text-white]="view() === 'recommended'" [class.text-on-surface-variant]="view() !== 'recommended'" class="px-6 py-2 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer">Dành cho bạn</button>
+    </div>
+
+    <div class="flex items-center gap-3 w-full md:w-auto" *ngIf="view() === 'explore'">
+      <!-- Search Input Box -->
+      <div class="relative flex-1 md:w-64 glass-panel rounded-full overflow-hidden border border-border-glass">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
+        <input
+          [(ngModel)]="destination"
+          (keyup.enter)="load()"
+          class="w-full bg-transparent border-none text-on-surface pl-10 pr-4 py-2 focus:ring-1 focus:ring-primary font-body-sm text-body-sm placeholder:text-on-surface-variant/60 outline-none"
+          placeholder="Tìm kiếm địa điểm..."
+          type="text"
+        />
+      </div>
+
+      <!-- Custom Sort Dropdown (Matching destination modal style, without emojis) -->
+      <div class="relative">
+        <button
+          type="button"
+          (click)="toggleSortDropdown($event)"
+          class="glass-panel px-4 py-2 rounded-full text-xs font-bold text-on-surface cursor-pointer flex items-center gap-2 border border-border-glass hover:bg-surface-container-high/60 transition-colors shadow-sm"
+        >
+          <span>{{ getSortLabel() }}</span>
+          <span class="material-symbols-outlined text-sm text-on-surface-variant transition-transform" [class.rotate-180]="isSortOpen()">expand_more</span>
+        </button>
+
+        <!-- Floating Dropdown Menu -->
+        <div
+          *ngIf="isSortOpen()"
+          (click)="$event.stopPropagation()"
+          class="absolute right-0 top-full mt-2 w-48 rounded-2xl glass-panel bg-surface-container/95 border border-border-glass backdrop-blur-xl shadow-2xl p-1.5 z-[100] flex flex-col gap-0.5"
+        >
+          <button
+            type="button"
+            *ngFor="let opt of sortOptions"
+            (click)="selectSortOption(opt.value)"
+            [class.bg-primary/20]="sort === opt.value"
+            [class.text-primary]="sort === opt.value"
+            [class.font-bold]="sort === opt.value"
+            [class.text-on-surface]="sort !== opt.value"
+            class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs transition-colors hover:bg-surface-container-high border-none cursor-pointer flex items-center justify-between"
+          >
+            <span>{{ opt.label }}</span>
+            <span *ngIf="sort === opt.value" class="material-symbols-outlined text-sm text-primary">check</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Button -->
+      <button
+        (click)="load()"
+        [disabled]="loading()"
+        class="bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] text-white px-5 py-2 rounded-full font-label-md text-label-md font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 transition-all border-none cursor-pointer disabled:opacity-50"
+      >
+        <span *ngIf="loading()" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        <span class="material-symbols-outlined text-[18px]" *ngIf="!loading()">tune</span>
+        <span>Bộ lọc</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Grid & States -->
+  <section class="space-y-6">
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="py-16 flex flex-col items-center justify-center text-center">
+      <div class="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="text-xs text-on-surface-variant font-medium m-0">Đang tải danh sách lịch trình cộng đồng...</p>
+    </div>
+
+    <!-- Error Banner -->
+    <div *ngIf="error() && !loading()" class="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-center flex flex-col items-center gap-3">
+      <span class="material-symbols-outlined text-3xl">error</span>
+      <p class="text-xs font-semibold m-0">{{ error() }}</p>
+      <button type="button" class="px-4 py-1.5 bg-rose-500 text-white rounded-lg text-xs font-bold cursor-pointer hover:bg-rose-600 transition-colors border-none" (click)="load()">Thử lại</button>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading() && !error() && items().length === 0" class="empty-state py-16 flex flex-col items-center justify-center text-center bg-surface-container/40 border border-dashed border-border-glass rounded-2xl">
+      <span class="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-4">{{ view() === 'saved' ? 'bookmark_border' : 'travel_explore' }}</span>
+      <h3 class="text-base font-bold text-on-surface mb-1">{{ view() === 'saved' ? 'Bạn chưa lưu lịch trình nào' : 'Chưa có bài chia sẻ phù hợp' }}</h3>
+      <p class="text-xs text-on-surface-variant max-w-sm m-0">
+        {{ view() === 'saved' ? 'Hãy mở một lịch trình trong Cộng đồng và chọn "Lưu lịch trình".' : 'Hãy thử thay đổi từ khóa tìm kiếm hoặc lọc theo bộ lọc khác.' }}
+      </p>
+    </div>
+
+    <!-- Trip Grid Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" *ngIf="!loading() && !error() && items().length > 0">
+      <a
+        class="bg-surface-container-lowest border border-border-glass rounded-2xl p-6 flex flex-col hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group cursor-pointer no-underline"
+        *ngFor="let item of items()"
+        [routerLink]="['/community/trips', item.slug]"
+      >
+        <!-- Decorative Accent Shape -->
+        <div class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full pointer-events-none transition-transform duration-300 group-hover:scale-125"></div>
+        <div *ngIf="view() === 'recommended'" class="relative z-20 flex items-center justify-between gap-2 mb-3 rounded-lg bg-primary/10 border border-primary/20 p-2 text-[11px] text-primary"><span>{{ recommendationReasons()[item.id] }}</span><button type="button" (click)="hideRecommendation(item.id,$event)" class="bg-transparent border-none text-on-surface-variant cursor-pointer" title="Ẩn gợi ý">✕</button></div>
+
+        <div class="flex justify-between items-center mb-4 relative z-10">
+          <span class="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 backdrop-blur-md">
+            <span class="material-symbols-outlined text-sm">verified</span>
+            Tác giả xác nhận
+          </span>
+          
+          <div class="flex items-center gap-2">
+            <span *ngIf="item.is_saved" class="px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 text-[11px] font-bold flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs">bookmark</span>
+              Đã lưu
+            </span>
+            <span class="flex items-center gap-1 text-amber-500 text-xs font-bold">
+              <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+              {{ item.overall_rating != null ? item.overall_rating : 'Chưa có' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex-grow">
+          <div class="text-xs font-bold text-primary flex items-center gap-1 mb-1.5">
+            <span class="material-symbols-outlined text-sm">location_on</span>
+            {{ item.destination }}
+          </div>
+          
+          <h2 class="text-lg font-bold text-on-surface mb-2 group-hover:text-primary transition-colors leading-snug m-0">
+            {{ item.title }}
+          </h2>
+          
+          <p class="text-xs text-on-surface-variant line-clamp-3 leading-relaxed mb-4 m-0">
+            {{ item.summary }}
+          </p>
+          
+          <div class="flex flex-wrap gap-1.5 mb-4" *ngIf="item.tags && item.tags.length">
+            <span class="px-2.5 py-0.5 rounded-lg bg-surface-container-high/60 text-on-surface-variant text-[11px] font-medium border border-border-glass" *ngFor="let tag of item.tags.slice(0, 3)">
+              #{{ tag }}
+            </span>
+          </div>
+        </div>
+
+        <div class="border-t border-border-glass my-0 mb-4"></div>
+
+        <div class="flex justify-between items-center text-xs font-semibold text-on-surface-variant">
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold tracking-widest text-on-surface-variant/70 uppercase">DỰ KIẾN CHI PHÍ</span>
+            <strong class="text-base font-black text-primary mt-0.5">{{ money(item.actual_cost_per_person) }}</strong>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <span class="flex items-center gap-1 bg-surface-container-high/60 px-3 py-1 rounded-xl text-xs font-semibold text-on-surface border border-border-glass">
+              <span class="material-symbols-outlined text-sm text-primary">calendar_today</span>
+              {{ item.duration_days }} ngày
+            </span>
+            <span class="flex items-center gap-1 bg-surface-container-high/60 px-3 py-1 rounded-xl text-xs font-semibold text-on-surface border border-border-glass">
+              <span class="material-symbols-outlined text-sm text-primary">bookmark</span>
+              {{ item.save_count }}
+            </span>
+          </div>
+        </div>
+        
+        <div class="text-[11px] text-on-surface-variant/80 mt-3 pt-2 border-t border-border-glass flex items-center justify-between">
+          <span>Chia sẻ bởi <strong class="text-on-surface font-bold">{{ item.author.full_name }}</strong></span>
+          <span class="text-primary text-xs font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+            Chi tiết <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
+</main>

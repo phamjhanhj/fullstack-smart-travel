@@ -30,6 +30,17 @@
           },
           "configurations": {
             "production": {
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": true,
+                  "removeSpecialComments": true
+                },
+                "fonts": {
+                  "inline": false
+                }
+              },
               "budgets": [
                 {
                   "type": "initial",
@@ -54,6 +65,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"
@@ -70,6 +84,7 @@
         "test": {
           "builder": "@angular/build:karma",
           "options": {
+            "karmaConfig": "karma.conf.cjs",
             "polyfills": [
               "zone.js",
               "zone.js/testing"

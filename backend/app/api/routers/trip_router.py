@@ -24,7 +24,7 @@ from app.schemas.trip import (
     UpdateTripRequest,
 )
 from app.schemas.trip_history import TripHistoryEventResponse, TripHistoryListResponse
-from app.services import trip_service
+from app.services import public_trip_service, trip_service
 from app.services import trip_history_service
 
 router = APIRouter(prefix="/trips", tags=["Trips"])
@@ -69,8 +69,26 @@ async def list_trips(
     db: AsyncSession = Depends(get_db),
 ):
     trips, total = await trip_service.list_trips(db, current_user, status, page, limit, scope)
+    publications = await public_trip_service.publication_summaries_by_trip_ids(
+        db, [trip.id for trip in trips if getattr(trip, "_access_type", "owner") == "owner"]
+    )
+    items = []
+    for trip in trips:
+        payload = _trip_access_payload(trip)
+        publication = publications.get(trip.id)
+        if publication:
+            payload["publication"] = {
+                "id": publication.id,
+                "slug": publication.slug,
+                "status": publication.status,
+                "published_at": publication.published_at,
+                "view_count": publication.view_count,
+                "save_count": publication.save_count,
+                "clone_count": publication.clone_count,
+            }
+        items.append(TripListItem.model_validate(payload))
     data = TripListResponse(
-        items=[TripListItem.model_validate(_trip_access_payload(t)) for t in trips],
+        items=items,
         total=total,
         page=page,
         limit=limit,

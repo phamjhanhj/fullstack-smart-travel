@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { ResponseEnvelope } from './auth.service';
+import { API_BASE_URL } from '../config/api.config';
 
 export interface PhotoResponse {
   destination: string;
@@ -33,7 +34,7 @@ export interface BestRatedPlace {
 })
 export class PlacePhotoService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8000/api';
+  private readonly baseUrl = inject(API_BASE_URL);
   private readonly cache = new Map<string, string[]>();
   private readonly detailCache = new Map<string, PhotoDetail[]>();
 

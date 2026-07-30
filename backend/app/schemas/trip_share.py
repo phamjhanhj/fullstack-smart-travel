@@ -17,12 +17,15 @@ class ShareUserBrief(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    email: str
+    username: str
+    email: str | None = None
     full_name: str
     avatar_url: str | None = None
 
 
 class CreateTripInviteRequest(BaseModel):
+    recipient: str | None = Field(default=None, max_length=254)
+    # Kept for backward compatibility with older clients.
     email: EmailStr | None = None
     role: TripShareRole
     expires_in_days: int = Field(default=7, ge=1, le=30)
@@ -31,6 +34,12 @@ class CreateTripInviteRequest(BaseModel):
     @classmethod
     def normalize_email(cls, value: EmailStr | None) -> str | None:
         return str(value).strip().lower() if value else None
+
+    @field_validator("recipient", mode="before")
+    @classmethod
+    def normalize_recipient(cls, value: str | None) -> str | None:
+        cleaned = str(value).strip().lower() if value else None
+        return cleaned or None
 
 
 class UpdateTripParticipantRequest(BaseModel):
@@ -64,6 +73,7 @@ class TripInviteResponse(BaseModel):
     updated_at: dt.datetime | None = None
     token: str | None = None
     accept_url: str | None = None
+    email_sent: bool | None = None
 
 
 class TripInviteTripBrief(BaseModel):

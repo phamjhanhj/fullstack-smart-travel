@@ -1,11 +1,12 @@
 declare const L: any;
 
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TripService, TripListItem, CreateTripRequest, TripScope } from '../../services/trip.service';
+import { PublicTripService } from '../../services/public-trip.service';
 import { PlacePhotoService } from '../../services/place-photo.service';
 import {
   GENERIC_TRAVEL_FALLBACK_IMAGES,
@@ -15,8 +16,11 @@ import {
 } from '../../services/travel-cover-images';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 import { CustomDatePickerComponent } from '../shared/custom-date-picker/custom-date-picker';
+
+import { PwaService } from '../../services/pwa.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -36,16 +40,24 @@ export class DashboardComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly tripService = inject(TripService);
+  private readonly publicTripService = inject(PublicTripService);
   private readonly placePhotoService = inject(PlacePhotoService);
+  readonly pwaService = inject(PwaService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  // PWA Signals
+  readonly isOnline = this.pwaService.isOnline;
+  readonly isPwaInstallable = this.pwaService.isInstallable;
 
   // Dynamic Destination Images Cache
   readonly destinationImagesMap = signal<Map<string, string[]>>(new Map());
 
   // Leaflet Map properties
   private dashboardMap: any = null;
+  private dashboardTileLayer: any = null;
   private mapMarkers: any[] = [];
+  readonly mapStyle = signal<'streets' | 'satellite'>('streets');
 
   // User Info signal link
   readonly currentUser = this.authService.currentUser;
@@ -62,6 +74,15 @@ export class DashboardComponent implements OnInit {
   readonly submitProgressMessage = signal<string | null>(null);
   readonly submittingMode = signal<'manual' | 'ai' | null>(null);
   readonly overBudgetTrips = signal<TripListItem[]>([]);
+
+  // Delete Modal state signals
+  readonly tripToDelete = signal<TripListItem | null>(null);
+  readonly isDeleteModalOpen = signal<boolean>(false);
+  readonly isDeletingTrip = signal<boolean>(false);
+  readonly tripToUnpublish = signal<TripListItem | null>(null);
+  readonly isUnpublishModalOpen = signal<boolean>(false);
+  readonly isUnpublishing = signal<boolean>(false);
+  readonly publicationMessage = signal<string | null>(null);
 
   // Airbnb Hub State
   readonly activeTab = signal<string>('explore'); // 'my-trips', 'explore', or 'map'
@@ -105,12 +126,32 @@ export class DashboardComponent implements OnInit {
   readonly searchGuests = signal<number>(1);
 
   readonly categories = [
-    { id: 'all', name: 'Tất cả', icon: '' },
-    { id: 'beach', name: 'Biển đảo', icon: '' },
-    { id: 'mountain', name: 'Núi non', icon: '' },
-    { id: 'culture', name: 'Văn hóa', icon: '' },
-    { id: 'city', name: 'Thành phố', icon: '' },
+    { id: 'all', name: 'Tất cả', icon: 'grid_view' },
+    { id: 'beach', name: 'Biển đảo', icon: 'beach_access' },
+    { id: 'mountain', name: 'Vùng núi', icon: 'terrain' },
+    { id: 'culture', name: 'Văn hóa', icon: 'museum' },
+    { id: 'city', name: 'Thành phố', icon: 'location_city' },
   ];
+
+  getCategoryIcon(category: string): string {
+    switch (category) {
+      case 'beach': return 'beach_access';
+      case 'mountain': return 'terrain';
+      case 'culture': return 'museum';
+      case 'city': return 'location_city';
+      default: return 'explore';
+    }
+  }
+
+  getCategoryLabel(category: string): string {
+    switch (category) {
+      case 'beach': return 'Biển đảo';
+      case 'mountain': return 'Vùng núi';
+      case 'culture': return 'Văn hóa';
+      case 'city': return 'Thành phố';
+      default: return 'Khám phá';
+    }
+  }
 
   readonly trendingDestinations = [
     {
@@ -237,6 +278,8 @@ export class DashboardComponent implements OnInit {
     preferences: [''],
   });
 
+  private readonly destroyRef = inject(DestroyRef);
+
   ngOnInit(): void {
     // Redirect if not authenticated
     if (!this.authService.isAuthenticated()) {
@@ -244,6 +287,11 @@ export class DashboardComponent implements OnInit {
       return;
     }
     this.fetchTrips();
+
+    // Auto-reload trips whenever trip list changes (e.g. invite accepted)
+    this.tripService.tripListUpdated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.fetchTrips();
+    });
 
     // Prefetch trending destinations immediately
     const trendingNames = this.trendingDestinations.map((d) => d.name);
@@ -345,7 +393,9 @@ export class DashboardComponent implements OnInit {
       allTrips = allTrips.filter((trip) => trip.access_type === 'shared');
     }
 
-    if (currentFilter !== 'all') {
+    if (currentFilter === 'published') {
+      allTrips = allTrips.filter((trip) => trip.publication?.status === 'published');
+    } else if (currentFilter !== 'all') {
       allTrips = allTrips.filter((trip) => trip.status === currentFilter);
     }
 
@@ -450,6 +500,9 @@ export class DashboardComponent implements OnInit {
   getTripsCountByStatus(status: string): number {
     if (status === 'all') {
       return this.trips().length;
+    }
+    if (status === 'published') {
+      return this.trips().filter((trip) => trip.publication?.status === 'published').length;
     }
     return this.trips().filter((trip) => trip.status === status).length;
   }
@@ -856,7 +909,7 @@ export class DashboardComponent implements OnInit {
     this.dashboardMap = L.map('dashboard-map', { zoomControl: false }).setView(centerCoords, 6);
 
     // Google Maps tile layer
-    L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    this.dashboardTileLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       attribution: '&copy; Google Maps',
@@ -871,6 +924,20 @@ export class DashboardComponent implements OnInit {
         this.renderDashboardMapMarkers();
       }
     }, 250);
+  }
+
+  toggleDashboardMapStyle(): void {
+    if (!this.dashboardMap) return;
+    if (this.dashboardTileLayer) {
+      this.dashboardMap.removeLayer(this.dashboardTileLayer);
+    }
+    const nextStyle = this.mapStyle() === 'streets' ? 'satellite' : 'streets';
+    this.mapStyle.set(nextStyle);
+    const layerCode = nextStyle === 'satellite' ? 's' : 'm';
+    this.dashboardTileLayer = L.tileLayer(
+      `https://{s}.google.com/vt/lyrs=${layerCode}&x={x}&y={y}&z={z}`,
+      { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps' },
+    ).addTo(this.dashboardMap);
   }
 
   renderDashboardMapMarkers(): void {
@@ -900,44 +967,52 @@ export class DashboardComponent implements OnInit {
       const marker = L.marker(coords, { icon: customIcon }).addTo(this.dashboardMap);
       this.mapMarkers.push(marker);
 
-      const coverImg = this.getTripImage(trip.destination, trip.id, trip.cover_image_url);
       const formattedBudget = this.formatCurrency(trip.budget);
 
       const popupContent = document.createElement('div');
       popupContent.className = 'flex flex-col';
-      popupContent.innerHTML = `
-        <img src="${coverImg}" alt="${trip.title}" class="w-full h-[90px] object-cover">
-        <div class="p-3 space-y-2">
-            <h4 class="font-bold text-on-surface leading-tight text-sm text-ellipsis overflow-hidden white-space-nowrap m-0">${trip.title}</h4>
-            <div class="space-y-1">
-                <div class="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                    <span class="material-symbols-outlined text-[14px]">location_on</span>
-                    <span>${trip.destination}</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                    <span class="material-symbols-outlined text-[14px]">calendar_today</span>
-                    <span>${new Date(trip.start_date).toLocaleDateString('vi-VN')}</span>
-                </div>
-            </div>
-            <div class="flex justify-between items-center pt-2 gap-2">
-                <span class="bg-status-rose/10 text-status-rose px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">${formattedBudget}</span>
-                <button class="popup-btn-go text-primary text-xs font-semibold hover:underline bg-transparent border-none p-0 cursor-pointer">Xem chi tiết</button>
-            </div>
-        </div>
-      `;
 
-      const popupImg = popupContent.querySelector('img');
-      if (popupImg) {
-        popupImg.dataset['fallbackSeed'] = `${trip.id}-${trip.destination}`;
-        popupImg.addEventListener('error', (event) => this.handleImgError(event));
-      }
+      const popupBody = document.createElement('div');
+      popupBody.className = 'p-3 space-y-2';
+      const popupTitle = document.createElement('h4');
+      popupTitle.className =
+        'font-bold text-on-surface leading-tight text-sm text-ellipsis overflow-hidden white-space-nowrap m-0';
+      popupTitle.textContent = trip.title;
 
-      const goBtn = popupContent.querySelector('.popup-btn-go');
-      if (goBtn) {
-        goBtn.addEventListener('click', () => {
-          this.goToTrip(trip.id);
-        });
-      }
+      const popupMeta = document.createElement('div');
+      popupMeta.className = 'space-y-1';
+      const makeMetaRow = (icon: string, value: string): HTMLDivElement => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-1.5 text-xs text-on-surface-variant';
+        const iconElement = document.createElement('span');
+        iconElement.className = 'material-symbols-outlined text-[14px]';
+        iconElement.textContent = icon;
+        const valueElement = document.createElement('span');
+        valueElement.textContent = value;
+        row.append(iconElement, valueElement);
+        return row;
+      };
+      popupMeta.append(
+        makeMetaRow('location_on', trip.destination),
+        makeMetaRow('calendar_today', new Date(trip.start_date).toLocaleDateString('vi-VN')),
+      );
+
+      const popupFooter = document.createElement('div');
+      popupFooter.className = 'flex justify-between items-center pt-2 gap-2';
+      const budgetLabel = document.createElement('span');
+      budgetLabel.className =
+        'bg-status-rose/10 text-status-rose px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider';
+      budgetLabel.textContent = formattedBudget;
+      const goBtn = document.createElement('button');
+      goBtn.type = 'button';
+      goBtn.className =
+        'popup-btn-go text-primary text-xs font-semibold hover:underline bg-transparent border-none p-0 cursor-pointer';
+      goBtn.textContent = 'Xem chi tiết';
+      goBtn.addEventListener('click', () => this.goToTrip(trip.id));
+
+      popupFooter.append(budgetLabel, goBtn);
+      popupBody.append(popupTitle, popupMeta, popupFooter);
+      popupContent.append(popupBody);
 
       marker.bindPopup(popupContent);
     });
@@ -945,5 +1020,80 @@ export class DashboardComponent implements OnInit {
     if (validCoords.length > 0) {
       this.dashboardMap.fitBounds(validCoords, { padding: [50, 50], maxZoom: 10 });
     }
+  }
+
+  confirmDeleteTrip(trip: TripListItem, event: Event): void {
+    event.stopPropagation();
+    this.tripToDelete.set(trip);
+    this.isDeleteModalOpen.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.isDeleteModalOpen.set(false);
+    this.tripToDelete.set(null);
+  }
+
+  performDeleteTrip(): void {
+    const trip = this.tripToDelete();
+    if (!trip) return;
+
+    this.isDeletingTrip.set(true);
+    this.tripService.deleteTrip(trip.id).subscribe({
+      next: () => {
+        this.isDeletingTrip.set(false);
+        this.closeDeleteModal();
+        this.trips.update((list) => list.filter((t) => t.id !== trip.id));
+        this.overBudgetTrips.update((list) => list.filter((t) => t.id !== trip.id));
+      },
+      error: (err) => {
+        this.isDeletingTrip.set(false);
+        alert('Không thể xóa chuyến đi: ' + (err?.error?.detail || err.message));
+      },
+    });
+  }
+
+  viewPublicTrip(trip: TripListItem, event: Event): void {
+    event.stopPropagation();
+    if (trip.publication?.slug) {
+      this.router.navigate(['/community/trips', trip.publication.slug]);
+    }
+  }
+
+  confirmUnpublishTrip(trip: TripListItem, event: Event): void {
+    event.stopPropagation();
+    this.publicationMessage.set(null);
+    this.tripToUnpublish.set(trip);
+    this.isUnpublishModalOpen.set(true);
+  }
+
+  closeUnpublishModal(): void {
+    if (this.isUnpublishing()) return;
+    this.isUnpublishModalOpen.set(false);
+    this.tripToUnpublish.set(null);
+  }
+
+  performUnpublishTrip(): void {
+    const trip = this.tripToUnpublish();
+    if (!trip?.publication) return;
+    this.isUnpublishing.set(true);
+    this.publicTripService.archive(trip.id).subscribe({
+      next: () => {
+        this.isUnpublishing.set(false);
+        this.isUnpublishModalOpen.set(false);
+        this.tripToUnpublish.set(null);
+        this.trips.update((items) => items.map((item) =>
+          item.id === trip.id ? { ...item, publication: null } : item
+        ));
+        this.publicationMessage.set(`Đã gỡ “${trip.title}” khỏi Cộng đồng. Chuyến đi gốc vẫn được giữ nguyên.`);
+      },
+      error: (error) => {
+        this.isUnpublishing.set(false);
+        this.publicationMessage.set(error?.error?.message || 'Không thể gỡ lịch trình khỏi Cộng đồng.');
+      },
+    });
+  }
+
+  installPwaApp(): void {
+    this.pwaService.promptInstall();
   }
 }

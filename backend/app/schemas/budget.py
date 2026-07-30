@@ -28,6 +28,8 @@ class BudgetItemResponse(BaseModel):
     planned_amount: int
     actual_amount: int
     date: dt.date | None = None
+    paid_by: str | None = None
+    participants: list[str] | None = None
     created_at: dt.datetime
     updated_at: dt.datetime | None = None
 
@@ -38,6 +40,8 @@ class CreateBudgetItemRequest(BaseModel):
     planned_amount: int = Field(default=0, ge=0)
     actual_amount: int = Field(default=0, ge=0)
     date: dt.date | None = None
+    paid_by: str | None = None
+    participants: list[str] | None = None
 
 
 class UpdateBudgetItemRequest(BaseModel):
@@ -47,6 +51,8 @@ class UpdateBudgetItemRequest(BaseModel):
     planned_amount: int | None = Field(default=None, ge=0)
     actual_amount: int | None = Field(default=None, ge=0)
     date: dt.date | None = None
+    paid_by: str | None = None
+    participants: list[str] | None = None
 
 
 class CategoryBudgetSummary(BaseModel):

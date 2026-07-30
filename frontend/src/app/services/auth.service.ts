@@ -1,6 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, map } from 'rxjs';
+import { API_BASE_URL } from '../config/api.config';
+import { clearStoredSession } from './auth-storage';
 
 export interface ResponseEnvelope<T> {
   status_code: number;
@@ -10,7 +12,8 @@ export interface ResponseEnvelope<T> {
 
 export interface UserInfo {
   id: string;
-  email: string;
+  username: string;
+  email?: string | null;
   full_name: string;
   avatar_url?: string | null;
   created_at?: string;
@@ -29,7 +32,7 @@ export interface LoginData {
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8000/api';
+  private readonly baseUrl = inject(API_BASE_URL);
 
   // Current logged in user details
   readonly currentUser = signal<UserInfo | null>(null);
@@ -53,34 +56,40 @@ export class AuthService {
             this.currentUser.set(profile);
             localStorage.setItem('user_info', JSON.stringify(profile));
           },
-          error: () => {
-            // Don't logout on profile refresh failure - keep session alive
-            // The token might still be valid (e.g., backend temporarily unreachable)
-            console.warn('Profile refresh failed, keeping existing session.');
+          error: (err) => {
+            if (err?.status === 401) {
+              this.clearSession();
+            } else {
+              // Don't logout on profile refresh network failure - keep session alive
+              // The token might still be valid (e.g., backend temporarily unreachable)
+              console.warn('Profile refresh failed, keeping existing session.');
+            }
           },
         });
       } catch (e) {
-        this.logout();
+        this.clearSession();
       }
     }
   }
 
   register(
+    username: string,
     email: string,
     password: string,
     fullName: string,
   ): Observable<ResponseEnvelope<UserInfo>> {
     return this.http.post<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/register`, {
+      username: username.trim().toLowerCase(),
       email: email.trim().toLowerCase(),
       password,
       full_name: fullName.trim().replace(/\s+/g, ' '),
     });
   }
 
-  login(email: string, password: string): Observable<ResponseEnvelope<LoginData>> {
+  login(login: string, password: string): Observable<ResponseEnvelope<LoginData>> {
     return this.http
       .post<ResponseEnvelope<LoginData>>(`${this.baseUrl}/auth/login`, {
-        email: email.trim().toLowerCase(),
+        login: login.trim().toLowerCase(),
         password,
       })
       .pipe(
@@ -97,11 +106,27 @@ export class AuthService {
       );
   }
 
+  verifyEmail(token: string): Observable<ResponseEnvelope<null>> {
+    return this.http.post<ResponseEnvelope<null>>(`${this.baseUrl}/auth/verify-email`, { token });
+  }
+
+  resendVerification(login: string): Observable<ResponseEnvelope<null>> {
+    return this.http.post<ResponseEnvelope<null>>(`${this.baseUrl}/auth/resend-verification`, {
+      login: login.trim().toLowerCase(),
+    });
+  }
+
   fetchProfile(): Observable<UserInfo> {
     return this.http.get<ResponseEnvelope<UserInfo>>(`${this.baseUrl}/auth/me`).pipe(
       map((response) => response.data),
       tap((user) => this.currentUser.set(user)),
     );
+  }
+
+  clearSession(): void {
+    clearStoredSession();
+    this.currentUser.set(null);
+    this.isAuthenticated.set(false);
   }
 
   logout(): void {
@@ -113,10 +138,6 @@ export class AuthService {
         },
       });
     }
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_info');
-    this.currentUser.set(null);
-    this.isAuthenticated.set(false);
+    this.clearSession();
   }
 }

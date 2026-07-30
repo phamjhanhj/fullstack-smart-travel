@@ -1,0 +1,659 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "dataset_id": "vn-hanoi-transportation-sample-01",
+    "province_code": "HN",
+    "province_name": "Hà Nội",
+    "country": "Việt Nam",
+    "generated_at": "2026-07-16",
+    "language": "vi",
+    "currency": "VND",
+    "notes": "File mẫu cho dữ liệu phương tiện và tuyến di chuyển tại Hà Nội. Nên dùng để gợi ý phương án đi lại giữa sân bay, ga, bến xe, khu trung tâm, điểm du lịch nội đô và một số điểm ngoại thành."
+  },
+  "transportation": [
+    {
+      "id": "hn-transport-001",
+      "name": "Taxi/ô tô công nghệ từ Sân bay Nội Bài đến khu Hoàn Kiếm",
+      "category": "transportation",
+      "subcategory": "airport_transfer",
+      "mode": "car",
+      "service_type": "route",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "route": {
+        "origin": {
+          "name": "Sân bay quốc tế Nội Bài",
+          "district": "Sóc Sơn",
+          "address": "Phú Minh, Sóc Sơn, Hà Nội",
+          "lat": 21.2187,
+          "lng": 105.8042,
+          "place_ref_id": null
+        },
+        "destination": {
+          "name": "Khu vực Hồ Hoàn Kiếm / Phố cổ",
+          "district": "Hoàn Kiếm",
+          "address": "Hoàn Kiếm, Hà Nội",
+          "lat": 21.0285,
+          "lng": 105.8542,
+          "place_ref_id": null
+        },
+        "distance_km": 28,
+        "typical_duration_minutes": {
+          "min": 35,
+          "max": 60
+        },
+        "direction": "two_way"
+      },
+      "price": {
+        "min_vnd": 250000,
+        "max_vnd": 450000,
+        "unit": "per_trip",
+        "confidence": "medium",
+        "note": "Giá thay đổi theo khung giờ, loại xe, phụ phí sân bay và tình trạng giao thông."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Hoạt động cả ngày",
+        "weekly": [
+          { "day": "mon", "open": "00:00", "close": "24:00" },
+          { "day": "tue", "open": "00:00", "close": "24:00" },
+          { "day": "wed", "open": "00:00", "close": "24:00" },
+          { "day": "thu", "open": "00:00", "close": "24:00" },
+          { "day": "fri", "open": "00:00", "close": "24:00" },
+          { "day": "sat", "open": "00:00", "close": "24:00" },
+          { "day": "sun", "open": "00:00", "close": "24:00" }
+        ]
+      },
+      "booking": {
+        "required": false,
+        "methods": ["ride_hailing_app", "airport_taxi_counter", "hotel_transfer"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": false,
+        "availability_required": true,
+        "seasonal": false,
+        "access_notes": "Nên kiểm tra giá trực tiếp trên ứng dụng hoặc quầy taxi trước khi đặt. Phù hợp cho khách có hành lý, gia đình hoặc đi muộn."
+      },
+      "tags": ["airport", "taxi", "ride_hailing", "private_car", "luggage_friendly"],
+      "suitable_for": ["solo", "couple", "family", "group"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["price_varies_by_time"]
+      },
+      "sources": [
+        {
+          "type": "estimate",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-002",
+      "name": "Xe buýt sân bay 86 từ Nội Bài đến trung tâm Hà Nội",
+      "category": "transportation",
+      "subcategory": "airport_bus",
+      "mode": "bus",
+      "service_type": "route",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "route": {
+        "origin": {
+          "name": "Sân bay quốc tế Nội Bài",
+          "district": "Sóc Sơn",
+          "address": "Phú Minh, Sóc Sơn, Hà Nội",
+          "lat": 21.2187,
+          "lng": 105.8042,
+          "place_ref_id": null
+        },
+        "destination": {
+          "name": "Ga Hà Nội / khu trung tâm",
+          "district": "Hoàn Kiếm",
+          "address": "120 Lê Duẩn, Hoàn Kiếm, Hà Nội",
+          "lat": 21.0242,
+          "lng": 105.8412,
+          "place_ref_id": null
+        },
+        "distance_km": 30,
+        "typical_duration_minutes": {
+          "min": 50,
+          "max": 80
+        },
+        "direction": "two_way"
+      },
+      "price": {
+        "min_vnd": 45000,
+        "max_vnd": 45000,
+        "unit": "per_person",
+        "confidence": "medium",
+        "note": "Giá vé cần kiểm tra lại theo thông báo vận hành mới nhất."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Có lịch chuyến theo ngày, cần kiểm tra giờ chạy thực tế",
+        "weekly": []
+      },
+      "booking": {
+        "required": false,
+        "methods": ["pay_on_bus"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": false,
+        "availability_required": true,
+        "seasonal": false,
+        "access_notes": "Phù hợp khách ít hành lý và muốn tiết kiệm chi phí. Cần kiểm tra điểm dừng gần nơi lưu trú."
+      },
+      "tags": ["airport", "public_transport", "budget", "bus"],
+      "suitable_for": ["solo", "couple"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["schedule_live_check_required"]
+      },
+      "sources": [
+        {
+          "type": "transport_operator",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-003",
+      "name": "Tuyến metro Cát Linh - Hà Đông",
+      "category": "transportation",
+      "subcategory": "urban_rail",
+      "mode": "metro",
+      "service_type": "route",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "route": {
+        "origin": {
+          "name": "Ga Cát Linh",
+          "district": "Đống Đa",
+          "address": "Cát Linh, Đống Đa, Hà Nội",
+          "lat": 21.0293,
+          "lng": 105.8281,
+          "place_ref_id": null
+        },
+        "destination": {
+          "name": "Ga Yên Nghĩa",
+          "district": "Hà Đông",
+          "address": "Yên Nghĩa, Hà Đông, Hà Nội",
+          "lat": 20.9512,
+          "lng": 105.7377,
+          "place_ref_id": null
+        },
+        "distance_km": 13,
+        "typical_duration_minutes": {
+          "min": 23,
+          "max": 35
+        },
+        "direction": "two_way"
+      },
+      "price": {
+        "min_vnd": 8000,
+        "max_vnd": 15000,
+        "unit": "per_person",
+        "confidence": "medium",
+        "note": "Giá vé lẻ phụ thuộc quãng đường. Có thể có vé ngày hoặc vé tháng."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Hoạt động theo biểu đồ chạy tàu hằng ngày",
+        "weekly": []
+      },
+      "booking": {
+        "required": false,
+        "methods": ["station_ticket_counter", "ticket_machine"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": false,
+        "availability_required": true,
+        "seasonal": false,
+        "access_notes": "Hữu ích khi di chuyển dọc trục Đống Đa - Thanh Xuân - Hà Đông, ít bị ảnh hưởng bởi tắc đường."
+      },
+      "tags": ["metro", "public_transport", "traffic_avoidance", "budget"],
+      "suitable_for": ["solo", "couple", "family", "group"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["schedule_live_check_required"]
+      },
+      "sources": [
+        {
+          "type": "transport_operator",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-004",
+      "name": "Thuê xe máy tự lái trong nội thành Hà Nội",
+      "category": "transportation",
+      "subcategory": "motorbike_rental",
+      "mode": "motorbike",
+      "service_type": "rental",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "coverage_area": {
+        "name": "Nội thành Hà Nội",
+        "districts": ["Hoàn Kiếm", "Ba Đình", "Đống Đa", "Tây Hồ", "Hai Bà Trưng", "Cầu Giấy"]
+      },
+      "route": null,
+      "price": {
+        "min_vnd": 120000,
+        "max_vnd": 250000,
+        "unit": "per_day",
+        "confidence": "medium",
+        "note": "Giá phụ thuộc loại xe số, xe ga, thời gian thuê và chính sách đặt cọc."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Tùy cửa hàng cho thuê xe",
+        "weekly": []
+      },
+      "booking": {
+        "required": true,
+        "methods": ["phone", "website", "hotel_support"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": true,
+        "availability_required": true,
+        "seasonal": false,
+        "access_notes": "Chỉ nên gợi ý cho người có bằng lái hợp lệ và quen giao thông Việt Nam. Không phù hợp khi đi phố cổ giờ cao điểm hoặc có nhiều hành lý."
+      },
+      "tags": ["motorbike", "rental", "flexible", "experienced_driver_only"],
+      "suitable_for": ["solo", "couple"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["license_required", "traffic_risk"]
+      },
+      "sources": [
+        {
+          "type": "market_estimate",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-005",
+      "name": "Xích lô tham quan khu phố cổ và Hồ Hoàn Kiếm",
+      "category": "transportation",
+      "subcategory": "cyclo_tour",
+      "mode": "cyclo",
+      "service_type": "local_experience",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "coverage_area": {
+        "name": "Phố cổ - Hồ Hoàn Kiếm",
+        "districts": ["Hoàn Kiếm"]
+      },
+      "route": {
+        "origin": {
+          "name": "Khu vực Hồ Hoàn Kiếm",
+          "district": "Hoàn Kiếm",
+          "address": "Hoàn Kiếm, Hà Nội",
+          "lat": 21.0285,
+          "lng": 105.8542,
+          "place_ref_id": null
+        },
+        "destination": {
+          "name": "Vòng quanh phố cổ",
+          "district": "Hoàn Kiếm",
+          "address": "Khu phố cổ Hà Nội",
+          "lat": 21.0341,
+          "lng": 105.8516,
+          "place_ref_id": null
+        },
+        "distance_km": null,
+        "typical_duration_minutes": {
+          "min": 30,
+          "max": 60
+        },
+        "direction": "loop"
+      },
+      "price": {
+        "min_vnd": 150000,
+        "max_vnd": 300000,
+        "unit": "per_trip",
+        "confidence": "medium",
+        "note": "Nên thống nhất giá và thời lượng trước khi đi."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Phổ biến ban ngày và đầu buổi tối",
+        "weekly": []
+      },
+      "booking": {
+        "required": false,
+        "methods": ["walk_up", "hotel_support", "tour_operator"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": false,
+        "avoid_auto_schedule": false,
+        "availability_required": false,
+        "seasonal": false,
+        "access_notes": "Phù hợp để trải nghiệm, không nên dùng như phương tiện chính khi cần đúng giờ."
+      },
+      "tags": ["old_quarter", "experience", "slow_travel", "sightseeing"],
+      "suitable_for": ["couple", "family", "solo"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["negotiate_price"]
+      },
+      "sources": [
+        {
+          "type": "market_estimate",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-006",
+      "name": "Ô tô riêng từ trung tâm Hà Nội đi Làng cổ Đường Lâm",
+      "category": "transportation",
+      "subcategory": "suburban_day_trip",
+      "mode": "car",
+      "service_type": "route",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "route": {
+        "origin": {
+          "name": "Khu vực Hồ Hoàn Kiếm",
+          "district": "Hoàn Kiếm",
+          "address": "Hoàn Kiếm, Hà Nội",
+          "lat": 21.0285,
+          "lng": 105.8542,
+          "place_ref_id": null
+        },
+        "destination": {
+          "name": "Làng cổ Đường Lâm",
+          "district": "Sơn Tây",
+          "address": "Đường Lâm, Sơn Tây, Hà Nội",
+          "lat": 21.1636,
+          "lng": 105.4722,
+          "place_ref_id": null
+        },
+        "distance_km": 45,
+        "typical_duration_minutes": {
+          "min": 60,
+          "max": 90
+        },
+        "direction": "two_way"
+      },
+      "price": {
+        "min_vnd": 900000,
+        "max_vnd": 1600000,
+        "unit": "round_trip",
+        "confidence": "medium",
+        "note": "Ước tính cho xe riêng trong ngày, chưa bao gồm phí chờ quá giờ hoặc phụ phí cuối tuần nếu có."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Theo lịch đặt xe",
+        "weekly": []
+      },
+      "booking": {
+        "required": true,
+        "methods": ["car_rental", "private_driver", "tour_operator"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": false,
+        "availability_required": true,
+        "seasonal": false,
+        "access_notes": "Phù hợp với lịch trình nửa ngày hoặc một ngày, đặc biệt khi kết hợp Thành cổ Sơn Tây, chùa Mía hoặc làng cổ."
+      },
+      "tags": ["day_trip", "private_car", "suburban", "family_friendly"],
+      "suitable_for": ["couple", "family", "group"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["price_varies_by_provider"]
+      },
+      "sources": [
+        {
+          "type": "route_estimate",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-007",
+      "name": "Ô tô riêng từ trung tâm Hà Nội đi Vườn quốc gia Ba Vì",
+      "category": "transportation",
+      "subcategory": "suburban_day_trip",
+      "mode": "car",
+      "service_type": "route",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "route": {
+        "origin": {
+          "name": "Khu vực Hồ Hoàn Kiếm",
+          "district": "Hoàn Kiếm",
+          "address": "Hoàn Kiếm, Hà Nội",
+          "lat": 21.0285,
+          "lng": 105.8542,
+          "place_ref_id": null
+        },
+        "destination": {
+          "name": "Vườn quốc gia Ba Vì",
+          "district": "Ba Vì",
+          "address": "Ba Vì, Hà Nội",
+          "lat": 21.0705,
+          "lng": 105.3539,
+          "place_ref_id": null
+        },
+        "distance_km": 60,
+        "typical_duration_minutes": {
+          "min": 90,
+          "max": 130
+        },
+        "direction": "two_way"
+      },
+      "price": {
+        "min_vnd": 1200000,
+        "max_vnd": 2200000,
+        "unit": "round_trip",
+        "confidence": "medium",
+        "note": "Ước tính xe riêng đi về trong ngày, giá thay đổi theo loại xe, điểm đón và thời gian chờ."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Theo lịch đặt xe",
+        "weekly": []
+      },
+      "booking": {
+        "required": true,
+        "methods": ["car_rental", "private_driver", "tour_operator"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": true,
+        "availability_required": true,
+        "seasonal": true,
+        "access_notes": "Nên kiểm tra thời tiết, sương mù và lịch mở cửa điểm tham quan trước khi khởi hành."
+      },
+      "tags": ["day_trip", "nature", "private_car", "mountain", "weather_sensitive"],
+      "suitable_for": ["couple", "family", "group"],
+      "verification": {
+        "status": "sample",
+        "confidence": "medium",
+        "last_verified_at": "2026-07-16",
+        "flags": ["weather_sensitive", "price_varies_by_provider"]
+      },
+      "sources": [
+        {
+          "type": "route_estimate",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-008",
+      "name": "Tàu hỏa từ Ga Hà Nội đi các tỉnh/thành khác",
+      "category": "transportation",
+      "subcategory": "intercity_train",
+      "mode": "train",
+      "service_type": "hub",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "hub": {
+        "name": "Ga Hà Nội",
+        "district": "Hoàn Kiếm",
+        "address": "120 Lê Duẩn, Hoàn Kiếm, Hà Nội",
+        "lat": 21.0242,
+        "lng": 105.8412
+      },
+      "common_routes": [
+        {
+          "destination": "Ninh Bình",
+          "typical_duration_minutes": { "min": 130, "max": 160 }
+        },
+        {
+          "destination": "Lào Cai",
+          "typical_duration_minutes": { "min": 480, "max": 540 }
+        },
+        {
+          "destination": "Huế / Đà Nẵng / TP. Hồ Chí Minh",
+          "typical_duration_minutes": null
+        }
+      ],
+      "price": {
+        "min_vnd": 100000,
+        "max_vnd": 1500000,
+        "unit": "per_person",
+        "confidence": "low",
+        "note": "Giá phụ thuộc tuyến, hạng ghế/giường, thời điểm đặt và chính sách vận hành."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Theo lịch tàu",
+        "weekly": []
+      },
+      "booking": {
+        "required": true,
+        "methods": ["official_railway_website", "station_ticket_counter", "travel_agency"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": true,
+        "availability_required": true,
+        "seasonal": false,
+        "access_notes": "Dùng cho di chuyển liên tỉnh, không phải phương tiện di chuyển nội đô."
+      },
+      "tags": ["train_station", "intercity", "railway", "booking_required"],
+      "suitable_for": ["solo", "couple", "family", "group"],
+      "verification": {
+        "status": "sample",
+        "confidence": "low",
+        "last_verified_at": "2026-07-16",
+        "flags": ["schedule_live_check_required", "availability_required"]
+      },
+      "sources": [
+        {
+          "type": "railway_operator",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "hn-transport-009",
+      "name": "Máy bay từ Sân bay Nội Bài đi các tỉnh/thành khác",
+      "category": "transportation",
+      "subcategory": "domestic_flight",
+      "mode": "airplane",
+      "service_type": "hub",
+      "province_code": "HN",
+      "province_name": "Hà Nội",
+      "hub": {
+        "name": "Sân bay quốc tế Nội Bài",
+        "district": "Sóc Sơn",
+        "address": "Phú Minh, Sóc Sơn, Hà Nội",
+        "lat": 21.2187,
+        "lng": 105.8042
+      },
+      "common_routes": [
+        {
+          "destination": "Đà Nẵng",
+          "typical_duration_minutes": { "min": 80, "max": 95 }
+        },
+        {
+          "destination": "TP. Hồ Chí Minh",
+          "typical_duration_minutes": { "min": 120, "max": 135 }
+        },
+        {
+          "destination": "Phú Quốc / Nha Trang / Huế",
+          "typical_duration_minutes": null
+        }
+      ],
+      "price": {
+        "min_vnd": 700000,
+        "max_vnd": 5000000,
+        "unit": "per_person",
+        "confidence": "low",
+        "note": "Giá vé máy bay biến động mạnh theo hãng, hành lý, giờ bay, mùa cao điểm và thời điểm đặt."
+      },
+      "operating_hours": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "raw": "Theo lịch bay",
+        "weekly": []
+      },
+      "booking": {
+        "required": true,
+        "methods": ["airline_website", "travel_agency", "ota"],
+        "url": null
+      },
+      "constraints": {
+        "live_check_required": true,
+        "avoid_auto_schedule": true,
+        "availability_required": true,
+        "seasonal": true,
+        "access_notes": "Chỉ nên dùng cho tuyến đến/đi Hà Nội hoặc liên tỉnh xa. Không dùng để mô tả di chuyển bên trong Hà Nội."
+      },
+      "tags": ["airport", "domestic_flight", "intercity", "booking_required"],
+      "suitable_for": ["solo", "couple", "family", "group"],
+      "verification": {
+        "status": "sample",
+        "confidence": "low",
+        "last_verified_at": "2026-07-16",
+        "flags": ["fare_live_check_required", "availability_required"]
+      },
+      "sources": [
+        {
+          "type": "airline_or_ota",
+          "url": null,
+          "checked_at": "2026-07-16"
+        }
+      ]
+    }
+  ]
+}

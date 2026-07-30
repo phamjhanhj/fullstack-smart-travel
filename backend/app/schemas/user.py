@@ -19,7 +19,8 @@ class UserProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    email: str
+    username: str
+    email: str | None = None
     full_name: str
     avatar_url: str | None = None
     preferences_json: UserPreferences | None = None
@@ -50,6 +51,13 @@ class UpdateProfileRequest(BaseModel):
     avatar_url: str | None = None
     preferences_json: UserPreferences | None = None
 
+    @field_validator("avatar_url")
+    @classmethod
+    def validate_avatar_url(cls, value: str | None) -> str | None:
+        if value is None or value.startswith(("http://", "https://", "/default-avatars/")):
+            return value
+        raise ValueError("avatar_url must be an http, https, or default avatar URL")
+
     @field_validator("preferences_json", mode="before")
     @classmethod
     def validate_preferences_json(cls, value: Any) -> Any:
@@ -60,3 +68,8 @@ class UpdateProfileRequest(BaseModel):
             except Exception:
                 return None
         return value
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)

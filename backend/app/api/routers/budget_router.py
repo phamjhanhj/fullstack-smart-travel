@@ -35,6 +35,15 @@ async def get_budget_summary(
     return envelope(data=BudgetSummaryResponse(**summary))
 
 
+@trip_budget_router.get("/split-summary")
+async def get_group_split_summary(
+    trip: Trip = Depends(get_trip_read_access),
+    db: AsyncSession = Depends(get_db),
+):
+    split_info = await budget_service.get_group_split_summary(db, trip)
+    return envelope(data=split_info)
+
+
 @trip_budget_router.get("/items")
 async def list_budget_items(
     category: BudgetCategory | None = Query(default=None),

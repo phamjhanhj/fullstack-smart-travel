@@ -73,26 +73,30 @@
           <span class="material-symbols-outlined">error</span>
           <span>{{ errorMessage() }}</span>
         </div>
+        <div *ngIf="needsVerification()" class="mb-stack-md flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm">
+          <span>{{ resendMessage() || 'Hãy mở email xác minh hoặc yêu cầu gửi lại.' }}</span>
+          <button type="button" (click)="resendVerification()" class="border-none bg-transparent text-primary font-bold cursor-pointer whitespace-nowrap">Gửi lại</button>
+        </div>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-stack-md relative z-10">
-          <!-- Email Field -->
+          <!-- Username or email field -->
           <div>
-            <label class="font-label-md text-label-md text-on-surface-variant block mb-stack-sm ml-1" for="email">Email</label>
+            <label class="font-label-md text-label-md text-on-surface-variant block mb-stack-sm ml-1" for="login">Tên đăng nhập hoặc email</label>
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
               <input 
                 class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline-variant font-body-md" 
-                [class.border-status-warning]="isFieldInvalid('email')"
-                id="email" 
-                formControlName="email"
-                placeholder="name@example.com" 
-                type="email"
-                autocomplete="email"
+                [class.border-status-warning]="isFieldInvalid('login')"
+                id="login"
+                formControlName="login"
+                placeholder="username hoặc name@example.com"
+                type="text"
+                autocomplete="username"
               />
             </div>
-            <div *ngIf="isFieldInvalid('email')" class="text-status-warning text-code-sm mt-1 ml-1 flex items-center gap-1">
+            <div *ngIf="isFieldInvalid('login')" class="text-status-warning text-code-sm mt-1 ml-1 flex items-center gap-1">
               <span class="material-symbols-outlined text-[14px]">info</span>
-              <span>Vui lòng nhập địa chỉ email hợp lệ.</span>
+              <span>{{ getFieldError('login') }}</span>
             </div>
           </div>
 
@@ -158,11 +162,11 @@
             <div class="flex-grow border-t border-glass"></div>
           </div>
           <div class="grid grid-cols-2 gap-gutter">
-            <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl hover:bg-on-surface/5 transition-colors border-glass cursor-pointer">
+            <button type="button" disabled title="Google OAuth chưa được cấu hình" class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl border-glass cursor-not-allowed opacity-50">
               <img alt="Google Logo" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLp30w-SRwfa5NymZBs5Q9t1WZVJZgJ1obxM5Q4Zpq81kIASnL5--pFmZqBU923wxog6Nm31QXkaIoWo_pFhWEWhhLu2V3K0e6Fi1chUq5_OZ4yVy3F8riTiOledPGclbNLyXvf1NXcwLaD-cjlKFahSwbz_LL9bJPOzxvvRBEcql41UY4fN__MXjmrXAAzm0bwegyiFaUUayY2aw5Fl6RJ29LxT7h3ADJT_SgQ48_T_ehk0rd3Z3nswEOim4-TVWQXjIo6LsdZXnB"/>
               <span class="font-label-md text-label-md text-on-surface">Google</span>
             </button>
-            <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl hover:bg-on-surface/5 transition-colors border-glass cursor-pointer">
+            <button type="button" disabled title="Apple OAuth chưa được cấu hình" class="flex items-center justify-center gap-3 py-3 px-4 glass-card rounded-xl border-glass cursor-not-allowed opacity-50">
               <span class="material-symbols-outlined text-on-surface" style="font-variation-settings: 'FILL' 1;">apps</span>
               <span class="font-label-md text-label-md text-on-surface">Apple</span>
             </button>

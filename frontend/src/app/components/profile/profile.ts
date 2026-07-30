@@ -62,11 +62,25 @@ export class UserProfileComponent implements OnInit {
     { id: 'avatar8', name: 'Mac dinh 8', url: '/default-avatars/avatar-08.svg' },
   ];
 
+  readonly activeTab = signal<'personal' | 'ai' | 'saved' | 'security'>('personal');
+  readonly isPasswordChanging = signal<boolean>(false);
+  readonly passwordSuccessMsg = signal<string | null>(null);
+  readonly passwordErrorMsg = signal<string | null>(null);
+
   readonly profileForm = this.fb.nonNullable.group({
     full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     avatar_url: [this.fallbackAvatarUrl],
     travel_style: ['mid-range' as 'budget' | 'mid-range' | 'luxury' | null],
     budget_range: ['medium' as 'low' | 'medium' | 'high' | null],
+    email: [''],
+    phone: ['+84 90 123 4567'],
+    bio: ['Thích khám phá những quán cà phê ẩn mình và trải nghiệm văn hóa địa phương. Sống để đi và đi để sống.'],
+  });
+
+  readonly passwordForm = this.fb.nonNullable.group({
+    current_password: ['', [Validators.required]],
+    new_password: ['', [Validators.required, Validators.minLength(6)]],
+    confirm_password: ['', [Validators.required]],
   });
 
   ngOnInit(): void {
@@ -86,11 +100,12 @@ export class UserProfileComponent implements OnInit {
         this.isLoading.set(false);
         if (res?.data) {
           const u = res.data;
-          const avatarUrl = this.isDefaultAvatar(u.avatar_url) ? u.avatar_url! : this.fallbackAvatarUrl;
+          const avatarUrl = this.isAllowedAvatarUrl(u.avatar_url) ? u.avatar_url! : this.fallbackAvatarUrl;
 
           this.profile.set(u);
           this.profileForm.patchValue({
             full_name: u.full_name,
+            email: u.email || `${u.username}@aether.com`,
             avatar_url: avatarUrl,
             travel_style: u.preferences_json?.travel_style || 'mid-range',
             budget_range: u.preferences_json?.budget_range || 'medium',
@@ -107,6 +122,46 @@ export class UserProfileComponent implements OnInit {
     });
   }
 
+  switchTab(tab: 'personal' | 'ai' | 'saved' | 'security'): void {
+    this.activeTab.set(tab);
+  }
+
+  onChangePassword(): void {
+    if (this.passwordForm.invalid) return;
+    const { new_password, confirm_password } = this.passwordForm.getRawValue();
+    if (new_password !== confirm_password) {
+      this.passwordErrorMsg.set('Mật khẩu mới và xác nhận mật khẩu không khớp.');
+      return;
+    }
+    this.isPasswordChanging.set(true);
+    this.passwordErrorMsg.set(null);
+    this.passwordSuccessMsg.set(null);
+
+    const currentPassword = this.passwordForm.getRawValue().current_password;
+    this.userService.changePassword({
+      current_password: currentPassword,
+      new_password,
+    }).subscribe({
+      next: () => {
+        this.isPasswordChanging.set(false);
+        this.passwordSuccessMsg.set('Đã cập nhật mật khẩu thành công!');
+        this.passwordForm.reset();
+        setTimeout(() => this.passwordSuccessMsg.set(null), 3000);
+      },
+      error: (err) => {
+        this.isPasswordChanging.set(false);
+        const message = err?.error?.message;
+        this.passwordErrorMsg.set(
+          message === 'Mat khau hien tai khong dung'
+            ? 'Mật khẩu hiện tại không đúng.'
+            : message === 'Mat khau moi phai khac mat khau hien tai'
+              ? 'Mật khẩu mới phải khác mật khẩu hiện tại.'
+              : 'Không thể đổi mật khẩu. Vui lòng thử lại.',
+        );
+      },
+    });
+  }
+
   selectAvatar(url: string): void {
     this.selectedAvatar.set(url);
     this.profileForm.patchValue({ avatar_url: url });
@@ -114,6 +169,10 @@ export class UserProfileComponent implements OnInit {
 
   isDefaultAvatar(url: string | null | undefined): boolean {
     return !!url && this.defaultAvatars.some((avatar) => avatar.url === url);
+  }
+
+  isAllowedAvatarUrl(url: string | null | undefined): boolean {
+    return !!url && (this.isDefaultAvatar(url) || url.startsWith('https://') || url.startsWith('http://'));
   }
 
   toggleInterest(interestId: string): void {
@@ -152,7 +211,7 @@ export class UserProfileComponent implements OnInit {
     this.errorMessage.set(null);
 
     const formVal = this.profileForm.getRawValue();
-    const avatarUrl = this.isDefaultAvatar(formVal.avatar_url) ? formVal.avatar_url : this.fallbackAvatarUrl;
+    const avatarUrl = this.isAllowedAvatarUrl(formVal.avatar_url) ? formVal.avatar_url : this.fallbackAvatarUrl;
 
     const preferences_json: UserPreferences = {
       travel_style: formVal.travel_style,
@@ -177,7 +236,7 @@ export class UserProfileComponent implements OnInit {
 
           const cachedUser: UserInfo = {
             id: updated.id,
-            email: updated.email,
+            username: updated.username,
             full_name: updated.full_name,
             avatar_url: updated.avatar_url || this.fallbackAvatarUrl,
           };

@@ -1,0 +1,39 @@
+{
+  "name": "Smart Travel Planner",
+  "short_name": "SmartTravel",
+  "description": "Lập kế hoạch du lịch thông minh bằng AI, xem lịch trình ngoại tuyến",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#0B0F19",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/travel-hero.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chuyến đi của tôi",
+      "short_name": "Chuyến đi",
+      "description": "Quản lý các kế hoạch du lịch của bạn",
+      "url": "/dashboard?tab=my-trips",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64" }]
+    },
+    {
+      "name": "Tạo chuyến đi mới",
+      "short_name": "Tạo mới",
+      "description": "Tạo chuyến đi tự động bằng AI",
+      "url": "/dashboard?action=new-trip",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64" }]
+    }
+  ]
+}

@@ -1,16 +1,65 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './components/auth/login/login';
-import { RegisterComponent } from './components/auth/register/register';
-import { DashboardComponent } from './components/dashboard/dashboard';
-import { TripDetailComponent } from './components/trip-detail/trip-detail';
-import { UserProfileComponent } from './components/profile/profile';
 import { authGuard } from './guards/auth.guard';
+import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'trip/:id', component: TripDetailComponent, canActivate: [authGuard] },
-  { path: 'profile', component: UserProfileComponent, canActivate: [authGuard] },
-  { path: '', redirectTo: 'login', pathMatch: 'full' }
+  {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./components/auth/login/login').then((module) => module.LoginComponent),
+  },
+  {
+    path: 'register',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./components/auth/register/register').then((module) => module.RegisterComponent),
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./components/auth/verify-email/verify-email').then((module) => module.VerifyEmailComponent),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/dashboard/dashboard').then((module) => module.DashboardComponent),
+  },
+  {
+    path: 'trip/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/trip-detail/trip-detail').then((module) => module.TripDetailComponent),
+  },
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/profile/profile').then((module) => module.UserProfileComponent),
+  },
+  {
+    path: 'community',
+    loadComponent: () =>
+      import('./components/community/community-list').then(
+        (module) => module.CommunityListComponent,
+      ),
+  },
+  {
+    path: 'community/trips/:slug',
+    loadComponent: () =>
+      import('./components/community/public-trip-detail').then(
+        (module) => module.PublicTripDetailComponent,
+      ),
+  },
+  {
+    path: 'trip-invites/:token',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/accept-invite/accept-invite').then(
+        (module) => module.AcceptInviteComponent,
+      ),
+  },
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '**', redirectTo: 'login' },
 ];

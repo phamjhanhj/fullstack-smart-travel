@@ -4,6 +4,7 @@ Goi Groq API thuc (model Llama 3) - ho tro ca non-streaming va SSE streaming.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from collections.abc import AsyncGenerator
@@ -24,7 +25,10 @@ from app.models.trip import DayPlan, Trip
 from app.models.user import User
 from app.services import trip_history_service
 
-_groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+_groq_client = AsyncGroq(
+    api_key=settings.GROQ_API_KEY,
+    max_retries=settings.GROQ_MAX_RETRIES,
+)
 
 
 class AiActivityPayload(BaseModel):
@@ -560,12 +564,16 @@ Trip:
 - Estimated travel hours to destination: {estimated_travel_hours}
 - Arrival transport to destination: {arrival_transport}
 - Daily active window: {daily_window}
+- Long-distance day trips allowed: {accept_long_daily_travel}
+- Maximum daily travel time: {max_daily_travel_minutes} minutes
 - User preferences: {preferences}
 - User profile interests: {interests}
-- User requested places, balanced priority: {must_visit}
+- Required user places (hard constraints): {must_visit}
 - Places to avoid: {avoid_places}
 - Dietary notes: {dietary_notes}
 - Mobility notes: {mobility_notes}
+- Other user notes: {user_notes}
+- Destination topology: {destination_profile}
 
 Grounded place candidates:
 {candidate_json}
@@ -573,15 +581,22 @@ Grounded place candidates:
 Validation errors from previous attempt:
 {validation_errors}
 
+Previous draft to repair:
+{draft_itinerary}
+
 Rules:
 1. Use only the place candidates above for attraction, meal, cafe, and hotel activities.
 2. Any place-based activity must include location_ref matching a candidate ref, for example "p3".
 3. Transport/rest/check-in/check-out activities may omit location_ref.
 4. Each day must have logical, non-overlapping HH:MM start_time and end_time.
-5. Include famous attractions and the user's requested places when route, time, and budget make sense.
+5. Every required user place whose candidate has must_visit_match must appear exactly once.
+   Never replace or omit it in favor of a famous or higher-rated optional place.
 6. Keep travel realistic by grouping nearby places on the same day when possible.
    - Nearby attractions can be combined into 2-3 visits in one full day.
    - Far attractions should reduce the number of visits and include more travel/rest buffer.
+   - When long-distance day trips are allowed, required places may be 40-120 km
+     apart. Keep them, allocate up to the maximum daily travel time, add explicit
+     transport buffers, and prefer separate days or a forward corridor over backtracking.
 7. Costs are VND for the whole group, not per person.
 8. Respect places to avoid, dietary notes, mobility notes, pace, and the daily active window.
 9. For strict budget mode, stay under budget. For flexible_15, stay within 115% of budget. For comfort, prioritize fit and route quality while keeping costs reasonable.
@@ -594,7 +609,13 @@ Rules:
 12. Avoid repeating the same attraction route on multiple days unless the user explicitly requested it.
 13. Do not produce logistics-only full days. A day with enough time at destination should contain real travel experiences: sightseeing, food, cafe/night walk, local culture, or light entertainment.
 14. Every activity should have realistic group cost. Include arrival/departure transport, local transport, lodging per night, meals, tickets/activities, and small buffer costs.
-15. Output schema:
+15. A requested dish is an experience requirement, not a request to repeat it
+    at every meal. Schedule it once, at most twice for the entire trip. Use the
+    other meals for different local specialties and different grounded venues.
+16. Diversify sightseeing across beaches/nature, culture/history, architecture,
+    markets/local life, viewpoints and entertainment when Data supports them.
+    Do not fill different days with only the same attraction theme.
+17. Output schema:
 {{
   "days": [
     {{
@@ -647,7 +668,12 @@ async def generate_grounded_itinerary_with_ai(
     daily_end_time: str | None = None,
     dietary_notes: str | None = None,
     mobility_notes: str | None = None,
+    user_notes: str | None = None,
+    destination_profile: dict | None = None,
+    accept_long_daily_travel: bool = False,
+    max_daily_travel_minutes: int = 240,
     validation_errors: list[str] | None = None,
+    draft_itinerary: dict | None = None,
 ) -> dict:
     """Generate an itinerary constrained to known location candidates."""
     if not settings.GROQ_API_KEY:
@@ -657,19 +683,37 @@ async def generate_grounded_itinerary_with_ai(
         )
 
     total_days = (trip.end_date - trip.start_date).days + 1
+    candidate_limit = (
+        settings.ITINERARY_MAX_CANDIDATES_SHORT
+        if total_days <= 3
+        else settings.ITINERARY_MAX_CANDIDATES_LONG
+    )
     compact_candidates = [
         {
             "ref": item.get("ref"),
             "name": item.get("name"),
             "category": item.get("category"),
-            "address": item.get("address"),
-            "lat": item.get("lat"),
-            "lng": item.get("lng"),
-            "rating": item.get("rating"),
             "score": item.get("score"),
             "must_visit_match": item.get("must_visit_match"),
+            "lat": item.get("lat"),
+            "lng": item.get("lng"),
+            "typical_visit_minutes": item.get("typical_visit_minutes"),
+            "opening_hours": (
+                (item.get("opening_hours") or {}).get("raw")
+                if isinstance(item.get("opening_hours"), dict)
+                else None
+            ),
+            "price": (
+                {
+                    key: item["price"].get(key)
+                    for key in ("min_vnd", "max_vnd", "unit", "confidence")
+                    if item["price"].get(key) is not None
+                }
+                if isinstance(item.get("price"), dict)
+                else None
+            ),
         }
-        for item in candidates[:45]
+        for item in candidates[:candidate_limit]
     ]
 
     prompt = _GROUNDED_ITINERARY_PROMPT.format(
@@ -690,28 +734,51 @@ async def generate_grounded_itinerary_with_ai(
         ),
         arrival_transport=arrival_transport or transport_mode or "not specified",
         daily_window=_format_daily_window(daily_start_time, daily_end_time),
+        accept_long_daily_travel="yes" if accept_long_daily_travel else "no",
+        max_daily_travel_minutes=max_daily_travel_minutes,
         preferences=trip.preferences or "none",
         interests=", ".join(interests) if interests else "none",
         must_visit=", ".join(must_visit) if must_visit else "none",
         avoid_places=", ".join(avoid_places or []) if avoid_places else "none",
         dietary_notes=dietary_notes or "none",
         mobility_notes=mobility_notes or "none",
+        user_notes=user_notes or "none",
+        destination_profile=json.dumps(destination_profile or {}, ensure_ascii=False),
         candidate_json=json.dumps(compact_candidates, ensure_ascii=False),
         validation_errors="; ".join(validation_errors or []) or "none",
+        draft_itinerary=(
+            json.dumps(draft_itinerary, ensure_ascii=False)
+            if draft_itinerary
+            else "none - create the first grounded draft"
+        ),
     )
+    if draft_itinerary and validation_errors:
+        prompt += (
+            "\nRepair mode: preserve every valid activity in the previous draft. "
+            "Only move or replace activities named in validation errors. "
+            "Never change place facts or invent a new location_ref."
+        )
 
     try:
-        completion = await _groq_client.chat.completions.create(
-            model=settings.GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": "You produce grounded travel itinerary JSON only."},
-                {"role": "user", "content": prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
+        async with asyncio.timeout(settings.ITINERARY_GROQ_TIMEOUT_SECONDS):
+            completion = await _groq_client.chat.completions.create(
+                model=settings.GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": "You produce grounded travel itinerary JSON only."},
+                    {"role": "user", "content": prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=settings.GROQ_ITINERARY_TEMPERATURE,
+                max_tokens=min(4096, 700 + total_days * 600),
+            )
         content = completion.choices[0].message.content or ""
         parsed = AiItineraryPayload.model_validate(json.loads(content))
         return parsed.model_dump()
+    except TimeoutError as exc:
+        raise AppError(
+            "Groq vuot qua thoi gian cho phep; chuyen sang lich fallback.",
+            status_code=504,
+        ) from exc
     except (json.JSONDecodeError, ValidationError) as e:
         print(f"Invalid grounded AI itinerary payload: {e}")
         raise AppError("AI tra ve lich trinh khong dung dinh dang.", status_code=502)

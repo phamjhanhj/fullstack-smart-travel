@@ -1,5 +1,5 @@
-@if (isAuthenticated()) {
-  <header class="fixed top-0 left-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-border-glass px-10 h-16 flex items-center justify-between select-none">
+@if (isAuthenticated() && !isAuthPage()) {
+  <header class="app-header fixed top-0 left-0 w-full z-[200] bg-surface/70 backdrop-blur-xl border-b border-border-glass px-10 h-16 flex items-center justify-between select-none">
     <div class="flex items-center gap-2 cursor-pointer" routerLink="/dashboard" [queryParams]="{tab: 'explore'}">
       <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">travel_explore</span>
       <span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Aether Travel</span>
@@ -10,7 +10,7 @@
         [queryParams]="{tab: 'explore'}"
         class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
       >
-        <span>Dashboard</span>
+        <span>Khám phá</span>
         <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentTab('explore')"></div>
       </a>
       <a 
@@ -18,7 +18,7 @@
         [queryParams]="{tab: 'my-trips'}"
         class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
       >
-        <span>Trips</span>
+        <span>Chuyến đi của tôi</span>
         <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentTab('my-trips')"></div>
       </a>
       <a 
@@ -26,15 +26,15 @@
         [queryParams]="{tab: 'map'}"
         class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
       >
-        <span>Map</span>
+        <span>Bản đồ</span>
         <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentTab('map')"></div>
       </a>
-      <a 
-        routerLink="/profile" 
+      <a
+        routerLink="/community"
         class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center h-full relative no-underline"
       >
-        <span>Profile</span>
-        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCurrentPath('/profile')"></div>
+        <span>Cộng đồng</span>
+        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCommunityPath()"></div>
       </a>
     </nav>
     <div class="flex items-center gap-4">
@@ -42,7 +42,7 @@
       <button (click)="toggleTheme()" class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer flex items-center justify-center" title="Đổi giao diện">
         <span class="material-symbols-outlined">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</span>
       </button>
-      <div class="relative">
+      <div class="relative notification-container flex items-center h-full">
         <button
           type="button"
           (click)="toggleNotifications()"
@@ -51,92 +51,123 @@
         >
           <span class="material-symbols-outlined">notifications</span>
           <span
-            *ngIf="pendingInvites().length > 0"
+            *ngIf="totalNotificationCount() > 0"
             class="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-status-warning text-white text-[10px] font-bold leading-5 text-center border border-surface"
           >
-            {{ pendingInvites().length > 9 ? '9+' : pendingInvites().length }}
+            {{ totalNotificationCount() > 9 ? '9+' : totalNotificationCount() }}
           </span>
         </button>
 
         <div
           *ngIf="isNotificationsOpen()"
-          class="absolute right-0 top-9 w-[360px] max-w-[calc(100vw-2rem)] rounded-lg border border-border-glass bg-surface/95 shadow-2xl backdrop-blur-xl p-4 text-on-surface z-[60]"
+          (click)="$event.stopPropagation()"
+          class="absolute right-0 top-full mt-2 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl border border-border-glass bg-white dark:bg-[#181a20] shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-5 text-on-surface z-[9999] select-text"
         >
-          <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-border-glass">
             <div>
-              <h3 class="text-sm font-bold">Lời mời chuyến đi</h3>
-              <p class="text-xs text-on-surface-variant">Chấp nhận để chuyến đi xuất hiện trong mục Được chia sẻ.</p>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-on-surface m-0">Lời mời chuyến đi</h3>
+                <span
+                  *ngIf="pendingInvites().length > 0"
+                  class="px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 text-[11px] font-bold"
+                >
+                  {{ pendingInvites().length }} mới
+                </span>
+              </div>
+              <p class="text-xs text-on-surface-variant m-0 mt-1">Chấp nhận để chuyến đi xuất hiện trong mục Được chia sẻ.</p>
             </div>
             <button
               type="button"
               (click)="isNotificationsOpen.set(false)"
-              class="material-symbols-outlined text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer p-1"
+              class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors bg-transparent border-none cursor-pointer p-0 shrink-0"
               title="Đóng"
             >
-              close
+              <span class="material-symbols-outlined text-base">close</span>
             </button>
           </div>
 
-          <div *ngIf="notificationError()" class="mb-3 rounded-md border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-xs text-status-warning">
-            {{ notificationError() }}
+          <div *ngIf="notificationError()" class="mb-3 rounded-xl border border-status-warning/40 bg-status-warning/10 px-3.5 py-2.5 text-xs text-status-warning flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">warning</span>
+            <span>{{ notificationError() }}</span>
           </div>
 
-          <div *ngIf="isLoadingInvites()" class="py-6 text-center text-xs text-on-surface-variant">
-            Đang tải lời mời...
+          <div *ngIf="notifications().length" class="space-y-2 mb-3 max-h-48 overflow-y-auto">
+            <div class="flex justify-end" *ngIf="unreadNotificationCount()">
+              <button type="button" (click)="markAllNotificationsRead()" class="text-[11px] text-primary font-bold bg-transparent border-none cursor-pointer">Đánh dấu tất cả đã đọc</button>
+            </div>
+            <button *ngFor="let item of notifications()" type="button" (click)="openNotification(item)" class="w-full text-left rounded-xl border p-3 cursor-pointer text-on-surface" [ngClass]="item.read_at ? 'bg-surface-container/40 border-border-glass opacity-70' : 'bg-primary/10 border-primary/30'">
+              <div class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">notifications_active</span>
+                <div><p class="m-0 text-xs font-bold">{{ item.title }}</p><p class="m-0 mt-1 text-[11px] text-on-surface-variant">{{ item.message }}</p></div>
+              </div>
+            </button>
           </div>
 
-          <div *ngIf="!isLoadingInvites() && pendingInvites().length === 0" class="py-6 text-center">
-            <span class="material-symbols-outlined text-on-surface-variant mb-2">notifications_off</span>
-            <p class="text-sm font-semibold">Không có lời mời mới</p>
-            <p class="text-xs text-on-surface-variant mt-1">Khi bạn được mời bằng email, lời mời sẽ hiện ở đây.</p>
+          <div *ngIf="isLoadingInvites()" class="py-8 text-center text-xs text-on-surface-variant flex flex-col items-center gap-2">
+            <div class="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <span>Đang tải lời mời...</span>
           </div>
 
-          <div *ngIf="!isLoadingInvites() && pendingInvites().length > 0" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+          <div *ngIf="!isLoadingInvites() && pendingInvites().length === 0" class="py-8 text-center flex flex-col items-center justify-center">
+            <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
+              <span class="material-symbols-outlined text-2xl">notifications_off</span>
+            </div>
+            <p class="text-sm font-bold text-on-surface m-0">Không có lời mời mới</p>
+            <p class="text-xs text-on-surface-variant max-w-[240px] m-0 mt-1 leading-relaxed">
+              Khi bạn được người khác mời tham gia chuyến đi qua email, lời mời sẽ xuất hiện tại đây.
+            </p>
+          </div>
+
+          <div *ngIf="!isLoadingInvites() && pendingInvites().length > 0" class="space-y-3 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
             <div
               *ngFor="let invite of pendingInvites()"
-              class="rounded-lg border border-border-glass bg-white/5 p-3"
+              class="rounded-xl border border-border-glass bg-surface-container/60 p-3.5 space-y-3 hover:border-primary/30 transition-all"
             >
               <div class="flex items-start gap-3">
                 <ng-container *ngIf="invite.trip.cover_image_url; else inviteTripFallback">
                   <img
                     [src]="invite.trip.cover_image_url"
-                    class="w-14 h-14 rounded-md object-cover border border-border-glass"
+                    class="w-12 h-12 rounded-xl object-cover border border-border-glass shrink-0"
                     alt=""
                   />
                 </ng-container>
                 <ng-template #inviteTripFallback>
-                  <div class="w-14 h-14 rounded-md border border-border-glass bg-primary/10 flex items-center justify-center text-primary">
-                    <span class="material-symbols-outlined">travel_explore</span>
+                  <div class="w-12 h-12 rounded-xl border border-border-glass bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <span class="material-symbols-outlined text-xl">travel_explore</span>
                   </div>
                 </ng-template>
                 <div class="min-w-0 flex-1">
-                  <p class="text-xs text-on-surface-variant">
-                    <strong class="text-on-surface">{{ invite.invited_by.full_name }}</strong>
+                  <p class="text-xs text-on-surface-variant m-0">
+                    <strong class="text-on-surface font-bold">{{ invite.invited_by.full_name }}</strong>
                     đã mời bạn tham gia
                   </p>
-                  <h4 class="text-sm font-bold truncate mt-1">{{ invite.trip.title }}</h4>
-                  <p class="text-xs text-on-surface-variant truncate">{{ invite.trip.destination }}</p>
-                  <p class="text-xs text-on-surface-variant mt-1">{{ formatInviteDateRange(invite) }}</p>
-                  <span class="inline-flex mt-2 rounded-full border border-primary/40 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                  <h4 class="text-xs font-bold text-on-surface truncate m-0 mt-0.5">{{ invite.trip.title }}</h4>
+                  <div class="flex items-center gap-2 mt-1 text-[11px] text-on-surface-variant">
+                    <span class="flex items-center gap-0.5 truncate"><span class="material-symbols-outlined text-[13px] text-primary">location_on</span>{{ invite.trip.destination }}</span>
+                    <span>•</span>
+                    <span>{{ formatInviteDateRange(invite) }}</span>
+                  </div>
+                  <span class="inline-flex mt-2 rounded-md bg-primary/15 border border-primary/30 px-2 py-0.5 text-[10px] font-bold text-primary">
                     Quyền {{ getInviteRoleLabel(invite.role) }}
                   </span>
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 mt-3">
+              <div class="grid grid-cols-2 gap-2 pt-1 border-t border-border-glass/40">
                 <button
                   type="button"
                   (click)="acceptInvite(invite, $event)"
                   [disabled]="inviteActionId() === invite.id"
-                  class="rounded-md bg-primary text-on-primary border-none px-3 py-2 text-xs font-bold cursor-pointer disabled:opacity-60"
+                  class="rounded-lg bg-primary hover:bg-primary-hover text-white border-none py-2 text-xs font-bold transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1"
                 >
-                  Chấp nhận
+                  <span *ngIf="inviteActionId() === invite.id" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Chấp nhận</span>
                 </button>
                 <button
                   type="button"
                   (click)="rejectInvite(invite, $event)"
                   [disabled]="inviteActionId() === invite.id"
-                  class="rounded-md bg-transparent text-on-surface border border-border-glass px-3 py-2 text-xs font-bold cursor-pointer hover:bg-white/10 disabled:opacity-60"
+                  class="rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-border-glass py-2 text-xs font-semibold transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center"
                 >
                   Từ chối
                 </button>
@@ -193,16 +224,25 @@
     </button>
     <button 
       class="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer"
+      [class.text-primary]="isCommunityPath()"
+      [class.text-on-surface-variant]="!isCommunityPath()"
+      routerLink="/community"
+    >
+      <span class="material-symbols-outlined" [style.font-variation-settings]="isCommunityPath() ? 'FILL 1' : 'FILL 0'">groups</span>
+      <span class="text-[10px] font-bold uppercase tracking-tighter">Cộng đồng</span>
+    </button>
+    <button 
+      class="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer"
       [class.text-primary]="isCurrentPath('/profile')"
       [class.text-on-surface-variant]="!isCurrentPath('/profile')"
       routerLink="/profile"
     >
       <span class="material-symbols-outlined" [style.font-variation-settings]="isCurrentPath('/profile') ? 'FILL 1' : 'FILL 0'">person</span>
-      <span class="text-[10px] font-bold uppercase tracking-tighter">Profile</span>
+      <span class="text-[10px] font-bold uppercase tracking-tighter">Cá nhân</span>
     </button>
   </nav>
 }
 
-<div [class.pt-16]="isAuthenticated()" [class.pb-16]="isAuthenticated()" class="min-h-screen flex flex-col relative z-10 md:pb-0">
+<div [class.pt-16]="isAuthenticated() && !isAuthPage()" [class.pb-16]="isAuthenticated() && !isAuthPage()" class="min-h-screen flex flex-col relative z-10 md:pb-0">
   <router-outlet></router-outlet>
 </div>

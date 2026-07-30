@@ -17,11 +17,11 @@ export class RegisterComponent implements OnInit, OnDestroy {
   readonly themeService = inject(ThemeService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-
   private readonly strictEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   readonly registerForm = this.fb.nonNullable.group({
     full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/), Validators.maxLength(39)]],
     email: ['', [Validators.required, Validators.email, Validators.pattern(this.strictEmailPattern)]],
     password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(128)]],
   });
@@ -71,12 +71,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    const { full_name, email, password } = this.registerForm.getRawValue();
+    const { full_name, username, email, password } = this.registerForm.getRawValue();
 
-    this.authService.register(email, password, full_name).subscribe({
+    this.authService.register(username, email, password, full_name).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.successMessage.set('Đăng ký tài khoản thành công! Đang chuyển hướng đến trang đăng nhập...');
+        this.successMessage.set('Đăng ký thành công! Hãy kiểm tra email để xác minh tài khoản trước khi đăng nhập.');
         this.registerForm.disable();
         setTimeout(() => {
           this.router.navigate(['/login']);
@@ -89,17 +89,18 @@ export class RegisterComponent implements OnInit, OnDestroy {
     });
   }
 
-  isFieldInvalid(fieldName: 'full_name' | 'email' | 'password'): boolean {
+  isFieldInvalid(fieldName: 'full_name' | 'username' | 'email' | 'password'): boolean {
     const field = this.registerForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  getFieldError(fieldName: 'full_name' | 'email' | 'password'): string {
+  getFieldError(fieldName: 'full_name' | 'username' | 'email' | 'password'): string {
     const field = this.registerForm.get(fieldName);
     if (!field || !field.errors) return '';
 
     if (field.errors['required']) {
       if (fieldName === 'full_name') return 'Vui lòng nhập họ và tên.';
+      if (fieldName === 'username') return 'Vui lòng nhập tên đăng nhập.';
       if (fieldName === 'email') return 'Vui lòng nhập email.';
       return 'Vui lòng nhập mật khẩu.';
     }
@@ -109,8 +110,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
       if (field.errors['maxlength']) return 'Họ và tên không được vượt quá 100 ký tự.';
     }
 
+    if (fieldName === 'username' && (field.errors['pattern'] || field.errors['maxlength'])) {
+      return 'Tên đăng nhập chỉ gồm chữ, số hoặc dấu gạch ngang, tối đa 39 ký tự.';
+    }
+
     if (fieldName === 'email' && (field.errors['email'] || field.errors['pattern'])) {
-      return 'Email chưa hợp lệ. Ví dụ đúng: ten@gmail.com.';
+      return 'Email chưa hợp lệ. Ví dụ: ten@gmail.com.';
     }
 
     if (fieldName === 'password') {
@@ -126,6 +131,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.registerForm.patchValue(
       {
         full_name: value.full_name.trim().replace(/\s+/g, ' '),
+        username: value.username.trim().toLowerCase(),
         email: value.email.trim().toLowerCase(),
       },
       { emitEvent: false },
@@ -134,6 +140,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   private getFirstValidationMessage(): string {
     if (this.registerForm.get('full_name')?.invalid) return this.getFieldError('full_name');
+    if (this.registerForm.get('username')?.invalid) return this.getFieldError('username');
     if (this.registerForm.get('email')?.invalid) return this.getFieldError('email');
     if (this.registerForm.get('password')?.invalid) return this.getFieldError('password');
     return 'Vui lòng kiểm tra lại thông tin đăng ký.';
@@ -145,14 +152,17 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
     if (Array.isArray(details)) {
       const fields = details.map((item: any) => String(item?.loc?.[item.loc.length - 1] || '')).join(' ');
-      if (fields.includes('email')) return 'Email chưa hợp lệ. Vui lòng nhập đúng dạng ten@gmail.com.';
+      if (fields.includes('username')) return 'Tên đăng nhập chưa hợp lệ.';
+      if (fields.includes('email')) return 'Email chưa hợp lệ.';
       if (fields.includes('password')) return 'Mật khẩu phải có từ 6 đến 128 ký tự.';
       if (fields.includes('full_name')) return 'Họ và tên phải có từ 2 đến 100 ký tự.';
     }
 
+    if (message === 'Ten dang nhap da duoc su dung') return 'Tên đăng nhập này đã được sử dụng.';
     if (message === 'Email da duoc su dung') return 'Email này đã được sử dụng.';
-    if (message === 'Email khong hop le') return 'Email chưa hợp lệ. Vui lòng nhập đúng dạng ten@gmail.com.';
+    if (message === 'Ten dang nhap hoac email da duoc su dung') return 'Tên đăng nhập hoặc email đã được sử dụng.';
+    if (message === 'Ten dang nhap khong hop le') return 'Tên đăng nhập chưa hợp lệ.';
     if (message && message !== 'Validation error') return message;
-    return 'Đăng ký thất bại. Vui lòng kiểm tra lại họ tên, email và mật khẩu.';
+    return 'Đăng ký thất bại. Vui lòng kiểm tra lại họ tên, tên đăng nhập và mật khẩu.';
   }
 }

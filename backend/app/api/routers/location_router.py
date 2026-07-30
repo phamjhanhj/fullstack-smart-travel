@@ -15,7 +15,9 @@ from app.models.user import User
 from app.schemas.location import (
     LocationCategory,
     LocationResponse,
+    ExploreLocationsResponse,
     NearbyLocationResponse,
+    SupportedDestinationResponse,
     UpsertLocationRequest,
     UpsertLocationResponse,
 )
@@ -24,15 +26,55 @@ from app.services import location_service
 router = APIRouter(prefix="/locations", tags=["Locations"])
 
 
+@router.get(
+    "/supported-destinations",
+    dependencies=[Depends(rate_limit("location_supported", settings.RATE_LIMIT_SEARCH_PER_MINUTE))],
+)
+async def supported_destinations(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    items = await location_service.list_supported_destinations(db)
+    return envelope(data=[SupportedDestinationResponse(**item) for item in items])
+
+
+@router.get("/explore", dependencies=[Depends(rate_limit("location_explore", settings.RATE_LIMIT_SEARCH_PER_MINUTE))])
+async def explore_locations(
+    destination: str = Query(min_length=1),
+    category: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=36, ge=1, le=60),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await location_service.explore_dataset_locations(
+        db,
+        destination=destination,
+        category=category,
+        page=page,
+        limit=limit,
+    )
+    return envelope(data=ExploreLocationsResponse(**result))
+
+
 @router.get("/search", dependencies=[Depends(rate_limit("location_search", settings.RATE_LIMIT_SEARCH_PER_MINUTE))])
 async def search_locations(
     q: str = Query(min_length=1),
     destination: str | None = Query(default=None),
-    limit: int = Query(default=15, ge=1, le=30),
+    category: str | None = Query(default=None),
+    include_external: bool = Query(default=True),
+    limit: int = Query(default=30, ge=1, le=60),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    locations = await location_service.search_locations(db, q, destination, limit)
+    locations = await location_service.search_locations_hybrid(
+        db,
+        query=q,
+        destination=destination,
+        category=category,
+        limit=limit,
+        include_external=include_external,
+    )
     return envelope(data=[LocationResponse.model_validate(loc) for loc in locations])
 
 

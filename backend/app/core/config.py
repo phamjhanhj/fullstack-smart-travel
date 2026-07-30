@@ -24,6 +24,21 @@ class Settings(BaseSettings):
     # Groq AI
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_ITINERARY_TEMPERATURE: float = 0.2
+    GROQ_MAX_RETRIES: int = 0
+
+    # Hard budgets for synchronous itinerary generation.
+    ITINERARY_TOTAL_TIMEOUT_SECONDS: float = 55.0
+    ITINERARY_GROQ_TIMEOUT_SECONDS: float = 23.0
+    ITINERARY_MAX_AI_CALLS: int = 1
+    ITINERARY_MAX_CANDIDATES_SHORT: int = 24
+    ITINERARY_MAX_CANDIDATES_LONG: int = 32
+    ITINERARY_ONLINE_FALLBACK: bool = False
+
+    # Route verification. "haversine" is offline and deterministic; "osrm"
+    # uses OSRM first and falls back to Haversine when unavailable.
+    ROUTING_PROVIDER: str = "haversine"
+    OSRM_BASE_URL: str = "https://router.project-osrm.org"
 
     # Google Places
     GOOGLE_PLACES_API_KEY: str = ""
@@ -43,6 +58,16 @@ class Settings(BaseSettings):
     RATE_LIMIT_PHOTO_PER_MINUTE: int = 40
 
     EXTERNAL_HTTP_TIMEOUT_SECONDS: float = 10.0
+
+    # Transactional email (Gmail SMTP)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USE_TLS: bool = True
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_FROM_NAME: str = "Smart Travel PKA"
+    FRONTEND_BASE_URL: str = "http://localhost:4200"
 
     @model_validator(mode="after")
     def validate_security_settings(self) -> "Settings":

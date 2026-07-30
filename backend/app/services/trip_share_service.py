@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -14,8 +15,9 @@ from app.core.exceptions import AppError, ForbiddenError, NotFoundError
 from app.models.trip import Trip
 from app.models.trip_share import TripParticipant, TripShareInvite
 from app.models.user import User
+from app.models.p1_features import UserNotification
 from app.schemas.trip_share import CreateTripInviteRequest
-from app.services import trip_history_service
+from app.services import email_service, trip_history_service
 
 EDIT_ROLES = {"owner", "editor"}
 PARTICIPANT_ROLES = {"viewer", "editor"}
@@ -104,15 +106,31 @@ async def create_invite(
     trip: Trip,
     inviter: User,
     payload: CreateTripInviteRequest,
-) -> tuple[TripShareInvite, str | None]:
-    email = str(payload.email).lower() if payload.email else None
+) -> tuple[TripShareInvite, str | None, bool]:
+    recipient = payload.recipient or (str(payload.email).lower() if payload.email else None)
+    email: str | None = None
     invited_user: User | None = None
-    if email and email == inviter.email.lower():
+
+    if recipient:
+        if "@" in recipient:
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]{2,}", recipient):
+                raise AppError("Email khong hop le")
+            email = recipient
+            user_result = await db.execute(select(User).where(func.lower(User.email) == email))
+            invited_user = user_result.scalar_one_or_none()
+        else:
+            user_result = await db.execute(select(User).where(func.lower(User.username) == recipient))
+            invited_user = user_result.scalar_one_or_none()
+            if invited_user is None:
+                raise AppError("Khong tim thay ten dang nhap nay")
+            if not invited_user.email:
+                raise AppError("Tai khoan nay chua co email de nhan loi moi")
+            email = invited_user.email.lower()
+
+    if invited_user and invited_user.id == inviter.id:
         raise AppError("Khong the moi chinh ban vao chuyen di")
 
     if email:
-        user_result = await db.execute(select(User).where(User.email == email))
-        invited_user = user_result.scalar_one_or_none()
         if invited_user and invited_user.id == trip.user_id:
             raise AppError("Khong the moi chu chuyen di")
         if invited_user and await get_participant(db, trip.id, invited_user.id):
@@ -142,6 +160,16 @@ async def create_invite(
 
     db.add(invite)
     await db.flush()
+    if invited_user:
+        db.add(UserNotification(
+            user_id=invited_user.id,
+            type="trip_invite",
+            title="Lời mời tham gia chuyến đi",
+            message=f'{inviter.full_name} đã mời bạn tham gia "{trip.title}".',
+            action_url=f"/trip/{trip.id}",
+            payload_json={"invite_id": str(invite.id), "trip_id": str(trip.id), "role": invite.role},
+            dedupe_key=f"trip-invite:{invite.id}",
+        ))
     await trip_history_service.record_history_event(
         db,
         trip_id=trip.id,
@@ -155,7 +183,23 @@ async def create_invite(
     await db.commit()
     await db.refresh(invite)
     invite.invited_by = inviter
-    return invite, token
+    email_sent = False
+    if email:
+        try:
+            await email_service.send_trip_invite_email(
+                email,
+                invited_user.full_name if invited_user else email,
+                inviter.full_name,
+                trip.title,
+                trip.destination,
+                invite.role,
+                token,
+            )
+            email_sent = True
+        except AppError:
+            # The in-app invite remains valid even if SMTP is temporarily unavailable.
+            pass
+    return invite, token, email_sent
 
 
 async def list_pending_email_invites_for_user(db: AsyncSession, user: User) -> list[TripShareInvite]:
@@ -164,7 +208,7 @@ async def list_pending_email_invites_for_user(db: AsyncSession, user: User) -> l
         .where(
             TripShareInvite.status == "pending",
             TripShareInvite.email.is_not(None),
-            func.lower(TripShareInvite.email) == user.email.lower(),
+            func.lower(TripShareInvite.email) == (user.email or "").lower(),
         )
         .options(
             selectinload(TripShareInvite.trip).selectinload(Trip.user),
@@ -251,7 +295,7 @@ async def get_pending_email_invite_for_user(db: AsyncSession, invite_id: uuid.UU
             TripShareInvite.id == invite_id,
             TripShareInvite.status == "pending",
             TripShareInvite.email.is_not(None),
-            func.lower(TripShareInvite.email) == user.email.lower(),
+            func.lower(TripShareInvite.email) == (user.email or "").lower(),
         )
         .options(selectinload(TripShareInvite.trip))
     )
@@ -292,7 +336,7 @@ async def accept_invite(db: AsyncSession, token: str, user: User) -> TripPartici
         invite.status = "revoked"
         await db.commit()
         raise AppError("Loi moi da het han")
-    if invite.email and invite.email.lower() != user.email.lower():
+    if invite.email and invite.email.lower() != (user.email or "").lower():
         raise ForbiddenError("Loi moi nay khong danh cho tai khoan cua ban")
     if invite.trip.user_id == user.id:
         raise AppError("Chu chuyen di khong can chap nhan loi moi")

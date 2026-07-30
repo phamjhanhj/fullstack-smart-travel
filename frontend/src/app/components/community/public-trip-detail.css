@@ -1,0 +1,69 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.verdict.must_go {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.verdict.recommended {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.verdict.preference_based {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.verdict.skip {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+:host-context(.light) .verdict.must_go {
+  background: rgba(168, 85, 247, 0.12);
+  color: #7e22ce;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+:host-context(.light) .verdict.recommended {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+:host-context(.light) .verdict.preference_based {
+  background: rgba(234, 179, 8, 0.15);
+  color: #a16207;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+:host-context(.light) .verdict.skip {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-save.saved { border-color:var(--color-primary,#8d7cff); background:rgba(141,124,255,.16); }
+.btn-save:disabled { opacity:.7; cursor:wait; }
+.save-feedback { color:var(--color-status-success,#34d399); }
+.save-feedback a { color:var(--color-primary,#8d7cff); }

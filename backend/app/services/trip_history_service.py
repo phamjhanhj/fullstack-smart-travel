@@ -36,6 +36,7 @@ ACTIVITY_FIELD_LABELS: dict[str, str] = {
     "order_index": "Thu tu",
     "booking_url": "Link dat cho",
     "notes": "Ghi chu",
+    "is_locked": "Khoa hoat dong",
 }
 
 BUDGET_FIELD_LABELS: dict[str, str] = {

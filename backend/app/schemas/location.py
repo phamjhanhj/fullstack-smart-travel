@@ -23,6 +23,38 @@ class LocationResponse(BaseModel):
     google_place_id: str | None = None
     photo_url: str | None = None
     rating: float | None = None
+    province_code: str | None = None
+    province_name: str | None = None
+    district: str | None = None
+    ward: str | None = None
+    subcategory: str | None = None
+    typical_visit_minutes: int | None = None
+    opening_hours: dict | None = None
+    price: dict | None = None
+    tags: list | None = None
+    suitable_for: list | None = None
+    data_confidence: str | None = None
+    coordinate_status: str | None = None
+    coordinate_accuracy_meters: int | None = None
+    status: str | None = None
+    result_source: Literal["dataset", "external"] | None = None
+
+
+class ExploreLocationsResponse(BaseModel):
+    items: list[LocationResponse] = Field(default_factory=list)
+    total: int = 0
+    page: int = 1
+    limit: int = 36
+    has_more: bool = False
+
+
+class SupportedDestinationResponse(BaseModel):
+    destination: str
+    attraction_count: int = 0
+    food_count: int = 0
+    lodging_count: int = 0
+    total_count: int = 0
+    can_generate: bool = False
 
 
 class NearbyLocationResponse(LocationResponse):
@@ -43,9 +75,11 @@ class UpsertLocationRequest(BaseModel):
     @field_validator("photo_url")
     @classmethod
     def validate_photo_url(cls, value: str | None) -> str | None:
-        if value is None or value.startswith(("http://", "https://")):
+        if not value:
+            return None
+        if value.startswith(("http://", "https://", "/", "assets/")):
             return value
-        raise ValueError("photo_url must be an http or https URL")
+        return None
 
 
 class UpsertLocationResponse(BaseModel):

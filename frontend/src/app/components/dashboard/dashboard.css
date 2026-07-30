@@ -37,7 +37,7 @@
 
 .logo-icon {
   font-size: 26px;
-  color: #ff385c;
+  color: #3b82f6;
   transform: rotate(-10deg);
   display: inline-block;
 }
@@ -45,7 +45,7 @@
 .logo-text {
   font-size: 20px;
   font-weight: 800;
-  color: #ff385c;
+  color: #3b82f6;
   letter-spacing: -0.5px;
 }
 
@@ -167,7 +167,7 @@
 }
 
 .search-orb {
-  background-color: #ff385c;
+  background-color: #3b82f6;
   color: #ffffff;
   border: none;
   width: 40px;
@@ -183,7 +183,7 @@
 }
 
 .search-orb:hover {
-  background-color: #e00b41;
+  background-color: #2563eb;
   transform: scale(1.02);
 }
 
@@ -406,7 +406,7 @@
 }
 
 .btn-hero-action {
-  background-color: #ff385c;
+  background-color: #3b82f6;
   color: #ffffff;
   border: none;
   padding: 12px 24px;
@@ -418,7 +418,7 @@
 }
 
 .btn-hero-action:hover {
-  background-color: #e00b41;
+  background-color: #2563eb;
   transform: translateY(-1px);
 }
 
@@ -589,7 +589,7 @@
 }
 
 .trending-budget b {
-  color: #ff385c;
+  color: #3b82f6;
 }
 
 /* 8. My Trips Personal Section */
@@ -663,7 +663,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #ff385c;
+  border-top: 3px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 12px;
@@ -736,7 +736,7 @@
 }
 
 .btn-create-trip {
-  background-color: #ff385c;
+  background-color: #3b82f6;
   color: #ffffff;
   border: none;
   padding: 12px 24px;
@@ -748,7 +748,7 @@
 }
 
 .btn-create-trip:hover {
-  background-color: #e00b41;
+  background-color: #2563eb;
 }
 
 /* Trips Grid and Personal Cards */
@@ -812,7 +812,7 @@
 }
 
 .status-badge.active {
-  background-color: #ff385c;
+  background-color: #3b82f6;
   color: #ffffff;
 }
 
@@ -971,15 +971,17 @@
 /* 10. Modal scrim & dialog */
 .modal-scrim {
   position: fixed;
-  top: 0;
+  top: 64px;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - 64px);
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 100;
   animation: fadeIn 0.2s ease;
 }
 
@@ -1134,7 +1136,7 @@
 }
 
 .modal-actions .btn-primary {
-  background-color: #ff385c;
+  background-color: #3b82f6;
   color: #ffffff;
   border: none;
   padding: 10px 20px;
@@ -1150,7 +1152,7 @@
 }
 
 .modal-actions .btn-primary:hover {
-  background-color: #e00b41;
+  background-color: #2563eb;
 }
 
 .spinner-small {

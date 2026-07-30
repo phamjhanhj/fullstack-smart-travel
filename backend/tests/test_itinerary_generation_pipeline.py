@@ -5,18 +5,27 @@ from uuid import uuid4
 
 from app.services.activity_service import (
     _apply_realistic_costs,
+    _apply_grounded_candidate_costs,
     _build_generation_summary,
     _budget_cap,
+    _diversify_meals,
     _enrich_experience_route,
     _enforce_closed_loop_itinerary,
-    _extract_requested_places_from_preferences,
     _filter_avoided_candidates,
     _fit_itinerary_to_budget,
+    _lock_required_visits,
     _trim_optional_experiences_to_budget,
     _validate_itinerary,
 )
 from app.schemas.day_plan import GenerateDaysRequest
 from app.models.trip import Trip
+from app.services.destination_profile_service import build_destination_profile
+from app.services.location_service import _keep_best_must_visit_matches, _match_requested_place
+from app.services.trip_intent_service import (
+    extract_place_requests_from_preferences,
+    extract_required_places_from_notes,
+    resolve_trip_intent,
+)
 
 
 def _candidate(ref: str, name: str, lat: float, lng: float, score: int = 50, must: str | None = None) -> dict:
@@ -60,15 +69,6 @@ def _ha_giang_trip(days: int = 3, budget: int = 3_500_000) -> Trip:
     )
 
 
-def test_extract_requested_places_from_preferences() -> None:
-    places = _extract_requested_places_from_preferences(
-        "Tam bien My Khe, check-in Cau Vang Ba Na Hills, an mi Quang"
-    )
-
-    assert "my khe" in places
-    assert "cau vang ba na hills" in places
-
-
 def test_generate_days_request_accepts_planning_options() -> None:
     payload = GenerateDaysRequest(
         overwrite=True,
@@ -89,6 +89,174 @@ def test_generate_days_request_accepts_planning_options() -> None:
     assert payload.transport_mode == "taxi"
     assert payload.departure_time == "18:00"
     assert payload.estimated_travel_hours == 6
+
+
+def test_user_notes_are_normalized_into_required_places() -> None:
+    payload = GenerateDaysRequest(
+        user_notes=(
+            "Tôi nhất định phải đến Thác Bản Giốc; "
+            "ưu tiên cảnh đẹp và có thể di chuyển nhiều."
+        )
+    )
+
+    intent = resolve_trip_intent(payload)
+
+    assert intent.required_names == ["thac ban gioc"]
+    assert intent.accept_long_daily_travel is True
+    assert intent.night_driving_allowed is False
+    assert extract_required_places_from_notes(payload.user_notes) == ["thac ban gioc"]
+
+
+def test_requested_place_matching_tolerates_common_typo() -> None:
+    assert _match_requested_place("Thác Bản Giốc", ["thắc bản Dốc"]) == "thắc bản Dốc"
+
+
+def test_requested_place_matching_resolves_ba_na_alias() -> None:
+    assert (
+        _match_requested_place("Sun World Ba Na Hills", ["Cầu Vàng Bà Nà Hills"])
+        == "Cầu Vàng Bà Nà Hills"
+    )
+
+
+def test_non_winning_food_alias_loses_hard_request_score_bonus() -> None:
+    candidates = [
+        {
+            "name": "Bánh tráng cuốn thịt heo A",
+            "score": 150,
+            "rating": 4.8,
+            "must_visit_match": "bánh tráng cuốn thịt heo",
+        },
+        {
+            "name": "Bánh tráng cuốn thịt heo B",
+            "score": 145,
+            "rating": 4.5,
+            "must_visit_match": "bánh tráng cuốn thịt heo",
+        },
+    ]
+
+    resolved = _keep_best_must_visit_matches(candidates)
+
+    assert sum(bool(item["must_visit_match"]) for item in resolved) == 1
+    loser = next(item for item in resolved if not item["must_visit_match"])
+    assert loser["score"] == 45
+
+
+def test_meal_diversity_caps_requested_dish_at_two_meals() -> None:
+    candidates = {
+        "p1": {
+            "ref": "p1",
+            "name": "Bánh tráng cuốn thịt heo A",
+            "category": "restaurant",
+            "score": 100,
+            "must_visit_match": "bánh tráng cuốn thịt heo",
+        },
+        "p2": {
+            "ref": "p2",
+            "name": "Bánh tráng cuốn thịt heo B",
+            "category": "restaurant",
+            "score": 30,
+        },
+        "p3": {"ref": "p3", "name": "Mì Quảng Bà Mua", "category": "restaurant", "score": 80},
+        "p4": {"ref": "p4", "name": "Bún chả cá", "category": "restaurant", "score": 70},
+    }
+    data = {
+        "days": [
+            {
+                "day_number": 1,
+                "activities": [
+                    {"type": "meal", "location_ref": "p1", "locked": True},
+                    {"type": "meal", "location_ref": "p2"},
+                    {"type": "meal", "location_ref": "p2"},
+                ],
+            }
+        ]
+    }
+
+    warnings = _diversify_meals(data, candidates, max_family_repeats=2)
+    refs = [item["location_ref"] for item in data["days"][0]["activities"]]
+
+    assert refs[:2] == ["p1", "p2"]
+    assert refs[2] in {"p3", "p4"}
+    assert warnings
+
+
+def test_dashboard_preferences_extract_places_and_strip_transport_details() -> None:
+    places = extract_place_requests_from_preferences(
+        "Dạo quanh Hồ Gươm, viếng Lăng Bác, "
+        "chinh phục đỉnh Fansipan bằng cáp treo; thích bún chả."
+    )
+
+    assert places == [
+        "ho guom",
+        "lang bac",
+        "dinh fansipan",
+        "thich bun cha",
+    ]
+
+
+def test_destination_profile_detects_mountain_corridor() -> None:
+    profile = build_destination_profile("Cao Bằng", [])
+
+    assert profile["topology"] == "mountain_corridor"
+    assert profile["supports_multi_lodging"] is True
+
+
+def test_required_visit_is_locked_into_backend_schedule() -> None:
+    trip = _ha_giang_trip()
+    payload = GenerateDaysRequest(
+        departure_location="Ha Noi",
+        departure_time="18:00",
+        estimated_travel_hours=6,
+        must_visit=["Thac Ban Gioc"],
+    )
+    candidates = [
+        _candidate("p1", "Thac Ban Gioc", 22.856, 106.724, 100, "Thac Ban Gioc"),
+        _candidate("p2", "Diem tuy chon", 22.802, 104.980, 90),
+        _food("p3", "Quan an"),
+    ]
+    data = {"days": [{"day_number": i, "activities": []} for i in range(1, 4)]}
+    _enforce_closed_loop_itinerary(data, trip, candidates, 3, payload)
+
+    warnings = _lock_required_visits(data, trip, candidates, 3, payload)
+    locked = [
+        activity
+        for day in data["days"]
+        for activity in day["activities"]
+        if activity.get("location_ref") == "p1"
+    ]
+
+    assert warnings == []
+    assert len(locked) == 1
+    assert locked[0]["locked"] is True
+    assert "BAT BUOC" in locked[0]["notes"]
+
+
+def test_mountain_corridor_allows_more_stops_only_when_user_accepts_long_travel() -> None:
+    trip = _ha_giang_trip()
+    payload = GenerateDaysRequest(
+        departure_location="Ha Noi",
+        departure_time="18:00",
+        estimated_travel_hours=6,
+        pace="packed",
+        accept_long_daily_travel=True,
+    )
+    candidates = [
+        _candidate("p1", "Diem 1", 22.802, 104.980, 90),
+        _candidate("p2", "Diem 2", 22.950, 104.980, 80),
+        _candidate("p3", "Diem 3", 23.100, 104.980, 70),
+        _food("p4", "Quan an"),
+    ]
+    data = {"days": [{"day_number": i, "activities": []} for i in range(1, 4)]}
+
+    _enforce_closed_loop_itinerary(data, trip, candidates, 3, payload)
+    _enrich_experience_route(data, trip, candidates, 3, payload)
+
+    day2_attractions = [
+        activity
+        for activity in data["days"][1]["activities"]
+        if activity["type"] == "attraction"
+    ]
+    assert len(day2_attractions) >= 2
 
 
 def test_filter_avoided_candidates_uses_normalized_text() -> None:
@@ -395,6 +563,38 @@ def test_budget_cap_modes() -> None:
     assert _budget_cap(1_000_000, "strict") == 1_000_000
     assert _budget_cap(1_000_000, "flexible_15") == 1_150_000
     assert _budget_cap(1_000_000, "comfort") == 1_300_000
+
+
+def test_grounded_price_replaces_ai_estimate_for_the_whole_group() -> None:
+    trip = _ha_giang_trip(days=1)
+    data = {
+        "days": [
+            {
+                "day_number": 1,
+                "activities": [
+                    {
+                        "title": "Museum",
+                        "type": "attraction",
+                        "location_ref": "p1",
+                        "estimated_cost": 1,
+                    }
+                ],
+            }
+        ]
+    }
+    candidates = {
+        "p1": {
+            "price": {
+                "min_vnd": 40_000,
+                "max_vnd": 60_000,
+                "unit": "per_person",
+            }
+        }
+    }
+
+    _apply_grounded_candidate_costs(data, trip, candidates, "flexible_15")
+
+    assert data["days"][0]["activities"][0]["estimated_cost"] == 100_000
 
 
 def test_validate_rejects_missing_required_closed_loop_steps() -> None:

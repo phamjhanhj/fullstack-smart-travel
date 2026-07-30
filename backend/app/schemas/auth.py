@@ -12,18 +12,20 @@ from app.schemas.user import UserPreferences
 
 
 class RegisterRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=39, pattern=r"^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$")
     email: EmailStr
     password: str = Field(min_length=6, max_length=128)
     full_name: str = Field(min_length=2, max_length=100)
 
-    @field_validator("email")
+    @field_validator("username", mode="before")
     @classmethod
-    def normalize_email(cls, value: EmailStr) -> str:
-        normalized = str(value).strip().lower()
-        domain = normalized.rsplit("@", 1)[-1]
-        if "." not in domain:
-            raise ValueError("email domain must include a dot")
-        return normalized
+    def normalize_username(cls, value: str) -> str:
+        return value.strip().lower()
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.strip().lower()
 
     @field_validator("full_name")
     @classmethod
@@ -38,31 +40,43 @@ class RegisterResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    email: str
+    username: str
+    email: str | None = None
     full_name: str
     avatar_url: str | None = None
     created_at: datetime
+    email_verified_at: datetime | None = None
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(min_length=32, max_length=256)
+
+
+class ResendVerificationRequest(BaseModel):
+    login: str = Field(min_length=1, max_length=254)
+
+    @field_validator("login", mode="before")
+    @classmethod
+    def normalize_login(cls, value: str) -> str:
+        return value.strip().lower()
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    login: str = Field(min_length=1, max_length=254)
     password: str
 
-    @field_validator("email")
+    @field_validator("login", mode="before")
     @classmethod
-    def normalize_email(cls, value: EmailStr) -> str:
-        normalized = str(value).strip().lower()
-        domain = normalized.rsplit("@", 1)[-1]
-        if "." not in domain:
-            raise ValueError("email domain must include a dot")
-        return normalized
+    def normalize_login(cls, value: str) -> str:
+        return value.strip().lower()
 
 
 class LoginUserInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    email: str
+    username: str
+    email: str | None = None
     full_name: str
     avatar_url: str | None = None
 
@@ -90,7 +104,8 @@ class MeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    email: str
+    username: str
+    email: str | None = None
     full_name: str
     avatar_url: str | None = None
     preferences_json: UserPreferences | None = None
@@ -106,3 +121,4 @@ class MeResponse(BaseModel):
                 return None
         return value
     created_at: datetime
+    email_verified_at: datetime | None = None

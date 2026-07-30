@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { ResponseEnvelope } from './auth.service';
+import { API_BASE_URL } from '../config/api.config';
 
 export type TripRole = 'owner' | 'viewer' | 'editor';
 export type TripShareRole = 'viewer' | 'editor';
@@ -10,9 +11,20 @@ export type TripScope = 'owned' | 'shared' | 'all';
 
 export interface TripOwnerInfo {
   id: string;
-  email: string;
+  username: string;
+  email?: string | null;
   full_name: string;
   avatar_url: string | null;
+}
+
+export interface TripPublicationSummary {
+  id: string;
+  slug: string;
+  status: 'published' | 'draft' | 'archived';
+  published_at: string | null;
+  view_count: number;
+  save_count: number;
+  clone_count: number;
 }
 
 export interface TripListItem {
@@ -29,6 +41,7 @@ export interface TripListItem {
   owner: TripOwnerInfo;
   access_type: TripAccessType;
   role: TripRole;
+  publication?: TripPublicationSummary | null;
 }
 
 export interface TripListResponse {
@@ -101,6 +114,7 @@ export interface TripInvite {
   updated_at: string | null;
   token: string | null;
   accept_url: string | null;
+  email_sent?: boolean | null;
 }
 
 export interface TripInviteTripBrief {
@@ -122,6 +136,8 @@ export interface TripSharesResponse {
 }
 
 export interface CreateTripInviteRequest {
+  recipient?: string | null;
+  /** @deprecated Kept for compatibility with older callers. */
   email?: string | null;
   role: TripShareRole;
   expires_in_days?: number;
@@ -171,6 +187,11 @@ export interface LocationBrief {
   category?: string | null;
   photo_url?: string | null;
   rating?: number | null;
+  data_confidence?: string | null;
+  coordinate_status?: string | null;
+  coordinate_accuracy_meters?: number | null;
+  opening_hours?: Record<string, unknown> | null;
+  price?: Record<string, unknown> | null;
 }
 
 export interface ActivityResponse {
@@ -185,6 +206,7 @@ export interface ActivityResponse {
   order_index: number;
   booking_url: string | null;
   notes: string | null;
+  is_locked: boolean;
   location_id: string | null;
   location: LocationBrief | null;
   updated_at: string | null;
@@ -209,6 +231,7 @@ export interface CreateActivityRequest {
   order_index?: number;
   booking_url?: string | null;
   notes?: string | null;
+  is_locked?: boolean;
 }
 
 export interface UpdateActivityRequest {
@@ -221,6 +244,22 @@ export interface UpdateActivityRequest {
   estimated_cost?: number | null;
   booking_url?: string | null;
   notes?: string | null;
+  is_locked?: boolean | null;
+}
+
+export interface ItineraryIssue {
+  code: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  day_id: string;
+  activity_ids: string[];
+}
+
+export interface ItineraryQualityResponse {
+  score: number;
+  error_count: number;
+  warning_count: number;
+  issues: ItineraryIssue[];
 }
 
 export interface DayPlanBrief {
@@ -232,6 +271,14 @@ export interface DayPlanBrief {
 export interface GenerateDaysRequest {
   overwrite: boolean;
   must_visit?: string[];
+  must_visit_items?: Array<{
+    location_id?: string | null;
+    name: string;
+    priority?: 'required' | 'preferred';
+    preferred_day?: number | null;
+    preferred_time?: 'morning' | 'afternoon' | 'evening' | 'any';
+    minimum_duration_minutes?: number | null;
+  }>;
   avoid_places?: string[];
   interest_weights?: Record<string, number>;
   pace?: 'relaxed' | 'balanced' | 'packed';
@@ -246,10 +293,28 @@ export interface GenerateDaysRequest {
   daily_end_time?: string | null;
   dietary_notes?: string | null;
   mobility_notes?: string | null;
+  user_notes?: string | null;
+  accept_long_daily_travel?: boolean;
+  max_daily_travel_minutes?: number;
+  early_start_allowed?: boolean;
+  night_driving_allowed?: boolean;
   ai?: boolean;
 }
 
+export interface UserRequestCoverage {
+  required_total: number;
+  scheduled_total: number;
+  items: Array<{
+    request: string;
+    status: 'scheduled' | 'unresolved' | 'infeasible';
+    day: number | null;
+    start_time: string | null;
+    location_id: string | null;
+  }>;
+}
+
 export interface ItineraryGenerationSummary {
+  generation_id: string | null;
   total_estimated_cost: number;
   budget_limit: number | null;
   budget_used_percent: number | null;
@@ -257,6 +322,18 @@ export interface ItineraryGenerationSummary {
   missing_user_places: string[];
   candidate_places_count: number;
   warnings: string[];
+  data_version: string | null;
+  prompt_version: string;
+  planning_mode: 'grounded_v2' | 'fallback' | 'manual';
+  verified_activities_count: number;
+  approximate_coordinate_count: number;
+  route_provider: string;
+  route_validation_status: 'passed' | 'warning' | 'not_run';
+  confidence_score: number | null;
+  destination_topology: string | null;
+  user_request_coverage: UserRequestCoverage;
+  generation_timings_ms: Record<string, number>;
+  fallback_reason: string | null;
 }
 
 export interface GenerateDaysResponse {
@@ -309,6 +386,8 @@ export interface BudgetItemResponse {
   planned_amount: number;
   actual_amount: number;
   date: string | null;
+  paid_by?: string | null;
+  participants?: string[] | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -319,6 +398,8 @@ export interface CreateBudgetItemRequest {
   planned_amount: number;
   actual_amount: number;
   date?: string | null;
+  paid_by?: string | null;
+  participants?: string[] | null;
 }
 
 export interface UpdateBudgetItemRequest {
@@ -327,6 +408,8 @@ export interface UpdateBudgetItemRequest {
   planned_amount?: number | null;
   actual_amount?: number | null;
   date?: string | null;
+  paid_by?: string | null;
+  participants?: string[] | null;
 }
 
 export interface CategoryBudgetSummary {
@@ -363,10 +446,42 @@ export interface LocationResponse {
   google_place_id: string | null;
   photo_url: string | null;
   rating: number | null;
+  province_code?: string | null;
+  province_name?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  subcategory?: string | null;
+  typical_visit_minutes?: number | null;
+  opening_hours?: Record<string, unknown> | null;
+  price?: Record<string, unknown> | null;
+  tags?: string[] | null;
+  suitable_for?: string[] | null;
+  data_confidence?: string | null;
+  coordinate_status?: string | null;
+  coordinate_accuracy_meters?: number | null;
+  status?: string | null;
+  result_source?: 'dataset' | 'external' | null;
 }
 
 export interface NearbyLocationResponse extends LocationResponse {
   distance_meters: number | null;
+}
+
+export interface ExploreLocationsResponse {
+  items: LocationResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  has_more: boolean;
+}
+
+export interface SupportedDestinationResponse {
+  destination: string;
+  attraction_count: number;
+  food_count: number;
+  lodging_count: number;
+  total_count: number;
+  can_generate: boolean;
 }
 
 export interface UpsertLocationRequest {
@@ -391,7 +506,14 @@ export interface UpsertLocationResponse {
 })
 export class TripService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8000/api';
+  private readonly baseUrl = inject(API_BASE_URL);
+
+  private readonly tripListUpdatedSource = new Subject<void>();
+  readonly tripListUpdated$ = this.tripListUpdatedSource.asObservable();
+
+  notifyTripListChanged(): void {
+    this.tripListUpdatedSource.next();
+  }
 
   listTrips(status?: string, page = 1, limit = 20, scope: TripScope = 'owned'): Observable<ResponseEnvelope<TripListResponse>> {
     let url = `${this.baseUrl}/trips?page=${page}&limit=${limit}&scope=${scope}`;
@@ -463,6 +585,8 @@ export class TripService {
     return this.http.post<ResponseEnvelope<AcceptTripInviteResponse>>(
       `${this.baseUrl}/trip-invites/${token}/accept`,
       {}
+    ).pipe(
+      tap(() => this.notifyTripListChanged())
     );
   }
 
@@ -476,6 +600,8 @@ export class TripService {
     return this.http.post<ResponseEnvelope<AcceptTripInviteResponse>>(
       `${this.baseUrl}/trip-invites/${inviteId}/accept-email`,
       {}
+    ).pipe(
+      tap(() => this.notifyTripListChanged())
     );
   }
 
@@ -506,6 +632,12 @@ export class TripService {
   listDays(tripId: string): Observable<ResponseEnvelope<DayPlanResponse[]>> {
     return this.http.get<ResponseEnvelope<DayPlanResponse[]>>(
       `${this.baseUrl}/trips/${tripId}/days`
+    );
+  }
+
+  checkItineraryQuality(tripId: string): Observable<ResponseEnvelope<ItineraryQualityResponse>> {
+    return this.http.get<ResponseEnvelope<ItineraryQualityResponse>>(
+      `${this.baseUrl}/trips/${tripId}/days/quality`
     );
   }
 
@@ -559,6 +691,13 @@ export class TripService {
     );
   }
 
+  optimizeDayRoute(tripId: string, dayId: string): Observable<ResponseEnvelope<DayPlanResponse>> {
+    return this.http.post<ResponseEnvelope<DayPlanResponse>>(
+      `${this.baseUrl}/trips/${tripId}/days/${dayId}/optimize-route`,
+      {}
+    );
+  }
+
   // AI Chat & suggestions
   getChatHistory(tripId: string): Observable<ResponseEnvelope<ChatHistoryItem[]>> {
     return this.http.get<ResponseEnvelope<ChatHistoryItem[]>>(
@@ -595,6 +734,12 @@ export class TripService {
     );
   }
 
+  getGroupSplitSummary(tripId: string): Observable<ResponseEnvelope<any>> {
+    return this.http.get<ResponseEnvelope<any>>(
+      `${this.baseUrl}/trips/${tripId}/budget/split-summary`
+    );
+  }
+
   listBudgetItems(tripId: string, category?: string): Observable<ResponseEnvelope<BudgetItemResponse[]>> {
     let url = `${this.baseUrl}/trips/${tripId}/budget/items`;
     if (category) {
@@ -624,11 +769,40 @@ export class TripService {
   }
 
   // Location discovery
-  searchLocations(q: string, destination?: string, limit = 15): Observable<ResponseEnvelope<LocationResponse[]>> {
+  getSupportedDestinations(): Observable<ResponseEnvelope<SupportedDestinationResponse[]>> {
+    return this.http.get<ResponseEnvelope<SupportedDestinationResponse[]>>(
+      `${this.baseUrl}/locations/supported-destinations`
+    );
+  }
+
+  exploreLocations(
+    destination: string,
+    category?: string,
+    page = 1,
+    limit = 36
+  ): Observable<ResponseEnvelope<ExploreLocationsResponse>> {
+    let url = `${this.baseUrl}/locations/explore?destination=${encodeURIComponent(destination)}&page=${page}&limit=${limit}`;
+    if (category) {
+      url += `&category=${encodeURIComponent(category)}`;
+    }
+    return this.http.get<ResponseEnvelope<ExploreLocationsResponse>>(url);
+  }
+
+  searchLocations(
+    q: string,
+    destination?: string,
+    limit = 30,
+    category?: string,
+    includeExternal = true
+  ): Observable<ResponseEnvelope<LocationResponse[]>> {
     let url = `${this.baseUrl}/locations/search?q=${encodeURIComponent(q)}&limit=${limit}`;
     if (destination) {
       url += `&destination=${encodeURIComponent(destination)}`;
     }
+    if (category) {
+      url += `&category=${encodeURIComponent(category)}`;
+    }
+    url += `&include_external=${includeExternal}`;
     return this.http.get<ResponseEnvelope<LocationResponse[]>>(url);
   }
 

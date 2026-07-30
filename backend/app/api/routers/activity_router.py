@@ -21,6 +21,7 @@ from app.schemas.day_plan import (
     DayPlanResponse,
     GenerateDaysResponse,
     GenerateDaysRequest,
+    ItineraryQualityResponse,
     ReorderActivitiesRequest,
     UpdateActivityRequest,
 )
@@ -38,6 +39,15 @@ async def list_days(
 ):
     days = await activity_service.list_days_with_activities(db, trip.id)
     return envelope(data=[DayPlanResponse.model_validate(d) for d in days])
+
+
+@trip_days_router.get("/quality")
+async def check_itinerary_quality(
+    trip: Trip = Depends(get_trip_read_access),
+    db: AsyncSession = Depends(get_db),
+):
+    result: ItineraryQualityResponse = await activity_service.check_itinerary_quality(db, trip.id)
+    return envelope(data=result)
 
 
 @trip_days_router.get("/{day_id}")
@@ -79,6 +89,20 @@ async def generate_days(
             summary=summary,
         ),
         message=f"Da tao {len(new_days)} ngay cho chuyen di",
+    )
+
+
+@trip_days_router.post("/{day_id}/optimize-route")
+async def optimize_day_route(
+    day_id: uuid.UUID,
+    trip: Trip = Depends(get_trip_edit_access),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    day_plan = await activity_service.optimize_day_route(db, trip.id, day_id, current_user)
+    return envelope(
+        data=DayPlanResponse.model_validate(day_plan),
+        message="Da toi uu hoa lo trinh di chuyen thanh cong",
     )
 
 

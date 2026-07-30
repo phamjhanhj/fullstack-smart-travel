@@ -1,231 +1,489 @@
-
-<div class="profile-layout-container">
-  <!-- Breadcrumb / Back Nav -->
-  <div class="profile-breadcrumb">
-    <a class="btn-back" routerLink="/dashboard">
-      <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
-      Quay lại trang chủ
-    </a>
+<div class="min-h-screen bg-background text-on-surface font-body-md relative overflow-x-hidden selection:bg-primary/30 pb-20">
+  <!-- Animated Atmospheric Background -->
+  <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+    <div class="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-primary/10 blur-[120px] animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-secondary/10 blur-[100px] animate-pulse" style="animation-delay: 2s"></div>
   </div>
 
-  <!-- Loading State -->
-  <div class="loading-overlay" *ngIf="isLoading()">
-    <div class="spinner"></div>
-    <p>Đang tải thông tin hồ sơ...</p>
-  </div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-8 pb-16">
 
-  <!-- Error State -->
-  <div class="error-banner" *ngIf="errorMessage() && !isLoading()">
-    <p class="flex items-center gap-1.5">
-      <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
-      {{ errorMessage() }}
-    </p>
-    <button (click)="loadProfile()" class="btn-retry">Tải lại</button>
-  </div>
+    <!-- Loading State -->
+    <div class="flex flex-col items-center justify-center py-20 text-on-surface-variant gap-4" *ngIf="isLoading()">
+      <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p class="animate-pulse">Đang tải thông tin hồ sơ...</p>
+    </div>
 
-  <!-- Form Success Toast -->
-  <div class="success-toast" *ngIf="successMessage()">
-    <span class="toast-icon material-symbols-outlined" style="font-size: 14px;">check</span>
-    <p>{{ successMessage() }}</p>
-  </div>
+    <!-- Error Banner -->
+    <div class="bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-2xl p-4 mb-6 flex items-center justify-between" *ngIf="errorMessage() && !isLoading()">
+      <p class="flex items-center gap-2 text-sm font-medium">
+        <span class="material-symbols-outlined text-[20px]">warning</span>
+        {{ errorMessage() }}
+      </p>
+      <button (click)="loadProfile()" class="px-4 py-1.5 bg-rose-500 text-white rounded-xl text-xs font-bold hover:bg-rose-600 transition-all cursor-pointer">Tải lại</button>
+    </div>
 
-  <div class="profile-grid" *ngIf="!isLoading()">
-    <!-- Left Column: Visual Profile Card -->
-    <aside class="profile-card-sidebar">
-      <div class="profile-badge-card">
-        <div class="avatar-preview-container">
-          <img [src]="selectedAvatar() || fallbackAvatarUrl" 
-               alt="Avatar Preview" class="card-avatar-image" />
-        </div>
-        
-        <h2 class="card-user-name">{{ profile()?.full_name }}</h2>
-        <p class="card-user-email">{{ profile()?.email }}</p>
-        
-        <div class="card-divider"></div>
-        
-        <div class="member-since">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--color-primary-tint);">calendar_month</span>
-          <span>Thành viên từ {{ profile()?.created_at | date:'dd/MM/yyyy' }}</span>
-        </div>
+    <!-- Success Toast Notification -->
+    <div class="fixed bottom-8 right-8 z-[1000] bg-surface-container-high text-on-surface px-6 py-3.5 rounded-2xl shadow-2xl border border-glass flex items-center gap-3 animate-fade-in" *ngIf="successMessage()">
+      <span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">✓</span>
+      <p class="text-sm font-medium">{{ successMessage() }}</p>
+    </div>
 
-        <!-- Dynamic preference badges -->
-        <div class="preferences-badges">
-          <span class="badge-item style-badge" [ngClass]="profileForm.get('travel_style')?.value">
-            {{ getTravelStyleName(profileForm.get('travel_style')?.value) }}
-          </span>
-          <span class="badge-item budget-badge" [ngClass]="profileForm.get('budget_range')?.value">
-            Chi tiêu: {{ profileForm.get('budget_range')?.value === 'low' ? 'Thấp' : profileForm.get('budget_range')?.value === 'high' ? 'Cao' : 'Trung bình' }}
-          </span>
-        </div>
-        
-        <div class="interests-summary-list" *ngIf="selectedInterests().length > 0">
-          <p class="summary-title">Sở thích du lịch</p>
-          <div class="summary-tags-container">
-            <span class="summary-tag" *ngFor="let item of selectedInterests()">
-              {{ getInterestName(item) }}
-            </span>
+    <!-- Main Content Grid -->
+    <div class="space-y-8" *ngIf="!isLoading()">
+      <!-- Hero Profile Banner -->
+      <section class="relative w-full glass-card border border-glass rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-xl">
+        <div class="flex flex-col md:flex-row items-center md:items-end gap-6 relative z-10">
+          <div class="relative group shrink-0">
+            <div class="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-background p-1 glass-card overflow-hidden shadow-2xl ring-2 ring-primary/30">
+              <img [src]="selectedAvatar() || fallbackAvatarUrl" alt="Avatar Preview" class="w-full h-full object-cover rounded-full" />
+            </div>
+            <button class="absolute bottom-1 right-1 w-9 h-9 bg-primary text-on-primary-container rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform border-2 border-background cursor-pointer" (click)="switchTab('personal')" title="Thay đổi ảnh đại diện">
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+            </button>
           </div>
-        </div>
-      </div>
-    </aside>
 
-    <!-- Right Column: Settings Inputs Form -->
-    <main class="profile-settings-form">
-      <h1 class="settings-title">Cài đặt Hồ sơ & Cá nhân hóa</h1>
-      <p class="settings-subtitle">Thông tin này giúp trí tuệ nhân tạo (AI) điều chỉnh và gợi ý lịch trình phù hợp tối đa với phong cách của bạn.</p>
+          <div class="flex-1 text-center md:text-left mb-2">
+            <h1 class="text-2xl md:text-3xl font-bold text-on-surface mb-1">{{ profile()?.full_name || 'Người dùng' }}</h1>
+            <p class="text-sm text-on-surface-variant flex items-center justify-center md:justify-start gap-2">
+              <span>@{{ profile()?.username }}</span>
+              <span class="w-1.5 h-1.5 bg-white/20 rounded-full"></span>
+              <span class="text-secondary font-semibold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px] text-amber-400">workspace_premium</span>
+                <span>Hạng: {{ getTravelStyleName(profileForm.get('travel_style')?.value) }} Traveler</span>
+              </span>
+            </p>
+            <p class="text-xs text-on-surface-variant/70 mt-1 flex items-center justify-center md:justify-start gap-1">
+              <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+              <span>Thành viên từ {{ profile()?.created_at | date:'dd/MM/yyyy' }}</span>
+            </p>
+          </div>
 
-      <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="form-container">
-        
-        <!-- Section 1: Basic Profile Details -->
-        <section class="form-section">
-          <h3 class="section-heading">1. Thông tin tài khoản</h3>
-          
-          <div class="form-group">
-            <label for="fullName" class="form-label">Họ tên của bạn <span class="required">*</span></label>
-            <input type="text" id="fullName" formControlName="full_name" class="text-input" 
-                   placeholder="Nhập họ và tên đầy đủ" />
-            <div class="field-error" *ngIf="profileForm.get('full_name')?.invalid && profileForm.get('full_name')?.touched">
-              <span class="material-symbols-outlined" style="font-size: 14px;">error</span>
-              Họ tên là bắt buộc và phải từ 2 đến 100 ký tự.
+          <!-- Quick Stats Pills -->
+          <div class="flex flex-wrap justify-center gap-3 shrink-0">
+            <div class="px-4 py-2 rounded-2xl bg-white/5 border border-glass flex items-center gap-2">
+              <span class="text-primary font-extrabold text-lg">12</span>
+              <span class="text-xs font-medium text-on-surface-variant">Chuyến đi</span>
+            </div>
+            <div class="px-4 py-2 rounded-2xl bg-white/5 border border-glass flex items-center gap-2">
+              <span class="text-primary font-extrabold text-lg">{{ (selectedInterests().length * 4) || 16 }}</span>
+              <span class="text-xs font-medium text-on-surface-variant">Địa điểm</span>
+            </div>
+            <div class="px-4 py-2 rounded-2xl bg-white/5 border border-glass flex items-center gap-2">
+              <span class="text-primary font-extrabold text-lg">8</span>
+              <span class="text-xs font-medium text-on-surface-variant">Huy hiệu</span>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div class="form-group">
-            <label class="form-label">Địa chỉ Email (Không thể thay đổi)</label>
-            <input type="text" [value]="profile()?.email" class="text-input disabled" disabled />
-          </div>
-        </section>
+      <!-- Tab Navigation Switcher -->
+      <section class="flex justify-start overflow-x-auto no-scrollbar select-none">
+        <div class="flex items-center gap-1.5 glass-panel p-1 rounded-full border border-glass shadow-sm">
+          <button 
+            type="button"
+            (click)="switchTab('personal')"
+            [class.bg-primary]="activeTab() === 'personal'"
+            [class.text-white]="activeTab() === 'personal'"
+            [class.shadow-md]="activeTab() === 'personal'"
+            [class.text-on-surface-variant]="activeTab() !== 'personal'"
+            [class.hover:text-on-surface]="activeTab() !== 'personal'"
+            class="px-6 py-2.5 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer"
+          >
+            Thông tin cá nhân
+          </button>
+          <button 
+            type="button"
+            (click)="switchTab('ai')"
+            [class.bg-primary]="activeTab() === 'ai'"
+            [class.text-white]="activeTab() === 'ai'"
+            [class.shadow-md]="activeTab() === 'ai'"
+            [class.text-on-surface-variant]="activeTab() !== 'ai'"
+            [class.hover:text-on-surface]="activeTab() !== 'ai'"
+            class="px-6 py-2.5 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer"
+          >
+            Gu Du Lịch AI
+          </button>
+          <button 
+            type="button"
+            (click)="switchTab('saved')"
+            [class.bg-primary]="activeTab() === 'saved'"
+            [class.text-white]="activeTab() === 'saved'"
+            [class.shadow-md]="activeTab() === 'saved'"
+            [class.text-on-surface-variant]="activeTab() !== 'saved'"
+            [class.hover:text-on-surface]="activeTab() !== 'saved'"
+            class="px-6 py-2.5 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer"
+          >
+            Bộ sưu tập
+          </button>
+          <button 
+            type="button"
+            (click)="switchTab('security')"
+            [class.bg-primary]="activeTab() === 'security'"
+            [class.text-white]="activeTab() === 'security'"
+            [class.shadow-md]="activeTab() === 'security'"
+            [class.text-on-surface-variant]="activeTab() !== 'security'"
+            [class.hover:text-on-surface]="activeTab() !== 'security'"
+            class="px-6 py-2.5 rounded-full font-label-md text-label-md font-bold transition-all border-none cursor-pointer"
+          >
+            Bảo mật
+          </button>
+        </div>
+      </section>
 
-        <!-- Section 2: Avatar Selection -->
-        <section class="form-section">
-          <h3 class="section-heading">2. Ảnh đại diện tài khoản</h3>
-          <p class="section-subtext">Chọn một trong những ảnh đại diện bên dưới:</p>
-          
-          <div class="avatar-selection-grid">
-            <button type="button" *ngFor="let avatar of defaultAvatars" 
-                    class="avatar-option-btn" 
-                    [class.selected]="selectedAvatar() === avatar.url"
-                    (click)="selectAvatar(avatar.url)"
-                    [title]="avatar.name">
-              <img [src]="avatar.url" [alt]="avatar.name" class="avatar-option-image" />
-              <div class="selected-check" *ngIf="selectedAvatar() === avatar.url">
-                <span class="material-symbols-outlined" style="font-size: 14px;">check</span>
+      <!-- Content Panels Container -->
+      <div class="min-h-[450px]">
+        
+        <!-- ================= TAB 1: THÔNG TIN CÁ NHÂN ================= -->
+        <div *ngIf="activeTab() === 'personal'" class="flex flex-col md:flex-row gap-8 animate-fade-in">
+          <!-- Left Sub-card: Avatar Picker -->
+          <div class="md:w-1/3 flex flex-col gap-6">
+            <div class="glass-card p-6 rounded-3xl border border-glass space-y-4">
+              <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">face</span>
+                <span>Chọn Ảnh đại diện</span>
+              </h3>
+              <p class="text-xs text-on-surface-variant">Chọn một mẫu Avatar minh họa có sẵn bên dưới:</p>
+              
+              <div class="grid grid-cols-4 gap-3 pt-2">
+                <button 
+                  type="button" 
+                  *ngFor="let avatar of defaultAvatars" 
+                  class="relative aspect-square rounded-full border-2 overflow-hidden transition-all duration-200 cursor-pointer hover:scale-105"
+                  [class.border-primary]="selectedAvatar() === avatar.url"
+                  [class.ring-2]="selectedAvatar() === avatar.url"
+                  [class.ring-primary/40]="selectedAvatar() === avatar.url"
+                  [class.border-transparent]="selectedAvatar() !== avatar.url"
+                  [class.bg-white/5]="selectedAvatar() !== avatar.url"
+                  (click)="selectAvatar(avatar.url)"
+                  [title]="avatar.name"
+                >
+                  <img [src]="avatar.url" [alt]="avatar.name" class="w-full h-full object-cover" />
+                  <div *ngIf="selectedAvatar() === avatar.url" class="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-[16px] font-bold">check</span>
+                  </div>
+                </button>
               </div>
-            </button>
-          </div>
 
-          <div class="form-group custom-avatar-group">
-            <label for="customAvatar" class="form-label">Hoặc nhập liên kết ảnh đại diện tùy chỉnh (URL)</label>
-            <input type="url" id="customAvatar" formControlName="avatar_url" class="text-input"
-                   placeholder="https://example.com/avatar.jpg" (input)="selectedAvatar.set(profileForm.get('avatar_url')?.value || '')" />
-          </div>
-        </section>
-
-        <!-- Section 3: Travel Styles & Budgets -->
-        <section class="form-section">
-          <h3 class="section-heading">3. Phong cách du lịch & Ngân sách</h3>
-          <p class="section-subtext">Trí tuệ nhân tạo sẽ chọn khách sạn và điểm ẩm thực tương xứng với cài đặt này.</p>
-          
-          <!-- Travel Style Radio Cards -->
-          <div class="form-group">
-            <label class="form-label">Phong cách di chuyển</label>
-            <div class="radio-cards-grid">
-              
-              <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'budget'">
-                <input type="radio" value="budget" formControlName="travel_style" class="hidden-radio" />
-                <div class="radio-card-content">
-                  <div class="radio-icon"><span class="material-symbols-outlined">backpack</span></div>
-                  <div class="radio-info">
-                    <span class="radio-title">Tiết kiệm</span>
-                    <span class="radio-desc">Ưu tiên trải nghiệm địa phương, homestay, phương tiện công cộng và ăn uống đường phố.</span>
-                  </div>
-                </div>
-              </label>
-
-              <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'mid-range'">
-                <input type="radio" value="mid-range" formControlName="travel_style" class="hidden-radio" />
-                <div class="radio-card-content">
-                  <div class="radio-icon"><span class="material-symbols-outlined">directions_car</span></div>
-                  <div class="radio-info">
-                    <span class="radio-title">Tự túc / Tiện lợi</span>
-                    <span class="radio-desc">Cân bằng giữa chi phí và sự thoải mái. Ở khách sạn 3 sao, thưởng thức ẩm thực local chất lượng.</span>
-                  </div>
-                </div>
-              </label>
-
-              <label class="radio-card" [class.selected]="profileForm.get('travel_style')?.value === 'luxury'">
-                <input type="radio" value="luxury" formControlName="travel_style" class="hidden-radio" />
-                <div class="radio-card-content">
-                  <div class="radio-icon"><span class="material-symbols-outlined">workspace_premium</span></div>
-                  <div class="radio-info">
-                    <span class="radio-title">Sang trọng</span>
-                    <span class="radio-desc">Tận hưởng dịch vụ cao cấp nhất, resort nghỉ dưỡng 5 sao, ẩm thực tinh tế và đưa đón riêng biệt.</span>
-                  </div>
-                </div>
-              </label>
+              <div class="pt-2 border-t border-glass">
+                <label for="customAvatarInput" class="block text-xs font-semibold text-on-surface-variant mb-1">Hoặc đường dẫn URL avatar tùy chỉnh</label>
+                <input 
+                  type="url" 
+                  id="customAvatarInput"
+                  [formControl]="$any(profileForm.get('avatar_url'))"
+                  class="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-xs text-on-surface focus:border-primary outline-none transition-all"
+                  placeholder="https://example.com/avatar.jpg"
+                  (input)="selectedAvatar.set(profileForm.get('avatar_url')?.value || '')"
+                />
+              </div>
             </div>
           </div>
 
-          <!-- Budget Level Radio Cards -->
-          <div class="form-group margin-top-lg">
-            <label class="form-label">Mức chi tiêu mặc định</label>
-            <div class="radio-cards-grid text-cards">
-              
-              <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'low'">
-                <input type="radio" value="low" formControlName="budget_range" class="hidden-radio" />
-                <div class="radio-card-content dense">
-                  <div class="radio-title">Thấp</div>
-                  <div class="radio-desc">Tối ưu chi phí tối đa, chú trọng điểm tham quan miễn phí hoặc giá rẻ.</div>
+          <!-- Right Sub-card: Main Form Inputs -->
+          <div class="md:flex-1">
+            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="glass-card p-6 sm:p-8 rounded-3xl border border-glass space-y-6">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-on-surface-variant px-1">Họ tên của bạn *</label>
+                  <input 
+                    type="text"
+                    formControlName="full_name"
+                    class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                    placeholder="Nhập họ và tên đầy đủ"
+                  />
+                  <div class="text-xs text-rose-400 flex items-center gap-1" *ngIf="profileForm.get('full_name')?.invalid && profileForm.get('full_name')?.touched">
+                    <span class="material-symbols-outlined text-[14px]">error</span>
+                    <span>Họ tên từ 2 đến 100 ký tự.</span>
+                  </div>
                 </div>
-              </label>
 
-              <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'medium'">
-                <input type="radio" value="medium" formControlName="budget_range" class="hidden-radio" />
-                <div class="radio-card-content dense">
-                  <div class="radio-title">Trung bình</div>
-                  <div class="radio-desc">Chi tiêu hợp lý, sẵn sàng trả thêm phí cho các hoạt động xứng đáng.</div>
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-on-surface-variant px-1">Tên đăng nhập (Cố định)</label>
+                  <div class="relative">
+                    <input 
+                      type="text"
+                      [value]="profile()?.username"
+                      class="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-on-surface-variant cursor-not-allowed text-sm"
+                      disabled
+                    />
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-emerald-400 text-[18px]">verified</span>
+                  </div>
                 </div>
-              </label>
 
-              <label class="radio-card" [class.selected]="profileForm.get('budget_range')?.value === 'high'">
-                <input type="radio" value="high" formControlName="budget_range" class="hidden-radio" />
-                <div class="radio-card-content dense">
-                  <div class="radio-title">Thoải mái</div>
-                  <div class="radio-desc">Thoải mái chi tiêu cho mua sắm, vui chơi và trải nghiệm dịch vụ đắt tiền.</div>
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-on-surface-variant px-1">Email liên hệ</label>
+                  <input 
+                    type="email"
+                    formControlName="email"
+                    class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                    placeholder="name@example.com"
+                  />
                 </div>
-              </label>
+
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-on-surface-variant px-1">Số điện thoại</label>
+                  <input 
+                    type="tel"
+                    formControlName="phone"
+                    class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                    placeholder="+84 90 123 4567"
+                  />
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-on-surface-variant px-1">Tiểu sử (Bio)</label>
+                <textarea 
+                  formControlName="bio"
+                  rows="4"
+                  class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm resize-none"
+                  placeholder="Hãy viết gì đó về niềm đam mê xê dịch của bạn..."
+                ></textarea>
+              </div>
+
+              <div class="flex items-center justify-end gap-3 pt-4 border-t border-glass">
+                <button 
+                  type="button"
+                  (click)="onReset()"
+                  [disabled]="isSaving()"
+                  class="px-6 py-3 rounded-full border border-glass text-on-surface hover:bg-white/5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50"
+                >
+                  Khôi phục
+                </button>
+                <button 
+                  type="submit"
+                  [disabled]="profileForm.invalid || isSaving()"
+                  class="bg-gradient-to-r from-primary to-secondary text-on-primary-container px-8 py-3 rounded-full font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  <span *ngIf="isSaving()" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>{{ isSaving() ? 'Đang lưu...' : 'Lưu tất cả thay đổi' }}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ================= TAB 2: GU DU LỊCH AI ================= -->
+        <div *ngIf="activeTab() === 'ai'" class="flex flex-col gap-8 animate-fade-in">
+          <!-- Persona Summary Banner -->
+          <div class="glass-card p-6 sm:p-8 rounded-3xl border border-primary/30 bg-primary/10 flex flex-col md:flex-row items-center gap-6 shadow-xl">
+            <div class="w-20 h-20 shrink-0 bg-primary/20 rounded-2xl flex items-center justify-center animate-pulse">
+              <span class="material-symbols-outlined text-primary text-[40px]">auto_awesome</span>
+            </div>
+            <div class="text-center md:text-left">
+              <h2 class="text-xl font-bold text-primary mb-1">
+                Nhà Thám Hiểm {{ getTravelStyleName(profileForm.get('travel_style')?.value) }} &amp; {{ selectedInterests().length > 0 ? getInterestName(selectedInterests()[0]) : 'Văn Hóa' }} ☕️🍲
+              </h2>
+              <p class="text-sm text-on-surface-variant leading-relaxed">
+                Trí tuệ nhân tạo (AI) sẽ tự động phân tích các tiêu chí này để chọn lựa điểm đến, khách sạn và nhịp độ di chuyển tối ưu nhất cho riêng bạn.
+              </p>
             </div>
           </div>
-        </section>
 
-        <!-- Section 4: Travel Interests -->
-        <section class="form-section">
-          <h3 class="section-heading">4. Sở thích du lịch của bạn</h3>
-          <p class="section-subtext">Lựa chọn các lĩnh vực bạn quan tâm khi du lịch (chọn nhiều mục):</p>
-          
-          <div class="interests-pills-container">
-            <button type="button" *ngFor="let item of availableInterests"
-                    class="interest-pill-btn"
-                    [class.active]="isInterestSelected(item.id)"
-                    (click)="toggleInterest(item.id)">
-              <span class="pill-name">{{ item.name }}</span>
-              <span class="pill-check-indicator material-symbols-outlined" style="font-size: 16px;" *ngIf="isInterestSelected(item.id)">check</span>
-            </button>
+          <div class="grid md:grid-cols-2 gap-8">
+            <!-- Interest Chips Selection -->
+            <div class="glass-card p-6 rounded-3xl border border-glass space-y-4">
+              <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Sở thích du lịch</h4>
+              <p class="text-xs text-on-surface-variant/80">Nhấp chọn các chủ đề bạn yêu thích khi đi du lịch:</p>
+              
+              <div class="flex flex-wrap gap-2.5 pt-2">
+                <button
+                  type="button"
+                  *ngFor="let item of availableInterests"
+                  (click)="toggleInterest(item.id)"
+                  [class]="isInterestSelected(item.id) 
+                    ? 'px-4 py-2 bg-primary/15 border border-primary/40 text-primary rounded-full text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm' 
+                    : 'px-4 py-2 bg-black/20 border border-white/10 text-on-surface-variant hover:border-white/30 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer'"
+                >
+                  <span>{{ item.name }}</span>
+                  <span class="material-symbols-outlined text-[16px]">{{ isInterestSelected(item.id) ? 'check' : 'add' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Budget & Style Settings -->
+            <div class="glass-card p-6 rounded-3xl border border-glass space-y-6">
+              <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Phong cách &amp; Ngân sách mặc định</h4>
+              
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-semibold text-on-surface-variant mb-2">Phong cách di chuyển</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      *ngFor="let s of ['budget', 'mid-range', 'luxury']"
+                      (click)="profileForm.patchValue({ travel_style: $any(s) })"
+                      [class]="profileForm.get('travel_style')?.value === s
+                        ? 'p-3 rounded-2xl bg-primary/20 border border-primary text-primary font-bold text-xs text-center transition-all cursor-pointer'
+                        : 'p-3 rounded-2xl bg-white/5 border border-glass text-on-surface-variant hover:bg-white/10 text-xs font-medium text-center transition-all cursor-pointer'"
+                    >
+                      {{ s === 'budget' ? 'Tiết kiệm 🎒' : (s === 'luxury' ? 'Sang trọng 👑' : 'Tự túc 🚗') }}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-on-surface-variant mb-2">Mức chi tiêu ưu tiên</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      *ngFor="let b of ['low', 'medium', 'high']"
+                      (click)="profileForm.patchValue({ budget_range: $any(b) })"
+                      [class]="profileForm.get('budget_range')?.value === b
+                        ? 'p-3 rounded-2xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-bold text-xs text-center transition-all cursor-pointer'
+                        : 'p-3 rounded-2xl bg-white/5 border border-glass text-on-surface-variant hover:bg-white/10 text-xs font-medium text-center transition-all cursor-pointer'"
+                    >
+                      {{ b === 'low' ? 'Thấp 💵' : (b === 'high' ? 'Rút ví thoải mái 💳' : 'Trung bình 💰') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-4 border-t border-glass flex justify-end">
+                <button
+                  type="button"
+                  (click)="onSubmit()"
+                  [disabled]="isSaving()"
+                  class="px-6 py-2.5 bg-primary text-on-primary-container font-bold text-xs rounded-full hover:brightness-110 transition-all cursor-pointer shadow-md"
+                >
+                  Cập nhật Gu AI
+                </button>
+              </div>
+            </div>
           </div>
-        </section>
+        </div>
 
-        <!-- Form Submission Button Actions -->
-        <footer class="form-actions-footer">
-          <button type="button" class="btn-cancel" (click)="onReset()" [disabled]="isSaving()">
-            Hủy & Khôi phục
-          </button>
-          <button type="submit" class="btn-submit" [disabled]="profileForm.invalid || isSaving()">
-            <span class="btn-spinner" *ngIf="isSaving()"></span>
-            {{ isSaving() ? 'Đang lưu...' : 'Lưu tất cả thay đổi' }}
-          </button>
-        </footer>
+        <!-- ================= TAB 3: BỘ SƯU TẬP ================= -->
+        <div *ngIf="activeTab() === 'saved'" class="animate-fade-in">
+          <div class="grid md:grid-cols-3 gap-6">
+            <!-- Sample Itinerary Card 1 -->
+            <div class="glass-card rounded-3xl overflow-hidden border border-glass hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer" routerLink="/dashboard">
+              <div class="h-44 relative overflow-hidden">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80" alt="Đà Lạt" />
+                <div class="absolute top-4 right-4 bg-emerald-500/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-widest">Đang diễn ra</div>
+              </div>
+              <div class="p-5 space-y-3">
+                <h4 class="font-bold text-base text-on-surface group-hover:text-primary transition-colors">Hành trình Cà phê Đà Lạt</h4>
+                <div class="flex items-center gap-2 text-xs text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[16px] text-amber-400">star</span>
+                  <span class="font-bold text-on-surface">4.9</span>
+                  <span>•</span>
+                  <span>3 ngày 2 đêm</span>
+                </div>
+                <button class="w-full py-2.5 rounded-xl border border-glass group-hover:bg-primary group-hover:text-on-primary-container transition-all text-xs font-bold cursor-pointer">Xem chi tiết</button>
+              </div>
+            </div>
 
-      </form>
-    </main>
+            <!-- Sample Itinerary Card 2 -->
+            <div class="glass-card rounded-3xl overflow-hidden border border-glass hover:-translate-y-1.5 transition-all duration-300 group cursor-pointer" routerLink="/dashboard">
+              <div class="h-44 relative overflow-hidden">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=600&q=80" alt="Hội An" />
+                <div class="absolute top-4 right-4 bg-blue-500/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-widest">Hoàn thành</div>
+              </div>
+              <div class="p-5 space-y-3">
+                <h4 class="font-bold text-base text-on-surface group-hover:text-primary transition-colors">Hội An - Hoài Niệm Cổ phố</h4>
+                <div class="flex items-center gap-2 text-xs text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[16px] text-amber-400">star</span>
+                  <span class="font-bold text-on-surface">4.8</span>
+                  <span>•</span>
+                  <span>2 ngày 1 đêm</span>
+                </div>
+                <button class="w-full py-2.5 rounded-xl border border-glass group-hover:bg-primary group-hover:text-on-primary-container transition-all text-xs font-bold cursor-pointer">Xem chi tiết</button>
+              </div>
+            </div>
+
+            <!-- Add New Placeholder Card -->
+            <div class="glass-card rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center p-8 gap-3 text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors cursor-pointer min-h-[260px]" routerLink="/dashboard">
+              <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                <span class="material-symbols-outlined text-2xl">add</span>
+              </div>
+              <span class="font-bold text-sm">Thêm chuyến đi mới</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= TAB 4: BẢO MẬT ================= -->
+        <div *ngIf="activeTab() === 'security'" class="animate-fade-in">
+          <div class="grid md:grid-cols-2 gap-8">
+            <!-- Password Change Form -->
+            <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" class="glass-card p-6 sm:p-8 rounded-3xl border border-glass space-y-5">
+              <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">lock</span>
+                <span>Đổi mật khẩu</span>
+              </h3>
+
+              <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-3 rounded-xl text-xs" *ngIf="passwordSuccessMsg()">
+                {{ passwordSuccessMsg() }}
+              </div>
+              <div class="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded-xl text-xs" *ngIf="passwordErrorMsg()">
+                {{ passwordErrorMsg() }}
+              </div>
+
+              <div class="space-y-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-semibold text-on-surface-variant">Mật khẩu hiện tại</label>
+                  <input type="password" formControlName="current_password" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-semibold text-on-surface-variant">Mật khẩu mới</label>
+                  <input type="password" formControlName="new_password" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-semibold text-on-surface-variant">Xác nhận mật khẩu</label>
+                  <input type="password" formControlName="confirm_password" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+
+                <button 
+                  type="submit" 
+                  [disabled]="passwordForm.invalid || isPasswordChanging()" 
+                  class="w-full bg-white text-background py-3 rounded-xl font-bold text-xs hover:bg-on-surface transition-all cursor-pointer disabled:opacity-50 mt-2"
+                >
+                  {{ isPasswordChanging() ? 'Đang cập nhật...' : 'Cập nhật mật khẩu' }}
+                </button>
+              </div>
+            </form>
+
+            <div class="flex flex-col gap-6">
+              <!-- Linked Social Accounts -->
+              <div class="glass-card p-6 sm:p-8 rounded-3xl border border-glass space-y-4">
+                <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">link</span>
+                  <span>Liên kết tài khoản</span>
+                </h3>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between p-3.5 bg-white/5 rounded-xl border border-glass">
+                    <div class="flex items-center gap-3">
+                      <span class="material-symbols-outlined text-[#1877F2]">qr_code_2</span>
+                      <span class="text-xs font-bold">Facebook</span>
+                    </div>
+                    <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Đã kết nối
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between p-3.5 bg-white/5 rounded-xl border border-glass">
+                    <div class="flex items-center gap-3">
+                      <span class="material-symbols-outlined text-[#EA4335]">google</span>
+                      <span class="text-xs font-bold">Google</span>
+                    </div>
+                    <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Đã kết nối
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Danger Zone -->
+              <div class="glass-card p-6 sm:p-8 rounded-3xl border border-rose-500/30 bg-rose-500/5 space-y-3">
+                <h3 class="text-lg font-bold text-rose-400">Danger Zone</h3>
+                <p class="text-xs text-on-surface-variant leading-relaxed">Xóa vĩnh viễn tài khoản và tất cả dữ liệu chuyến đi của bạn. Hành động này không thể hoàn tác.</p>
+                <button type="button" class="w-full border border-rose-500/50 text-rose-400 py-3 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white transition-all cursor-pointer">
+                  Xóa tài khoản vĩnh viễn
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 </div>

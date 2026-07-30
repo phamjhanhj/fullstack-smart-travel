@@ -105,7 +105,7 @@
     <div class="px-6 mt-auto">
       <button
         (click)="goBack()"
-        class="w-full bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+        class="w-full bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer border-none"
       >
         <span class="material-symbols-outlined text-[20px]">add</span>
         <span>Chuyến đi mới</span>
@@ -115,9 +115,9 @@
 
   <!-- Central Workspace (Scrollable) -->
   <main
-    class="flex-1 ml-0 xl:ml-64 bg-bg-slate-deep px-4 sm:px-8 xl:px-[80px] py-8 relative min-h-[calc(100vh-64px)] pb-24 transition-all duration-300"
-    [class.xl:mr-96]="isChatOpen()"
-    [class.mr-0]="!isChatOpen()"
+    class="flex-1 min-w-0 overflow-x-hidden ml-0 xl:ml-64 bg-bg-slate-deep px-4 sm:px-6 lg:px-8 xl:px-12 py-8 relative min-h-[calc(100vh-64px)] pb-24 transition-all duration-300"
+    [class.lg:mr-96]="activeSubTab() === 'itinerary' && isChatOpen()"
+    [class.mr-0]="activeSubTab() !== 'itinerary' || !isChatOpen()"
   >
     <!-- Blurry BG circles -->
     <div
@@ -126,6 +126,21 @@
     <div
       class="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 blur-[100px] rounded-full pointer-events-none"
     ></div>
+
+    <!-- Loading Detail State -->
+    <div *ngIf="isLoadingDetail() && !trip()" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-on-surface-variant font-medium text-sm animate-pulse">Đang tải thông tin chuyến đi...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!isLoadingDetail() && errorMsg() && !trip()" class="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
+      <span class="material-symbols-outlined text-5xl text-rose-400">error</span>
+      <h3 class="text-lg font-bold text-on-surface">{{ errorMsg() }}</h3>
+      <button (click)="loadTripData()" class="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer">
+        Thử lại
+      </button>
+    </div>
 
     <div class="w-full" *ngIf="trip()">
       <!-- Horizontal Sub-Tabs for smaller screens (hidden on xl) -->
@@ -205,22 +220,87 @@
               >
             </div>
           </div>
-          <button
-            *ngIf="canEditTrip()"
-            class="flex items-center gap-2 px-5 py-3 bg-white/5 border border-primary/40 rounded-xl hover:bg-primary/10 transition-all group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            (click)="onGenerateItinerary()"
-            [disabled]="isGenerating()"
-          >
-            <span
-              class="material-symbols-outlined text-primary group-hover:rotate-12 transition-transform"
-              [class.animate-spin]="isGenerating()"
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              *ngIf="canPublishCompletedTrip()"
+              class="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 border border-emerald-400/40 rounded-xl hover:bg-emerald-500/25 text-emerald-300 transition-all cursor-pointer shadow-sm"
+              (click)="openPublishWizard()"
             >
-              {{ isGenerating() ? 'progress_activity' : 'auto_awesome' }}
-            </span>
-            <span class="font-bold text-primary">{{
-              isGenerating() ? 'Đang lên lịch AI...' : 'Tạo lịch trình bằng AI'
-            }}</span>
-          </button>
+              <span class="material-symbols-outlined text-[18px]">public</span>
+              <span class="font-bold text-xs">{{ existingPublicSlug() ? 'Cập nhật bài chia sẻ' : 'Chia sẻ trải nghiệm' }}</span>
+            </button>
+            <button
+              *ngIf="existingPublicSlug()"
+              class="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-glass rounded-xl hover:bg-white/10 text-on-surface transition-all cursor-pointer shadow-sm"
+              (click)="viewPublishedTrip()"
+            >
+              <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+              <span class="font-bold text-xs">Xem bài công khai</span>
+            </button>
+            <button
+              class="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/25 text-emerald-400 font-bold transition-all cursor-pointer shadow-sm"
+              (click)="exportExcel()"
+              title="Xuất lịch trình chuyến đi ra file Excel (mỗi ngày 1 tab)"
+            >
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
+              <span class="font-bold text-xs">Xuất Excel</span>
+            </button>
+            <button
+              *ngIf="canEditTrip()"
+              class="flex items-center gap-2 px-5 py-2.5 bg-primary/20 border border-primary/40 rounded-xl hover:bg-primary/30 transition-all group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              (click)="onGenerateItinerary()"
+              [disabled]="isGenerating()"
+            >
+              <span
+                class="material-symbols-outlined text-primary group-hover:rotate-12 transition-transform"
+                [class.animate-spin]="isGenerating()"
+              >
+                {{ isGenerating() ? 'progress_activity' : 'auto_awesome' }}
+              </span>
+              <span class="font-bold text-xs text-primary">{{
+                isGenerating() ? 'Đang lên lịch AI...' : 'Tạo lịch trình bằng AI'
+              }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Weather Forecast Widget Card -->
+        <div
+          *ngIf="weatherForecast() as weather"
+          class="rounded-2xl border border-glass bg-surface-container/60 backdrop-blur-md p-5 shadow-xl animate-fade-in space-y-3"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                <span class="material-symbols-outlined text-xl">wb_sunny</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-on-surface text-sm m-0">Dự báo thời tiết {{ trip()?.destination }}</h4>
+                <p class="text-xs text-on-surface-variant m-0 mt-0.5">Thời tiết tuần từ Open-Meteo API</p>
+              </div>
+            </div>
+            <div *ngIf="weather.currentTemp !== undefined" class="text-right">
+              <span class="text-2xl font-bold text-primary">{{ weather.currentTemp }}°C</span>
+              <span class="text-[11px] text-on-surface-variant block">Hiện tại</span>
+            </div>
+          </div>
+
+          <!-- Daily Weather Strip -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+            <div
+              *ngFor="let d of weather.daily"
+              class="p-2.5 rounded-xl bg-white/5 border border-glass/40 text-center flex flex-col items-center gap-1 hover:bg-white/10 transition-all cursor-default"
+            >
+              <span class="text-xs font-semibold text-on-surface-variant">{{ d.date | date: 'dd/MM' }}</span>
+              <span class="text-2xl my-0.5">{{ d.weatherIcon }}</span>
+              <span class="text-[11px] font-bold text-on-surface truncate w-full" [title]="d.weatherLabel">{{ d.weatherLabel }}</span>
+              <div class="flex items-center justify-center gap-1 text-[11px] font-medium text-on-surface-variant mt-0.5">
+                <span class="text-rose-400 font-bold">{{ d.tempMax }}°</span>
+                <span>/</span>
+                <span class="text-sky-400 font-bold">{{ d.tempMin }}°</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div
@@ -246,6 +326,32 @@
             </span>
             <span *ngIf="summary.budget_limit !== null">
               Cap: {{ formatCurrency(summary.budget_limit) }}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="rounded-lg bg-emerald-500/10 px-2 py-1 text-emerald-500 font-semibold">
+              {{ summary.verified_activities_count }} hoạt động grounded
+            </span>
+            <span
+              *ngIf="summary.approximate_coordinate_count > 0"
+              class="rounded-lg bg-amber-500/10 px-2 py-1 text-status-warning font-semibold"
+            >
+              {{ summary.approximate_coordinate_count }} tọa độ gần đúng
+            </span>
+            <span
+              class="rounded-lg px-2 py-1 font-semibold"
+              [class.bg-emerald-500/10]="summary.route_validation_status === 'passed'"
+              [class.text-emerald-500]="summary.route_validation_status === 'passed'"
+              [class.bg-amber-500/10]="summary.route_validation_status !== 'passed'"
+              [class.text-status-warning]="summary.route_validation_status !== 'passed'"
+            >
+              Tuyến: {{ summary.route_validation_status }} · {{ summary.route_provider }}
+            </span>
+            <span *ngIf="summary.confidence_score !== null">
+              Độ tin cậy: {{ summary.confidence_score }}/100
+            </span>
+            <span *ngIf="summary.planning_mode === 'fallback'" class="text-status-warning font-semibold">
+              Đã dùng lịch fallback an toàn
             </span>
           </div>
           <div
@@ -357,18 +463,76 @@
                 <h2 class="text-xl font-bold font-headline-md text-on-surface">
                   Hành trình Ngày {{ day.day_number }}
                 </h2>
-                <p class="text-xs text-on-surface-variant">
-                  Ngày {{ day.date | date: 'dd/MM/yyyy' }}
+                <p class="text-xs text-on-surface-variant flex items-center gap-2 mt-0.5">
+                  <span>Ngày {{ day.date | date: 'dd/MM/yyyy' }}</span>
+                  <span
+                    *ngIf="getWeatherForDate(day.date) as w"
+                    class="px-2 py-0.5 rounded-md bg-white/10 text-on-surface text-[11px] font-bold flex items-center gap-1 border border-glass"
+                    [title]="w.weatherLabel"
+                  >
+                    <span>{{ w.weatherIcon }}</span>
+                    <span>{{ w.tempMax }}°C / {{ w.tempMin }}°C</span>
+                  </span>
                 </p>
               </div>
-              <button
-                *ngIf="canEditTrip()"
-                class="flex items-center gap-1.5 px-4 py-2 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary text-sm font-bold rounded-xl transition-all cursor-pointer"
-                (click)="openActivityModal(day.id)"
-              >
-                <span class="material-symbols-outlined text-[18px]">add</span>
-                <span>Thêm hoạt động</span>
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  *ngIf="canEditTrip()"
+                  class="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-400 text-sm font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                  (click)="optimizeDayRoute(day.id)"
+                  [disabled]="optimizingDayId() === day.id"
+                  title="Tự động sắp xếp thứ tự các điểm theo đường đi ngắn nhất"
+                >
+                  <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="optimizingDayId() === day.id">
+                    {{ optimizingDayId() === day.id ? 'sync' : 'near_me' }}
+                  </span>
+                  <span>{{ optimizingDayId() === day.id ? 'Đang tối ưu...' : 'Tối ưu lộ trình' }}</span>
+                </button>
+                <button
+                  *ngIf="canEditTrip()"
+                  class="flex items-center gap-1.5 px-4 py-2 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary text-sm font-bold rounded-xl transition-all cursor-pointer"
+                  (click)="openActivityModal(day.id)"
+                >
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                  <span>Thêm hoạt động</span>
+                </button>
+              </div>
+            </div>
+
+            <section
+              *ngIf="itineraryQuality() as quality"
+              class="glass-card rounded-2xl p-4 mb-5 border"
+              [ngClass]="quality.error_count ? 'border-red-500/40 bg-red-500/5' : quality.warning_count ? 'border-amber-500/40 bg-amber-500/5' : 'border-emerald-500/40 bg-emerald-500/5'"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined" [ngClass]="quality.error_count ? 'text-red-400' : quality.warning_count ? 'text-amber-400' : 'text-emerald-400'">fact_check</span>
+                  <strong>Chất lượng lịch trình: {{ quality.score }}/100</strong>
+                </div>
+                <button type="button" class="text-xs text-primary font-bold" (click)="refreshItineraryQuality()" [disabled]="isCheckingQuality()">
+                  {{ isCheckingQuality() ? 'Đang kiểm tra...' : 'Kiểm tra lại' }}
+                </button>
+              </div>
+              <div *ngIf="quality.issues.length" class="mt-3 space-y-1.5 text-sm">
+                <p *ngFor="let issue of quality.issues" class="m-0" [ngClass]="issue.severity === 'error' ? 'text-red-300' : 'text-amber-200'">• {{ issue.message }}</p>
+              </div>
+              <p *ngIf="!quality.issues.length" class="m-0 mt-2 text-sm text-emerald-300">Không phát hiện xung đột cơ bản.</p>
+            </section>
+
+            <div class="glass-card rounded-2xl p-4 mb-5 border border-border-glass">
+              <div class="flex flex-wrap items-center gap-2">
+                <strong class="text-sm mr-2">Kế hoạch khẩn cấp:</strong>
+                <button type="button" class="px-3 py-1.5 rounded-lg border border-blue-500/30 text-blue-300 text-xs" (click)="previewEmergency('rain')">Trời mưa</button>
+                <button type="button" class="px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-300 text-xs" (click)="previewEmergency('closed')">Địa điểm đóng cửa</button>
+                <button type="button" class="px-3 py-1.5 rounded-lg border border-purple-500/30 text-purple-300 text-xs" (click)="previewEmergency('late')">Bị trễ</button>
+                <span *ngIf="isLoadingEmergency()" class="text-xs text-on-surface-variant">Đang tạo phương án...</span>
+              </div>
+              <div *ngIf="emergencyOptions().length" class="grid md:grid-cols-2 gap-2 mt-3">
+                <article *ngFor="let option of emergencyOptions()" class="rounded-xl bg-white/5 border border-glass p-3">
+                  <strong class="text-sm">{{ option.title }}</strong><p class="text-xs text-on-surface-variant my-1">{{ option.description }}</p><small class="text-amber-300">{{ option.impact }}</small>
+                </article>
+              </div>
+              <p *ngIf="journalMessage()" class="text-xs text-primary mt-2 mb-0">{{ journalMessage() }}</p>
             </div>
 
             <!-- Empty activities warning -->
@@ -395,7 +559,7 @@
               [cdkDropListData]="day.activities"
               (cdkDropListDropped)="onActivityDrop($event, day.id)"
             >
-              <div class="relative" *ngFor="let act of day.activities" cdkDrag>
+              <div class="relative" *ngFor="let act of day.activities; let actIdx = index" cdkDrag>
                 <!-- Color-coded marker nodes -->
                 <div
                   class="absolute -left-[41px] top-4 w-4 h-4 rounded-full border-4 border-bg-slate-deep z-10"
@@ -445,6 +609,28 @@
                         {{ act.title }}
                       </h3>
                       <div class="flex items-center gap-1.5 shrink-0">
+                        <button *ngIf="canEditTrip()" type="button" class="flex items-center justify-center p-1 rounded-lg border border-emerald-500/30" [ngClass]="hasCheckedIn(act.id) ? 'text-emerald-300 bg-emerald-500/10' : 'text-on-surface-variant'" (click)="quickCheckIn(act, $event)" [disabled]="hasCheckedIn(act.id)" [title]="hasCheckedIn(act.id) ? 'Đã check-in' : 'Check-in nhanh'">
+                          <span class="material-symbols-outlined text-[18px]">{{ hasCheckedIn(act.id) ? 'where_to_vote' : 'add_location_alt' }}</span>
+                        </button>
+                        <button
+                          *ngIf="canEditTrip()"
+                          type="button"
+                          class="flex items-center justify-center p-1 rounded-lg border transition-colors"
+                          [ngClass]="act.is_locked ? 'text-amber-300 border-amber-500/40 bg-amber-500/10' : 'text-on-surface-variant border-transparent hover:text-amber-300'"
+                          [disabled]="updatingLockId() === act.id"
+                          (click)="toggleActivityLock(act, $event)"
+                          [title]="act.is_locked ? 'Mở khóa hoạt động' : 'Khóa để AI không thay đổi'"
+                        >
+                          <span class="material-symbols-outlined text-[18px]">{{ act.is_locked ? 'lock' : 'lock_open' }}</span>
+                        </button>
+                        <button
+                          class="flex items-center gap-1 text-xs text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                          (click)="openGoogleMaps(act, $event)"
+                          title="Mở dẫn đường Google Maps"
+                        >
+                          <span class="material-symbols-outlined text-[14px]">explore</span>
+                          <span>Dẫn đường</span>
+                        </button>
                         <button
                           *ngIf="canEditTrip()"
                           class="text-on-surface-variant hover:text-status-warning transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
@@ -509,6 +695,14 @@
                       </span>
                     </div>
                   </div>
+                </div>
+                <!-- Travel distance & time estimate to next activity -->
+                <div
+                  *ngIf="actIdx < day.activities.length - 1 && getTravelEstimate(act, day.activities[actIdx + 1]) as est"
+                  class="flex items-center gap-2 my-2 ml-4 text-xs font-semibold text-indigo-300/90 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg w-fit shadow-sm"
+                >
+                  <span class="material-symbols-outlined text-[15px] text-indigo-400">directions_car</span>
+                  <span>Di chuyển ~{{ est.durationMin }} phút ({{ est.distanceKm }} km)</span>
                 </div>
               </div>
             </div>
@@ -602,7 +796,7 @@
                     <div class="flex items-center gap-3 pt-2 border-t border-glass/40 text-xs font-semibold text-on-surface-variant">
                       <span class="flex items-center gap-1 text-emerald-400">
                         <span class="material-symbols-outlined text-[14px]">directions_car</span>
-                        <span>{{ seg.distanceKm.toFixed(1) }} km</span>
+                        <span>{{ (seg.distanceKm || 0).toFixed(1) }} km</span>
                       </span>
                       <span>•</span>
                       <span class="flex items-center gap-1 text-indigo-300">
@@ -623,7 +817,7 @@
               <div>
                 <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tổng hành trình trong ngày</h4>
                 <div class="text-[20px] font-extrabold text-on-surface mt-1 flex items-baseline gap-1">
-                  <span>{{ routeTotalDistance().toFixed(1) }}</span>
+                  <span>{{ (routeTotalDistance() || 0).toFixed(1) }}</span>
                   <span class="text-xs font-semibold text-on-surface-variant">km</span>
                   <span class="mx-2 text-on-surface-variant/40">|</span>
                   <span>{{ routeTotalDuration() | number:'1.0-0' }}</span>
@@ -769,6 +963,113 @@
           </div>
         </div>
 
+        <!-- Group Expense Splitter Widget with Min-Cash-Flow Algorithm -->
+        <div *ngIf="groupSplitSummary() as split" class="glass-card rounded-2xl p-6 border border-glass bg-gradient-to-r from-indigo-900/30 via-slate-900/40 to-violet-900/30 space-y-6">
+          <div class="flex items-center justify-between flex-wrap gap-2 text-indigo-400">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-2xl text-emerald-400">price_check</span>
+              <div>
+                <h3 class="text-lg font-bold text-on-surface leading-snug">Quyết toán nợ nhóm tối ưu (Min-Cash-Flow)</h3>
+                <p class="text-xs text-on-surface-variant">Tự động tính toán số lần chuyển tiền tối giản giữa các thành viên</p>
+              </div>
+            </div>
+            <span class="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">group</span>
+              {{ split.companions_count }} người tham gia
+            </span>
+          </div>
+
+          <!-- Overall Stats Summary -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-white/5 border border-glass/40 rounded-xl p-4">
+              <span class="text-xs text-on-surface-variant block mb-1">Bình quân thực tế / người</span>
+              <span class="text-xl font-bold text-emerald-400">
+                {{ formatCurrency(split.per_person_actual) }}
+              </span>
+              <span class="text-[11px] text-on-surface-variant/70 block mt-1">
+                Tổng thực chi: {{ formatCurrency(split.total_actual) }}
+              </span>
+            </div>
+            <div class="bg-white/5 border border-glass/40 rounded-xl p-4">
+              <span class="text-xs text-on-surface-variant block mb-1">Bình quân kế hoạch / người</span>
+              <span class="text-xl font-bold text-indigo-300">
+                {{ formatCurrency(split.per_person_planned) }}
+              </span>
+              <span class="text-[11px] text-on-surface-variant/70 block mt-1">
+                Tổng dự kiến: {{ formatCurrency(split.total_planned) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Net Balance Per Member -->
+          <div *ngIf="split.members_summary && split.members_summary.length > 0" class="space-y-3">
+            <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Cân bằng thu/chi từng thành viên</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div *ngFor="let m of split.members_summary" class="bg-white/5 border border-glass/30 rounded-xl p-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-bold text-sm text-on-surface truncate">{{ m.name }}</span>
+                  <span 
+                    class="text-xs font-bold px-2 py-0.5 rounded-full"
+                    [ngClass]="m.net_balance > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : (m.net_balance < 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-white/10 text-on-surface-variant')"
+                  >
+                    {{ m.net_balance > 0 ? '+' : '' }}{{ formatCurrency(m.net_balance) }}
+                  </span>
+                </div>
+                <div class="text-[11px] text-on-surface-variant flex justify-between">
+                  <span>Đã ứng: <strong class="text-on-surface">{{ formatCurrency(m.paid_amount) }}</strong></span>
+                  <span>Phần chi: <strong class="text-on-surface">{{ formatCurrency(m.assigned_amount) }}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settlement Steps (Min-Cash-Flow Result) -->
+          <div class="space-y-3 border-t border-glass/40 pt-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-amber-400 text-sm">swap_horiz</span>
+                <span>Các bước chuyển tiền tối giản (Chỉ {{ split.settlements?.length || 0 }} giao dịch)</span>
+              </h4>
+              <button 
+                *ngIf="split.settlements && split.settlements.length > 0"
+                (click)="copySettlementMessage()"
+                class="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/30 text-indigo-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span class="material-symbols-outlined text-sm">{{ copiedSettlement() ? 'check' : 'content_copy' }}</span>
+                <span>{{ copiedSettlement() ? 'Đã sao chép!' : 'Copy tin nhắn quyết toán' }}</span>
+              </button>
+            </div>
+
+            <div *ngIf="!split.settlements || split.settlements.length === 0" class="text-xs text-emerald-400 italic p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              ✓ Tất cả các thành viên đã hòa vốn! Không cần chuyển khoản thêm.
+            </div>
+
+            <div *ngIf="split.settlements && split.settlements.length > 0" class="space-y-2.5">
+              <div *ngFor="let step of split.settlements" class="bg-surface-container-high/60 border border-glass rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-3 shadow-sm">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center justify-center font-bold text-xs">
+                    {{ step.from_name[0] }}
+                  </span>
+                  <span class="font-bold text-sm text-on-surface">{{ step.from_name }}</span>
+                </div>
+
+                <div class="flex items-center gap-2 text-xs font-semibold text-amber-300 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <span>chuyển</span>
+                  <strong class="text-sm font-bold text-emerald-400">{{ formatCurrency(step.amount) }}</strong>
+                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center font-bold text-xs">
+                    {{ step.to_name[0] }}
+                  </span>
+                  <span class="font-bold text-sm text-on-surface">{{ step.to_name }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Categories breakdown list -->
         <div class="space-y-4" *ngIf="budgetSummary()?.categories">
           <h3 class="text-lg font-bold text-on-surface">Thống kê theo hạng mục</h3>
@@ -848,6 +1149,7 @@
                 >
                   <th class="p-4">Danh mục</th>
                   <th class="p-4">Nội dung chi tiêu</th>
+                  <th class="p-4">Người ứng tiền</th>
                   <th class="p-4">Dự kiến (Kế hoạch)</th>
                   <th class="p-4">Thực chi (Thực tế)</th>
                   <th class="p-4">Ngày giao dịch</th>
@@ -868,6 +1170,12 @@
                     </span>
                   </td>
                   <td class="p-4 font-bold text-on-surface">{{ item.label }}</td>
+                  <td class="p-4 text-xs font-bold text-indigo-300">
+                    <div class="flex items-center gap-1">
+                      <span class="material-symbols-outlined text-sm text-indigo-400">account_balance_wallet</span>
+                      <span>{{ item.paid_by || (currentUser()?.full_name || 'Chủ chuyến đi') }}</span>
+                    </div>
+                  </td>
                   <td class="p-4 text-on-surface-variant">
                     {{ formatCurrency(item.planned_amount) }}
                   </td>
@@ -969,12 +1277,14 @@
             <!-- Loading Explore -->
             <div
               class="glass-card rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-2 border border-glass"
-              *ngIf="isLoadingExplore()"
+              *ngIf="isLoadingExplore() && exploreLocations().length === 0"
             >
               <div class="animate-spin material-symbols-outlined text-primary text-3xl">
                 progress_activity
               </div>
-              <p class="text-sm text-on-surface-variant">Đang tải địa điểm lân cận...</p>
+              <p class="text-sm text-on-surface-variant">
+                {{ exploreIsSearchResult() ? 'Đang tìm trong Data và nguồn bên ngoài...' : 'Đang tải từ bộ dữ liệu...' }}
+              </p>
             </div>
 
             <!-- Empty Results explore -->
@@ -993,16 +1303,21 @@
               *ngIf="!isLoadingExplore() && !exploreError() && exploreLocations().length > 0"
             >
               <span class="material-symbols-outlined text-base text-primary">pin_drop</span>
-              <span
-                >Tìm thấy <strong class="text-primary">{{ exploreLocations().length }}</strong> địa
-                điểm</span
-              >
+              <span>
+                {{ exploreIsSearchResult() ? 'Tìm thấy' : 'Đang hiển thị' }}
+                <strong class="text-primary">{{ exploreLocations().length }}</strong>
+                <ng-container *ngIf="!exploreIsSearchResult()"> / {{ exploreTotal() }}</ng-container>
+                địa điểm
+              </span>
+              <span class="ml-auto text-xs" *ngIf="!exploreIsSearchResult()">
+                Nguồn: Data nội bộ
+              </span>
             </div>
 
             <!-- Results grid list -->
             <div
               class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[700px] overflow-y-auto pr-2"
-              *ngIf="!isLoadingExplore() && !exploreError() && exploreLocations().length > 0"
+              *ngIf="!exploreError() && exploreLocations().length > 0"
             >
               <div
                 class="glass-card rounded-2xl overflow-hidden border border-glass flex flex-col justify-between"
@@ -1041,6 +1356,15 @@
                             : 'Tham quan'
                     }}
                   </span>
+                  <span
+                    class="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[10px] font-semibold backdrop-blur-sm"
+                    [class.bg-emerald-500/20]="loc.result_source === 'dataset'"
+                    [class.text-emerald-300]="loc.result_source === 'dataset'"
+                    [class.bg-indigo-500/20]="loc.result_source === 'external'"
+                    [class.text-indigo-200]="loc.result_source === 'external'"
+                  >
+                    {{ loc.result_source === 'external' ? 'Kết quả API' : 'Data nội bộ' }}
+                  </span>
                 </div>
                 <div
                   class="p-4 bg-surface-container-high/40 flex-1 flex flex-col justify-between gap-3"
@@ -1076,6 +1400,19 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div
+              class="flex justify-center"
+              *ngIf="!exploreIsSearchResult() && exploreHasMore() && !exploreError()"
+            >
+              <button
+                class="px-6 py-2.5 rounded-xl border border-primary/40 text-primary font-bold text-sm hover:bg-primary hover:text-on-primary transition-all disabled:opacity-60"
+                [disabled]="isLoadingExplore()"
+                (click)="loadMoreExplore()"
+              >
+                {{ isLoadingExplore() ? 'Đang tải thêm...' : 'Xem thêm địa điểm' }}
+              </button>
             </div>
 
             <!-- Gợi ý tốt nhất Section (C2) -->
@@ -1137,369 +1474,488 @@
       </div>
 
       <!-- ==================== TAB 4: SETTINGS ==================== -->
-      <div *ngIf="activeSubTab() === 'settings'" class="space-y-8 animate-fade-in select-none">
-        <div class="border-b border-glass pb-6">
-          <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2 leading-tight">
-            Cài đặt chuyến đi
-          </h1>
-          <p class="text-on-surface-variant font-body-md text-sm">
-            Quản lý và điều chỉnh các thông số thiết lập của chuyến đi.
-          </p>
-        </div>
-
-        <div class="glass-card rounded-2xl p-6 border border-glass max-w-2xl mx-auto space-y-6">
-          <div class="border-b border-glass/40 pb-4">
-            <h3 class="text-lg font-bold text-on-surface">Thông tin cơ bản</h3>
+      <div *ngIf="activeSubTab() === 'settings'" class="space-y-8 animate-fade-in select-none max-w-6xl mx-auto">
+        <form [formGroup]="settingsForm" (ngSubmit)="onSaveSettings()" class="space-y-6 md:space-y-8">
+          <!-- Top Header -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 pb-6 border-b border-glass">
+            <div>
+              <h1 class="font-headline-lg text-2xl md:text-3xl font-bold text-on-surface mb-2">Cài đặt chuyến đi</h1>
+              <p class="text-on-surface-variant text-sm opacity-80">Quản lý và điều chỉnh các thông số thiết lập của chuyến đi.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-on-surface-variant" aria-live="polite">
+                {{ settingsSaveState() === 'pending' ? 'Chưa lưu' : settingsSaveState() === 'saving' ? 'Đang tự động lưu...' : settingsSaveState() === 'saved' ? 'Đã lưu' : settingsSaveState() === 'error' ? 'Lưu thất bại' : '' }}
+              </span>
+              <button
+                type="button"
+                class="px-5 py-2.5 bg-white/5 border border-glass text-on-surface text-sm font-bold rounded-full hover:bg-white/10 transition-all cursor-pointer"
+                (click)="onResetSettings()"
+                [disabled]="isSavingSettings()"
+              >
+                Khôi phục
+              </button>
+              <button
+                type="submit"
+                class="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-full transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2 shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50"
+                [disabled]="settingsForm.invalid || isSavingSettings()"
+              >
+                <span class="material-symbols-outlined text-[20px]">save</span>
+                {{ isSavingSettings() ? 'Đang lưu...' : 'Lưu thay đổi' }}
+              </button>
+            </div>
           </div>
 
+          <!-- Alert Notifications -->
           <div
-            class="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-status-success text-sm flex items-center gap-3"
+            class="mb-6 p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-status-success text-sm flex items-center gap-3"
             *ngIf="settingsSuccessMsg()"
           >
             <span class="material-symbols-outlined">check_circle</span>
             <span>{{ settingsSuccessMsg() }}</span>
           </div>
           <div
-            class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 text-status-warning text-sm flex items-center gap-3"
+            class="mb-6 p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-status-warning text-sm flex items-center gap-3"
             *ngIf="settingsErrorMsg()"
           >
             <span class="material-symbols-outlined">error</span>
             <span>{{ settingsErrorMsg() }}</span>
           </div>
 
-          <form [formGroup]="settingsForm" (ngSubmit)="onSaveSettings()" class="space-y-6">
-            <!-- Title -->
-            <div class="space-y-2">
-              <label for="trip-title" class="text-sm font-semibold text-on-surface-variant block"
-                >Tên chuyến đi *</label
-              >
-              <input
-                type="text"
-                id="trip-title"
-                formControlName="title"
-                class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
-                placeholder="Nhập tên chuyến đi"
-              />
-              <div
-                class="text-status-warning text-xs font-semibold mt-1"
-                *ngIf="settingsForm.get('title')?.invalid && settingsForm.get('title')?.touched"
-              >
-                Tên chuyến đi là bắt buộc (tối đa 200 kí tự).
+          <!-- Grid Container -->
+          <div class="grid grid-cols-12 gap-6 lg:gap-8">
+            <!-- CARD 1: Thông tin chung (12 Cols) -->
+            <div class="col-span-12 glass-card rounded-3xl p-6 md:p-8 space-y-6 relative z-30">
+              <div class="flex items-center justify-between border-b border-glass/40 pb-4">
+                <h3 class="font-headline-md text-lg md:text-xl font-bold text-on-surface flex items-center gap-3 whitespace-nowrap">
+                  <span class="material-symbols-outlined text-primary shrink-0">info</span>
+                  <span>Thông tin chung</span>
+                </h3>
+                <span class="px-3.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest border border-primary/20 shrink-0">Cơ bản</span>
               </div>
-            </div>
 
-            <!-- Destination -->
-            <div class="space-y-2">
-              <label for="trip-dest" class="text-sm font-semibold text-on-surface-variant block"
-                >Điểm đến du lịch *</label
-              >
-              <app-custom-select
-                id="trip-dest"
-                formControlName="destination"
-                [items]="provinces"
-                placeholder="Bạn muốn đi đâu?"
-                [isInvalid]="!!(settingsForm.get('destination')?.invalid && settingsForm.get('destination')?.touched)"
-              ></app-custom-select>
-              <div
-                class="text-status-warning text-xs font-semibold mt-1"
-                *ngIf="
-                  settingsForm.get('destination')?.invalid &&
-                  settingsForm.get('destination')?.touched
-                "
-              >
-                Điểm đến là bắt buộc.
-              </div>
-            </div>
-
-            <!-- Dates columns -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label for="trip-start" class="text-sm font-semibold text-on-surface-variant block"
-                  >Ngày đi *</label
-                >
-                <app-custom-date-picker
-                  id="trip-start"
-                  formControlName="start_date"
-                  placeholder="dd/mm/yyyy"
-                  [isInvalid]="!!(settingsForm.get('start_date')?.invalid && settingsForm.get('start_date')?.touched)"
-                ></app-custom-date-picker>
-              </div>
-              <div class="space-y-2">
-                <label for="trip-end" class="text-sm font-semibold text-on-surface-variant block"
-                  >Ngày về *</label
-                >
-                <app-custom-date-picker
-                  id="trip-end"
-                  formControlName="end_date"
-                  placeholder="dd/mm/yyyy"
-                  [isInvalid]="!!(settingsForm.get('end_date')?.invalid && settingsForm.get('end_date')?.touched)"
-                  [minDate]="settingsForm.get('start_date')?.value || ''"
-                ></app-custom-date-picker>
-              </div>
-            </div>
-
-            <!-- Budget & Travelers columns -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <label for="trip-budget" class="text-sm font-semibold text-on-surface-variant block"
-                  >Tổng ngân sách tối đa</label
-                >
-                <div class="relative flex items-center">
+              <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+                <!-- Tên chuyến đi -->
+                <div class="flex flex-col gap-2">
+                  <label for="trip-title" class="text-xs font-semibold text-on-surface-variant/80 uppercase tracking-wider ml-1">Tên chuyến đi *</label>
                   <input
                     type="text"
-                    id="trip-budget"
-                    formControlName="budget"
-                    (input)="onBudgetInputChange($event)"
-                    class="w-full bg-surface-container-low border border-glass rounded-xl py-3 pl-4 pr-14 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
-                    placeholder="Không bắt buộc (ví dụ: 5.000.000)"
+                    id="trip-title"
+                    formControlName="title"
+                    class="w-full bg-surface-container-low border border-glass rounded-2xl px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all placeholder:text-outline-variant text-sm font-medium"
+                    placeholder="Nhập tên chuyến đi"
                   />
-                  <span class="absolute right-4 text-primary select-none font-bold text-xs pointer-events-none">VNĐ</span>
+                  <div class="text-status-warning text-xs font-semibold mt-1" *ngIf="settingsForm.get('title')?.invalid && settingsForm.get('title')?.touched">
+                    Tên chuyến đi là bắt buộc (tối đa 200 ký tự).
+                  </div>
                 </div>
-              </div>
-              <div class="space-y-2">
-                <label
-                  for="trip-travelers"
-                  class="text-sm font-semibold text-on-surface-variant block"
-                  >Số thành viên du lịch *</label
-                >
-                <input
-                  type="number"
-                  id="trip-travelers"
-                  formControlName="num_travelers"
-                  class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm font-medium"
-                  min="1"
-                />
+
+                <!-- Điểm đến -->
+                <div class="flex flex-col gap-2">
+                  <label for="trip-dest" class="text-xs font-semibold text-on-surface-variant/80 uppercase tracking-wider ml-1">Điểm đến du lịch *</label>
+                  <app-custom-select
+                    id="trip-dest"
+                    formControlName="destination"
+                    [items]="provinces"
+                    placeholder="Bạn muốn đi đâu?"
+                    [isInvalid]="!!(settingsForm.get('destination')?.invalid && settingsForm.get('destination')?.touched)"
+                  ></app-custom-select>
+                  <div class="text-status-warning text-xs font-semibold mt-1" *ngIf="settingsForm.get('destination')?.invalid && settingsForm.get('destination')?.touched">
+                    Điểm đến là bắt buộc.
+                  </div>
+                </div>
+
+                <!-- Ngày đi - Ngày về -->
+                <div class="flex flex-col gap-2 md:col-span-2 2xl:col-span-1">
+                  <label class="text-xs font-semibold text-on-surface-variant/80 uppercase tracking-wider ml-1">Ngày đi - Ngày về *</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <app-custom-date-picker
+                      id="trip-start"
+                      formControlName="start_date"
+                      placeholder="Ngày đi"
+                      [isInvalid]="!!(settingsForm.get('start_date')?.invalid && settingsForm.get('start_date')?.touched)"
+                    ></app-custom-date-picker>
+                    <app-custom-date-picker
+                      id="trip-end"
+                      formControlName="end_date"
+                      placeholder="Ngày về"
+                      [isInvalid]="!!(settingsForm.get('end_date')?.invalid && settingsForm.get('end_date')?.touched)"
+                      [minDate]="settingsForm.get('start_date')?.value || ''"
+                    ></app-custom-date-picker>
+                  </div>
+                </div>
+
+                <!-- Phong cách chuyến đi (Tags) -->
+                <div class="md:col-span-2 2xl:col-span-3 pt-2 border-t border-glass/30">
+                  <label class="text-xs font-semibold text-on-surface-variant/80 uppercase tracking-wider block mb-3">Phong cách chuyến đi</label>
+                  <div class="flex flex-wrap gap-2.5">
+                    <button
+                      type="button"
+                      *ngFor="let tag of ['Nghỉ dưỡng', 'Phượt', 'Check-in', 'Ẩm thực', 'Văn hóa', 'Mạo hiểm']"
+                      (click)="toggleTravelStyleTag(tag)"
+                      class="px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border"
+                      [ngClass]="isTravelStyleActive(tag) ? 'bg-primary/20 border-primary text-primary' : 'bg-surface-container-low border-glass text-on-surface-variant hover:bg-white/10'"
+                    >
+                      {{ tag }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Status cards selection -->
-            <div class="space-y-2">
-              <label class="text-sm font-semibold text-on-surface-variant block"
-                >Trạng thái chuyến đi</label
-              >
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <!-- Draft Card -->
+            <!-- CARD 2: Ngân sách & Quy mô (Col 12 -> Md 6 -> 2Xl 4) -->
+            <div class="col-span-12 md:col-span-6 2xl:col-span-4 glass-card rounded-3xl p-6 md:p-8 flex flex-col justify-between gap-6 min-w-0 relative z-20">
+              <h3 class="font-headline-md text-base md:text-lg font-bold text-on-surface flex items-center gap-2.5 whitespace-nowrap">
+                <span class="material-symbols-outlined text-secondary shrink-0">payments</span>
+                <span>Ngân sách & Quy mô</span>
+              </h3>
+              <div class="space-y-5">
+                <!-- Ngân sách tối đa -->
+                <div class="flex flex-col gap-2">
+                  <label for="trip-budget" class="text-xs uppercase tracking-widest text-on-surface-variant/70 font-bold">Ngân sách tối đa (VND)</label>
+                  <div class="relative flex items-center">
+                    <input
+                      type="text"
+                      id="trip-budget"
+                      formControlName="budget"
+                      (input)="onBudgetInputChange($event)"
+                      class="w-full bg-surface-container-low border border-glass rounded-2xl py-3 pl-4 pr-14 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none font-mono text-base font-bold"
+                      placeholder="Ví dụ: 15.000.000"
+                    />
+                    <span class="absolute right-4 text-xs font-bold text-primary select-none pointer-events-none">VNĐ</span>
+                  </div>
+                </div>
+
+                <!-- Số thành viên -->
+                <div class="flex flex-col gap-2">
+                  <label for="trip-travelers" class="text-xs uppercase tracking-widest text-on-surface-variant/70 font-bold">Số thành viên du lịch *</label>
+                  <div class="flex items-center bg-surface-container-low border border-glass rounded-2xl px-2 overflow-hidden">
+                    <button
+                      type="button"
+                      (click)="decrementTravelers()"
+                      class="p-3 text-on-surface-variant hover:text-primary hover:bg-white/5 transition-all bg-transparent border-none cursor-pointer shrink-0"
+                    >
+                      <span class="material-symbols-outlined text-base">remove</span>
+                    </button>
+                    <input
+                      type="number"
+                      id="trip-travelers"
+                      formControlName="num_travelers"
+                      min="1"
+                      class="w-full bg-transparent border-none text-center focus:ring-0 outline-none py-3 text-base font-bold text-on-surface min-w-0"
+                    />
+                    <button
+                      type="button"
+                      (click)="incrementTravelers()"
+                      class="p-3 text-on-surface-variant hover:text-primary hover:bg-white/5 transition-all bg-transparent border-none cursor-pointer shrink-0"
+                    >
+                      <span class="material-symbols-outlined text-base">add</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 3: Trạng thái chuyến đi (Col 12 -> Md 6 -> 2Xl 4) -->
+            <div class="col-span-12 md:col-span-6 2xl:col-span-4 glass-card rounded-3xl p-6 md:p-8 flex flex-col justify-between gap-6 min-w-0 relative z-10">
+              <h3 class="font-headline-md text-base md:text-lg font-bold text-on-surface flex items-center gap-2.5 whitespace-nowrap">
+                <span class="material-symbols-outlined text-primary shrink-0">analytics</span>
+                <span>Trạng thái chuyến đi</span>
+              </h3>
+              <div class="flex flex-col gap-3">
+                <!-- Draft option -->
                 <label
-                  class="glass-card rounded-xl p-3 border border-glass flex items-center gap-3 cursor-pointer select-none transition-all hover:bg-white/5"
-                  [class.border-primary]="settingsForm.get('status')?.value === 'draft'"
+                  class="relative flex items-center p-3.5 rounded-2xl border cursor-pointer transition-all group overflow-hidden select-none"
+                  [ngClass]="settingsForm.get('status')?.value === 'draft' ? 'border-primary/50 bg-primary/10' : 'border-glass bg-surface-container-low/50 hover:bg-white/5'"
                 >
                   <input type="radio" value="draft" formControlName="status" class="hidden" />
-                  <span class="material-symbols-outlined text-primary text-xl">edit_note</span>
-                  <div>
-                    <p class="text-sm font-bold text-on-surface leading-none mb-1">Nháp</p>
-                    <span class="text-[10px] text-on-surface-variant">Lên kế hoạch</span>
+                  <div class="w-9 h-9 rounded-full bg-slate-500/20 flex items-center justify-center mr-3 shrink-0">
+                    <span class="material-symbols-outlined text-slate-400 text-lg">edit_note</span>
                   </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-on-surface m-0 leading-tight truncate">Bản nháp</p>
+                    <p class="text-xs text-on-surface-variant opacity-70 m-0 mt-0.5 truncate">Đang lên kế hoạch</p>
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center shrink-0 ml-2" *ngIf="settingsForm.get('status')?.value === 'draft'">
+                    <div class="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-glass shrink-0 ml-2" *ngIf="settingsForm.get('status')?.value !== 'draft'"></div>
                 </label>
 
-                <!-- Active Card -->
+                <!-- Active option -->
                 <label
-                  class="glass-card rounded-xl p-3 border border-glass flex items-center gap-3 cursor-pointer select-none transition-all hover:bg-white/5"
-                  [class.border-primary]="settingsForm.get('status')?.value === 'active'"
+                  class="relative flex items-center p-3.5 rounded-2xl border cursor-pointer transition-all group overflow-hidden select-none"
+                  [ngClass]="settingsForm.get('status')?.value === 'active' ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-glass bg-surface-container-low/50 hover:bg-white/5'"
                 >
                   <input type="radio" value="active" formControlName="status" class="hidden" />
-                  <span class="material-symbols-outlined text-primary text-xl">flight_takeoff</span>
-                  <div>
-                    <p class="text-sm font-bold text-on-surface leading-none mb-1">Đang đi</p>
-                    <span class="text-[10px] text-on-surface-variant">Đang diễn ra</span>
+                  <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center mr-3 shrink-0">
+                    <span class="material-symbols-outlined text-emerald-400 text-lg">flight_takeoff</span>
                   </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-on-surface m-0 leading-tight truncate">Đang đi</p>
+                    <p class="text-xs text-on-surface-variant opacity-70 m-0 mt-0.5 truncate">Hành trình bắt đầu</p>
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-emerald-400 flex items-center justify-center shrink-0 ml-2" *ngIf="settingsForm.get('status')?.value === 'active'">
+                    <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full"></div>
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-glass shrink-0 ml-2" *ngIf="settingsForm.get('status')?.value !== 'active'"></div>
                 </label>
 
-                <!-- Completed Card -->
+                <!-- Completed option -->
                 <label
-                  class="glass-card rounded-xl p-3 border border-glass flex items-center gap-3 cursor-pointer select-none transition-all hover:bg-white/5"
-                  [class.border-primary]="settingsForm.get('status')?.value === 'completed'"
+                  class="relative flex items-center p-3.5 rounded-2xl border cursor-pointer transition-all group overflow-hidden select-none"
+                  [ngClass]="settingsForm.get('status')?.value === 'completed' ? 'border-blue-500/50 bg-blue-500/10' : 'border-glass bg-surface-container-low/50 hover:bg-white/5'"
                 >
                   <input type="radio" value="completed" formControlName="status" class="hidden" />
-                  <span class="material-symbols-outlined text-primary text-xl">emoji_events</span>
-                  <div>
-                    <p class="text-sm font-bold text-on-surface leading-none mb-1">Xong</p>
-                    <span class="text-[10px] text-on-surface-variant">Đã hoàn thành</span>
+                  <div class="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 shrink-0">
+                    <span class="material-symbols-outlined text-blue-400 text-lg">task_alt</span>
                   </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-on-surface m-0 leading-tight truncate">Đã hoàn thành</p>
+                    <p class="text-xs text-on-surface-variant opacity-70 m-0 mt-0.5 truncate">Lưu giữ kỷ niệm</p>
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-blue-400 flex items-center justify-center shrink-0 ml-2" *ngIf="settingsForm.get('status')?.value === 'completed'">
+                    <div class="w-2.5 h-2.5 bg-blue-400 rounded-full"></div>
+                  </div>
+                  <div class="w-5 h-5 rounded-full border-2 border-glass shrink-0 ml-2" *ngIf="settingsForm.get('status')?.value !== 'completed'"></div>
                 </label>
               </div>
             </div>
 
-            <!-- Danger Zone -->
-            <div class="p-5 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-3">
-              <h4 class="font-bold text-status-warning text-sm flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[18px]">warning</span> Khu vực cảnh báo
-              </h4>
-              <p class="text-xs text-on-surface-variant leading-relaxed">
-                Xóa chuyến đi sẽ xóa vĩnh viễn toàn bộ ngày hành trình, hoạt động timeline, chi tiết
-                chi tiêu và lịch sử trò chuyện AI. Dữ liệu sau khi xóa sẽ không thể được phục hồi.
-              </p>
-              <button
-                type="button"
-                class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-status-warning text-xs font-bold rounded-xl transition-all cursor-pointer"
-                (click)="onOpenDeleteModal()"
-              >
-                Xóa chuyến đi này
-              </button>
-            </div>
-
-            <!-- Form Actions buttons -->
-            <div class="flex justify-end gap-3 pt-4 border-t border-glass/40">
-              <button
-                type="button"
-                class="px-5 py-2.5 bg-white/5 border border-glass text-on-surface text-sm font-bold rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
-                (click)="onResetSettings()"
-                [disabled]="isSavingSettings()"
-              >
-                Hủy & Khôi phục
-              </button>
-              <button
-                type="submit"
-                class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                [disabled]="settingsForm.invalid || isSavingSettings()"
-              >
-                {{ isSavingSettings() ? 'Đang lưu...' : 'Lưu tất cả thay đổi' }}
-              </button>
-            </div>
-          </form>
-
-          <div class="pt-6 border-t border-glass/40 space-y-5" *ngIf="canManageShares()">
-            <div>
-              <h3 class="text-lg font-bold text-on-surface">Chia sẻ chuyến đi</h3>
-              <p class="text-xs text-on-surface-variant mt-1">
-                Mời bạn đồng hành xem hoặc cùng chỉnh lịch trình và ngân sách.
-              </p>
-            </div>
-
-            <div
-              class="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-status-success text-sm flex items-center gap-2"
-              *ngIf="shareSuccessMsg()"
-            >
-              <span class="material-symbols-outlined text-[18px]">check_circle</span>
-              <span>{{ shareSuccessMsg() }}</span>
-            </div>
-            <div
-              class="p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-status-warning text-sm flex items-center gap-2"
-              *ngIf="shareErrorMsg()"
-            >
-              <span class="material-symbols-outlined text-[18px]">error</span>
-              <span>{{ shareErrorMsg() }}</span>
-            </div>
-
-            <form [formGroup]="shareForm" (ngSubmit)="onCreateShareInvite()" class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3 items-end">
-              <div class="space-y-1">
-                <label class="text-xs font-bold uppercase text-on-surface-variant">Email hoặc link mở</label>
-                <input
-                  type="email"
-                  formControlName="email"
-                  class="w-full bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm"
-                  placeholder="Để trống để tạo link mời"
-                />
+            <!-- CARD 4 & 5 container -->
+            <!-- CARD 4: Thành viên & Chia sẻ (Col 12 / 2Xl 8) -->
+            <div class="col-span-12 2xl:col-span-8 glass-card rounded-3xl p-6 md:p-8 space-y-6 min-w-0" *ngIf="canManageShares()">
+              <div class="flex justify-between items-center border-b border-glass/40 pb-4">
+                <h3 class="font-headline-md text-base md:text-lg font-bold text-on-surface flex items-center gap-2.5 whitespace-nowrap">
+                  <span class="material-symbols-outlined text-primary shrink-0">groups</span>
+                  <span>Thành viên & Chia sẻ</span>
+                </h3>
+                <span class="text-xs font-bold text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20 shrink-0">
+                  {{ shareParticipants().length + 1 }} người
+                </span>
               </div>
-              <div class="space-y-1">
-                <label class="text-xs font-bold uppercase text-on-surface-variant">Quyền</label>
-                <select
-                  formControlName="role"
-                  class="bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface outline-none text-sm"
-                >
-                  <option value="viewer">Xem</option>
-                  <option value="editor">Sửa</option>
-                </select>
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs font-bold uppercase text-on-surface-variant">Hết hạn</label>
-                <input
-                  type="number"
-                  formControlName="expires_in_days"
-                  min="1"
-                  max="30"
-                  class="w-24 bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface outline-none text-sm"
-                />
-              </div>
-              <button
-                type="submit"
-                class="px-4 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer disabled:opacity-50"
-                [disabled]="shareForm.invalid || isSubmittingShare()"
-              >
-                {{ isSubmittingShare() ? 'Đang tạo...' : 'Tạo lời mời' }}
-              </button>
-            </form>
 
-            <div class="flex items-center gap-2" *ngIf="latestInviteUrl()">
-              <input
-                class="flex-1 bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface text-xs"
-                [value]="latestInviteUrl()"
-                readonly
-              />
-              <button
-                type="button"
-                class="px-4 py-2.5 bg-white/5 border border-glass text-on-surface text-xs font-bold rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
-                (click)="copyLatestInviteUrl()"
-              >
-                Copy
-              </button>
-            </div>
-
-            <div class="space-y-3">
-              <h4 class="text-sm font-bold text-on-surface">Người đã được chia sẻ</h4>
-              <div class="text-xs text-on-surface-variant" *ngIf="!isLoadingShares() && shareParticipants().length === 0">
-                Chưa có người đồng hành nào.
+              <!-- Invite Success / Error messages -->
+              <div class="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-status-success text-xs flex items-center gap-2" *ngIf="shareSuccessMsg()">
+                <span class="material-symbols-outlined text-base">check_circle</span>
+                <span>{{ shareSuccessMsg() }}</span>
               </div>
-              <div
-                class="flex items-center justify-between gap-3 rounded-xl border border-glass bg-white/5 px-3 py-2"
-                *ngFor="let participant of shareParticipants()"
-              >
-                <div class="min-w-0">
-                  <div class="text-sm font-bold text-on-surface truncate">{{ participant.user.full_name }}</div>
-                  <div class="text-xs text-on-surface-variant truncate">{{ participant.user.email }}</div>
+              <div class="p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-status-warning text-xs flex items-center gap-2" *ngIf="shareErrorMsg()">
+                <span class="material-symbols-outlined text-base">error</span>
+                <span>{{ shareErrorMsg() }}</span>
+              </div>
+
+              <!-- Invite form -->
+              <form [formGroup]="shareForm" (ngSubmit)="onCreateShareInvite()" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 items-end">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Email hoặc username</label>
+                  <input
+                    type="text"
+                    formControlName="recipient"
+                    class="w-full bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-xs font-medium"
+                    placeholder="Nhập email hoặc username..."
+                  />
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Quyền</label>
                   <select
-                    class="bg-surface-container-low border border-glass rounded-lg py-1.5 px-2 text-xs text-on-surface outline-none"
-                    [value]="participant.role"
-                    (change)="onUpdateParticipantRole(participant, $any($event.target).value)"
+                    formControlName="role"
+                    class="bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface outline-none text-xs font-medium cursor-pointer"
                   >
                     <option value="viewer">Xem</option>
                     <option value="editor">Sửa</option>
                   </select>
-                  <button
-                    type="button"
-                    class="text-status-warning bg-transparent border-none cursor-pointer p-1"
-                    (click)="onRevokeParticipant(participant.id)"
-                    title="Thu hồi quyền"
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Hạn (ngày)</label>
+                  <input
+                    type="number"
+                    formControlName="expires_in_days"
+                    min="1"
+                    max="30"
+                    class="w-20 bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface outline-none text-xs font-medium"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="px-4 py-2.5 bg-primary text-on-primary text-xs font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1 shrink-0"
+                  [disabled]="shareForm.invalid || isSubmittingShare()"
+                >
+                  <span class="material-symbols-outlined text-base">person_add</span>
+                  {{ isSubmittingShare() ? 'Đang tạo...' : 'Tạo lời mời' }}
+                </button>
+              </form>
+
+              <!-- Latest Invite Link -->
+              <div class="flex items-center gap-2 pt-2 border-t border-glass/30" *ngIf="latestInviteUrl()">
+                <input
+                  class="flex-1 bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface text-xs font-mono"
+                  [value]="latestInviteUrl()"
+                  readonly
+                />
+                <button
+                  type="button"
+                  class="px-4 py-2.5 bg-primary/10 border border-primary/30 text-primary text-xs font-bold rounded-xl hover:bg-primary/20 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  (click)="copyLatestInviteUrl()"
+                >
+                  <span class="material-symbols-outlined text-base">content_copy</span> Copy
+                </button>
+              </div>
+
+              <!-- Participants list -->
+              <div class="space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant m-0">Người đã tham gia</h4>
+                <div class="text-xs text-on-surface-variant py-2" *ngIf="!isLoadingShares() && shareParticipants().length === 0">
+                  Chưa có người đồng hành nào. Hãy tạo lời mời để cùng lập kế hoạch!
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div
+                    class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-surface-container-low/60 border border-glass hover:border-primary/30 transition-all"
+                    *ngFor="let participant of shareParticipants()"
                   >
-                    <span class="material-symbols-outlined text-[18px]">person_remove</span>
-                  </button>
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-9 h-9 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0">
+                        {{ participant.user.full_name.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-xs font-bold text-on-surface truncate m-0">{{ participant.user.full_name }}</p>
+                        <p class="text-[10px] text-on-surface-variant truncate m-0 opacity-70">{{ participant.user.email }}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <select
+                        class="bg-transparent border border-glass rounded-lg py-1 px-1.5 text-[11px] font-bold text-on-surface outline-none cursor-pointer"
+                        [value]="participant.role"
+                        (change)="onUpdateParticipantRole(participant, $any($event.target).value)"
+                      >
+                        <option value="viewer">Xem</option>
+                        <option value="editor">Sửa</option>
+                      </select>
+                      <button
+                        type="button"
+                        class="text-status-warning hover:bg-rose-500/10 p-1.5 rounded-lg border-none bg-transparent cursor-pointer transition-colors"
+                        (click)="onRevokeParticipant(participant.id)"
+                        title="Thu hồi quyền"
+                      >
+                        <span class="material-symbols-outlined text-base">person_remove</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pending invites list -->
+              <div class="space-y-3" *ngIf="shareInvites().length > 0">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant m-0">Lời mời đang chờ</h4>
+                <div class="space-y-2">
+                  <div
+                    class="flex items-center justify-between gap-3 p-3 rounded-xl border border-glass bg-surface-container-low/40"
+                    *ngFor="let invite of shareInvites()"
+                  >
+                    <div class="min-w-0">
+                      <p class="text-xs font-bold text-on-surface truncate m-0">{{ invite.email || 'Link mời mở' }}</p>
+                      <p class="text-[10px] text-on-surface-variant m-0 mt-0.5">Quyền {{ invite.role === 'editor' ? 'Sửa' : 'Xem' }} • Hết hạn {{ invite.expires_at | date: 'dd/MM/yyyy' }}</p>
+                    </div>
+                    <button
+                      type="button"
+                      class="text-status-warning hover:bg-rose-500/10 p-1.5 rounded-lg border-none bg-transparent cursor-pointer transition-colors"
+                      (click)="onRevokeInvite(invite.id)"
+                      title="Hủy lời mời"
+                    >
+                      <span class="material-symbols-outlined text-base">link_off</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="space-y-3">
-              <h4 class="text-sm font-bold text-on-surface">Lời mời đang chờ</h4>
-              <div class="text-xs text-on-surface-variant" *ngIf="!isLoadingShares() && shareInvites().length === 0">
-                Không có lời mời đang chờ.
+            <!-- CARD 5: Xuất bản Cộng đồng (Col 12 / 2Xl 4) -->
+            <div class="col-span-12 2xl:col-span-4 glass-card rounded-3xl p-6 md:p-8 flex flex-col justify-between gap-6 min-w-0 relative z-10" *ngIf="canManageShares()">
+              <div>
+                <h3 class="font-headline-md text-base md:text-lg font-bold text-on-surface flex items-center gap-2.5 mb-3 whitespace-nowrap">
+                  <span class="material-symbols-outlined text-secondary shrink-0">public</span>
+                  <span>Xuất bản Cộng đồng</span>
+                </h3>
+                <p class="text-on-surface-variant text-xs opacity-80 leading-relaxed m-0">
+                  Chia sẻ lịch trình tuyệt vời của bạn để truyền cảm hứng cho những người đam mê du lịch khác trong cộng đồng Aether Travel.
+                </p>
               </div>
-              <div
-                class="flex items-center justify-between gap-3 rounded-xl border border-glass bg-white/5 px-3 py-2"
-                *ngFor="let invite of shareInvites()"
-              >
-                <div class="min-w-0">
-                  <div class="text-sm font-bold text-on-surface truncate">{{ invite.email || 'Link mời mở' }}</div>
-                  <div class="text-xs text-on-surface-variant">Quyền {{ invite.role === 'editor' ? 'Sửa' : 'Xem' }} • Hết hạn {{ invite.expires_at | date: 'dd/MM/yyyy' }}</div>
+
+              <div class="p-5 rounded-2xl bg-secondary/10 border border-secondary/20 flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary shrink-0">
+                    <span class="material-symbols-outlined text-xl">auto_awesome</span>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold text-on-surface m-0 truncate">
+                      {{ publishedPublicSlug() ? 'Đang công khai' : 'Chia sẻ công khai' }}
+                    </p>
+                    <p class="text-xs text-secondary/80 font-medium m-0 mt-0.5 truncate">
+                      {{ publishedPublicSlug() ? 'Mọi người có thể xem lịch trình' : 'Xuất bản lịch trình lên Cộng đồng' }}
+                    </p>
+                  </div>
                 </div>
+
+                <div class="flex items-center gap-2 pt-2 border-t border-secondary/20">
+                  <ng-container *ngIf="publishedPublicSlug()">
+                    <button
+                      type="button"
+                      (click)="viewPublishedTrip()"
+                      class="flex-1 py-2 px-3 bg-secondary text-black font-bold text-xs rounded-xl border-none transition-all hover:brightness-110 cursor-pointer flex items-center justify-center gap-1 shrink-0"
+                    >
+                      <span class="material-symbols-outlined text-sm">visibility</span> Xem bài
+                    </button>
+                    <button
+                      type="button"
+                      (click)="onUnpublishFromCommunity()"
+                      class="py-2 px-3 bg-white/10 text-on-surface font-bold text-xs rounded-xl border border-glass hover:bg-white/20 transition-all cursor-pointer shrink-0"
+                    >
+                      Gỡ bài
+                    </button>
+                  </ng-container>
+                  <ng-container *ngIf="!publishedPublicSlug()">
+                    <button
+                      type="button"
+                      (click)="isPublishWizardOpen.set(true)"
+                      class="w-full py-2.5 px-4 bg-secondary text-black font-bold text-xs rounded-xl border-none transition-all hover:brightness-110 cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-secondary/20"
+                    >
+                      <span class="material-symbols-outlined text-base">rocket_launch</span> Xuất bản lịch trình
+                    </button>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 6: Danger Zone / Khu vực nguy hiểm (12 Cols) -->
+            <div class="col-span-12 glass-card rounded-3xl p-6 md:p-8 border border-rose-500/20 bg-rose-500/5 relative overflow-hidden space-y-4">
+              <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div class="min-w-0 flex-1">
+                  <h3 class="font-headline-md text-base md:text-lg text-rose-400 font-bold uppercase tracking-wider flex items-center gap-2.5 m-0 whitespace-nowrap">
+                    <span class="material-symbols-outlined shrink-0">warning</span>
+                    <span>Khu vực quản lý & Xóa chuyến đi</span>
+                  </h3>
+                  <p class="text-xs text-on-surface-variant/80 m-0 mt-1">Thao tác xóa chuyến đi không thể hoàn tác. Toàn bộ dữ liệu lịch trình sẽ bị xóa vĩnh viễn.</p>
+                </div>
+
                 <button
                   type="button"
-                  class="text-status-warning bg-transparent border-none cursor-pointer p-1"
-                  (click)="onRevokeInvite(invite.id)"
-                  title="Hủy lời mời"
+                  (click)="onOpenDeleteModal()"
+                  class="w-full lg:w-auto px-6 py-3 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-500/10 shrink-0"
                 >
-                  <span class="material-symbols-outlined text-[18px]">link_off</span>
+                  <span class="material-symbols-outlined text-base">delete_forever</span>
+                  <span>Xóa chuyến đi vĩnh viễn</span>
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   </main>
 
   <!-- Right Side NavBar: AI Assistant Sidebar (Fixed Aside) -->
   <aside
-    class="fixed right-0 top-0 bottom-0 w-96 bg-surface-container-high/80 backdrop-blur-2xl border-l border-glass shadow-2xl flex flex-col z-[60] xl:top-16 xl:z-40 transition-all duration-300"
+    *ngIf="activeSubTab() === 'itinerary'"
+    class="fixed right-0 top-16 bottom-0 w-96 bg-surface-container-high/80 backdrop-blur-2xl border-l border-glass shadow-2xl flex flex-col z-40 transition-all duration-300"
     [ngClass]="isChatOpen() ? 'translate-x-0 flex' : 'translate-x-full hidden'"
   >
     <!-- Sidebar Header -->
@@ -1851,22 +2307,155 @@
     </div>
   </aside>
 
-  <!-- Chat Sidebar Scrim (Visible on < xl when chat is open) -->
+  <!-- Chat Sidebar Scrim (Visible on < lg when chat is open) -->
   <div
-    *ngIf="isChatOpen()"
+    *ngIf="activeSubTab() === 'itinerary' && isChatOpen()"
     (click)="isChatOpen.set(false)"
-    class="xl:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] transition-opacity duration-300"
+    class="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] transition-opacity duration-300"
   ></div>
 
   <!-- Floating Chat Toggle Button (Visible on all screens when chat is closed or history is open) -->
   <button
-    *ngIf="!isChatOpen() || activeRightTab() === 'history'"
+    *ngIf="activeSubTab() === 'itinerary' && (!isChatOpen() || activeRightTab() === 'history')"
     (click)="isChatOpen.set(true); activeRightTab.set('chat')"
-    class="fixed bottom-6 w-14 h-14 bg-gradient-to-tr from-indigo-500 to-violet-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all z-[70] cursor-pointer"
+    class="fixed bottom-6 w-14 h-14 bg-gradient-to-tr from-[#3b82f6] to-[#8b5cf6] text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all z-[70] cursor-pointer"
     [ngClass]="(isChatOpen() && activeRightTab() === 'history') ? 'right-[408px]' : 'right-6'"
   >
     <span class="material-symbols-outlined text-[24px]">chat</span>
   </button>
+</div>
+
+<!-- Publish completed trip as an official community itinerary -->
+<div
+  *ngIf="isPublishWizardOpen()"
+  class="fixed inset-x-0 bottom-0 top-16 z-[100] bg-black/75 backdrop-blur-sm overflow-y-auto p-4 md:p-8 flex items-center justify-center"
+  (click)="isPublishWizardOpen.set(false)"
+>
+  <section
+    class="w-full max-w-4xl mx-auto max-h-[calc(100vh-100px)] overflow-y-auto rounded-3xl border border-glass bg-surface-container shadow-2xl p-6 md:p-8 text-on-surface"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <span class="text-xs font-bold tracking-widest uppercase text-emerald-400">Lịch trình chính thức</span>
+        <h2 class="text-2xl md:text-3xl font-bold mt-2">Chia sẻ chuyến đi đã hoàn thành</h2>
+        <p class="text-sm text-on-surface-variant mt-2">
+          Giữ nguyên những gì bạn thực sự đã đi. Hãy đánh giá từng địa điểm và để lại lời khuyên cho người tiếp theo.
+        </p>
+      </div>
+      <button class="material-symbols-outlined bg-transparent border-none text-on-surface cursor-pointer" (click)="isPublishWizardOpen.set(false)">close</button>
+    </div>
+
+    <div *ngIf="publishedPublicSlug()" class="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-6 text-center">
+      <span class="material-symbols-outlined text-4xl text-emerald-400">check_circle</span>
+      <h3 class="text-xl font-bold mt-2">Đã xuất bản lịch trình!</h3>
+      <p class="text-sm text-on-surface-variant mt-2">Mọi người có thể xem, lưu hoặc thêm từng địa điểm vào chuyến của họ.</p>
+      <button class="mt-5 px-5 py-3 rounded-xl border-none bg-emerald-400 text-black font-bold cursor-pointer" (click)="viewPublishedTrip()">Xem bài công khai</button>
+    </div>
+
+    <ng-container *ngIf="!publishedPublicSlug()">
+      <div class="grid md:grid-cols-2 gap-4">
+        <label class="text-sm font-semibold">Tiêu đề
+          <input [(ngModel)]="publicationDraft.title" class="publish-input" maxlength="200" />
+        </label>
+        <label class="text-sm font-semibold">Tổng chi phí thực tế
+          <input [(ngModel)]="publicationDraft.actual_total_cost" class="publish-input" inputmode="numeric" placeholder="Ví dụ: 4.200.000" />
+        </label>
+      </div>
+      <label class="block text-sm font-semibold mt-4">Tóm tắt trải nghiệm
+        <textarea [(ngModel)]="publicationDraft.summary" class="publish-input min-h-24" maxlength="2000"></textarea>
+      </label>
+
+      <div class="grid md:grid-cols-3 gap-4 mt-4">
+        <label class="text-sm font-semibold">Lịch trình
+          <select [(ngModel)]="publicationDraft.itinerary_rating" class="publish-input">
+            <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">{{ rating }}/5</option>
+          </select>
+        </label>
+        <label class="text-sm font-semibold">Chi phí phù hợp
+          <select [(ngModel)]="publicationDraft.cost_rating" class="publish-input">
+            <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">{{ rating }}/5</option>
+          </select>
+        </label>
+        <label class="text-sm font-semibold">Địa điểm
+          <select [(ngModel)]="publicationDraft.place_rating" class="publish-input">
+            <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">{{ rating }}/5</option>
+          </select>
+        </label>
+      </div>
+
+      <h3 class="text-lg font-bold mt-8 mb-3">Đánh giá từng địa điểm</h3>
+      <div class="space-y-3 max-h-[420px] overflow-y-auto pr-2">
+        <ng-container *ngFor="let day of days()">
+          <div *ngFor="let activity of day.activities" class="rounded-2xl border border-glass bg-white/5 p-4" [hidden]="!activity.location_id">
+            <div class="flex justify-between gap-3 mb-3">
+              <div>
+                <span class="text-[11px] text-primary font-bold">NGÀY {{ day.day_number }} · {{ activity.start_time }}</span>
+                <h4 class="font-bold mt-1">{{ activity.title }}</h4>
+              </div>
+              <select
+                class="publish-select"
+                [ngModel]="publicationReview(activity.id).author_verdict"
+                (ngModelChange)="publicationReview(activity.id).author_verdict = $event"
+              >
+                <option *ngFor="let option of verdictOptions()" [ngValue]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="grid md:grid-cols-[120px_1fr] gap-3">
+              <select
+                class="publish-input"
+                [ngModel]="publicationReview(activity.id).rating"
+                (ngModelChange)="publicationReview(activity.id).rating = $event"
+              >
+                <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">★ {{ rating }}/5</option>
+              </select>
+              <input
+                class="publish-input"
+                placeholder="Ghi chú cho người đi sau: giờ đẹp, gửi xe, xếp hàng..."
+                [ngModel]="publicationReview(activity.id).next_traveler_note"
+                (ngModelChange)="publicationReview(activity.id).next_traveler_note = $event"
+              />
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-6">
+        <label class="text-sm font-semibold">Điểm đáng đi nhất
+          <textarea [(ngModel)]="publicationDraft.best_places" class="publish-input min-h-20" placeholder="Cầu Vàng, biển Mỹ Khê..."></textarea>
+        </label>
+        <label class="text-sm font-semibold">Đặc sản nên thử
+          <textarea [(ngModel)]="publicationDraft.best_foods" class="publish-input min-h-20" placeholder="Mì Quảng, bánh tráng cuốn thịt heo..."></textarea>
+        </label>
+      </div>
+      <label class="block text-sm font-semibold mt-4">Lời khuyên chung
+        <textarea [(ngModel)]="publicationDraft.general_tips" class="publish-input min-h-20" placeholder="Phương tiện, thời tiết, đặt vé, những điều nên tránh..."></textarea>
+      </label>
+
+      <div class="grid md:grid-cols-2 gap-3 mt-6 rounded-2xl border border-glass p-4 bg-white/5 text-sm">
+        <label class="flex gap-2"><input type="checkbox" [(ngModel)]="publicationDraft.show_author_name" /> Hiển thị tên tác giả</label>
+        <label class="flex gap-2"><input type="checkbox" [(ngModel)]="publicationDraft.show_cost" /> Công khai chi phí</label>
+        <label class="flex gap-2"><input type="checkbox" [(ngModel)]="publicationDraft.allow_clone" /> Cho phép dùng toàn bộ lịch trình</label>
+        <label class="flex gap-2"><input type="checkbox" [(ngModel)]="publicationDraft.allow_partial_import" /> Cho phép thêm từng ngày/địa điểm</label>
+      </div>
+      <label class="flex items-start gap-3 mt-5 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm">
+        <input type="checkbox" [(ngModel)]="publicationDraft.author_confirmed" class="mt-1" />
+        <span>Tôi xác nhận đây là lịch trình chính thức tôi đã trải nghiệm; đánh giá và chi phí công khai là thông tin tôi đã kiểm tra.</span>
+      </label>
+
+      <div *ngIf="publishError()" class="mt-4 rounded-xl bg-rose-500/10 border border-rose-400/30 p-3 text-sm text-rose-300">{{ publishError() }}</div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button class="px-5 py-3 rounded-xl border border-glass bg-transparent text-on-surface font-bold cursor-pointer" (click)="isPublishWizardOpen.set(false)">Hủy</button>
+        <button
+          class="px-6 py-3 rounded-xl border-none bg-emerald-400 text-black font-bold cursor-pointer disabled:opacity-50"
+          (click)="publishCompletedTrip()"
+          [disabled]="isPublishingPublicTrip()"
+        >
+          {{ isPublishingPublicTrip() ? 'Đang xuất bản...' : 'Xuất bản công khai' }}
+        </button>
+      </div>
+    </ng-container>
+  </section>
 </div>
 
 <!-- ==================== MODALS LIST ==================== -->
@@ -2412,17 +3001,34 @@
         </div>
       </div>
 
-      <!-- Date -->
-      <div class="space-y-1.5">
-        <label for="bud-date" class="text-xs font-bold text-on-surface-variant block uppercase"
-          >Ngày giao dịch</label
-        >
-        <input
-          id="bud-date"
-          type="date"
-          formControlName="date"
-          class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-        />
+      <!-- Date & Paid By row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label for="bud-date" class="text-xs font-bold text-on-surface-variant block uppercase"
+            >Ngày giao dịch</label
+          >
+          <input
+            id="bud-date"
+            type="date"
+            formControlName="date"
+            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
+          />
+        </div>
+        <div class="space-y-1.5">
+          <label for="bud-paid-by" class="text-xs font-bold text-on-surface-variant block uppercase"
+            >Người ứng tiền (Ai trả?)</label
+          >
+          <select
+            id="bud-paid-by"
+            formControlName="paid_by"
+            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
+          >
+            <option value="">-- Chọn thành viên ứng tiền --</option>
+            <option *ngFor="let member of groupSplitSummary()?.members || [currentUser()?.full_name || 'Chủ chuyến đi']" [value]="member">
+              {{ member }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <!-- Actions -->

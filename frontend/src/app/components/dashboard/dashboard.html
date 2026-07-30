@@ -1,4 +1,45 @@
 <main class="relative z-10">
+  <!-- Offline Mode Warning Banner -->
+  <div
+    class="mx-[80px] mt-6 px-6 py-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-between shadow-lg select-none animate-fade-in"
+    *ngIf="!isOnline()"
+  >
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-2xl text-amber-500">wifi_off</span>
+      <div>
+        <h4 class="font-bold text-sm text-on-surface m-0">Đang ở Chế độ Ngoại tuyến (Offline Mode)</h4>
+        <p class="text-xs text-on-surface-variant m-0 mt-0.5">
+          Mất kết nối mạng. Bạn vẫn có thể xem các chuyến đi và lịch trình đã lưu trên máy.
+        </p>
+      </div>
+    </div>
+    <span class="px-3 py-1 rounded-lg bg-amber-500/20 text-xs font-bold text-amber-500">Ngoại tuyến</span>
+  </div>
+
+  <!-- PWA Install App Banner -->
+  <div
+    class="mx-[80px] mt-4 px-6 py-4 rounded-2xl bg-primary/10 border border-primary/30 text-on-surface flex items-center justify-between shadow-lg select-none animate-fade-in"
+    *ngIf="isPwaInstallable()"
+  >
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-2xl">install_mobile</span>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-on-surface m-0">Cài đặt ứng dụng Smart Travel Planner</h4>
+        <p class="text-xs text-on-surface-variant m-0 mt-0.5">
+          Cài đặt về màn hình chính để xem lịch trình ngoại tuyến và trải nghiệm mượt như ứng dụng di động.
+        </p>
+      </div>
+    </div>
+    <button
+      (click)="installPwaApp()"
+      class="px-5 py-2.5 bg-primary text-on-primary font-bold text-xs rounded-xl hover:brightness-110 transition-all cursor-pointer shadow-md shrink-0 border-none"
+    >
+      Cài đặt ngay
+    </button>
+  </div>
+
   <!-- Over-budget warnings banner -->
   <div
     class="budget-warning-banner mx-[80px] mt-6 px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between shadow-lg select-none animate-fade-in"
@@ -7,7 +48,7 @@
     <div class="flex items-center gap-3">
       <span class="material-symbols-outlined text-2xl text-rose-500">warning</span>
       <div>
-        <h4 class="font-bold text-sm text-white">Cảnh báo chi tiêu vượt ngân sách!</h4>
+        <h4 class="font-bold text-sm text-on-surface m-0">Cảnh báo chi tiêu vượt ngân sách!</h4>
         <p class="text-xs text-on-surface-variant mt-0.5">
           Bạn có chuyến đi đang vượt định mức ngân sách:
           <span
@@ -41,14 +82,15 @@
         <button
           *ngFor="let cat of categories"
           (click)="selectCategory(cat.id)"
-          class="flex items-center gap-3 px-4 py-3 w-full font-label-md text-sm cursor-pointer transition-all duration-200 bg-transparent border-none text-left"
+          class="flex items-center gap-3 px-6 py-3 w-full font-label-md text-sm cursor-pointer transition-all duration-200 bg-transparent border-none text-left"
           [ngClass]="{
-            'bg-primary-container/20 text-primary border-r-4 border-primary':
+            'bg-primary/15 text-primary border-r-4 border-primary font-bold':
               selectedCategory() === cat.id,
             'text-on-surface-variant hover:bg-white/5 hover:translate-x-1':
               selectedCategory() !== cat.id,
           }"
         >
+          <span class="material-symbols-outlined text-lg">{{ cat.icon }}</span>
           <span>{{ cat.name }}</span>
         </button>
       </nav>
@@ -66,6 +108,7 @@
           'text-on-surface-variant border-glass/40 bg-transparent': selectedCategory() !== cat.id,
         }"
       >
+        <span class="material-symbols-outlined text-sm">{{ cat.icon }}</span>
         <span>{{ cat.name }}</span>
       </button>
     </div>
@@ -103,7 +146,7 @@
             10 giây cùng AI.
           </p>
           <button
-            class="flex items-center gap-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold px-8 py-4 rounded-2xl hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all text-lg cursor-pointer border-none"
+            class="flex items-center gap-3 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] text-white font-bold px-8 py-3.5 rounded-lg hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all text-base cursor-pointer border-none"
             (click)="openModal()"
           >
             Lập kế hoạch ngay
@@ -111,7 +154,7 @@
         </div>
       </section>
 
-      <!-- Trending Destinations Grid -->
+      <!-- Trending Destinations Grid (Minimalist Non-Image Bento Cards) -->
       <section>
         <div class="flex justify-between items-end mb-stack-md">
           <div>
@@ -119,10 +162,12 @@
               Điểm đến thịnh hành đề xuất bởi AI
             </h2>
             <p class="text-on-surface-variant text-sm mt-1 mb-0">
-              Dựa trên sở thích của cộng đồng và xu hướng du lịch hiện tại.
+              Lựa chọn hàng đầu cho những chuyến đi đậm chất riêng, tối giản và hiệu quả.
             </p>
           </div>
           <button
+            type="button"
+            (click)="selectCategory('all')"
             class="text-primary text-sm font-label-md hover:underline bg-transparent border-none cursor-pointer"
           >
             Xem tất cả
@@ -131,69 +176,70 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
           <div
-            class="glass-card rounded-2xl overflow-hidden group transition-all duration-300 hover:translate-y-[-8px] hover:shadow-2xl hover:shadow-primary/10 border-glass cursor-pointer"
+            class="bg-surface-container-lowest border border-border-glass rounded-2xl p-6 flex flex-col hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group cursor-pointer"
             *ngFor="let dest of getFilteredTrending()"
             (click)="planTrending(dest)"
           >
-            <div class="h-64 w-full relative overflow-hidden">
-              <img
-                [src]="dest.image || getTripImage(dest.name)"
-                (error)="handleImgError($event)"
-                [attr.data-fallback-seed]="dest.name"
-                loading="lazy"
-                decoding="async"
-                class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                [alt]="dest.name"
-              />
+            <!-- Decorative quarter-circle top-right background accent shape -->
+            <div
+              class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full pointer-events-none transition-transform duration-300 group-hover:scale-125"
+            ></div>
+
+            <!-- Top Header: Category Pill Badge & Rating -->
+            <div class="flex justify-between items-center mb-4 relative z-10">
               <div
-                class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center"
+                class="bg-primary/10 border border-primary/20 text-primary rounded-full px-3.5 py-1.5 flex items-center gap-1.5 backdrop-blur-md"
               >
-                <button
-                  class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-xl border-none cursor-pointer"
-                >
-                  Lập hành trình ngay
-                </button>
+                <span class="material-symbols-outlined text-sm">{{ getCategoryIcon(dest.category) }}</span>
+                <span class="text-xs font-bold uppercase tracking-wider">{{ getCategoryLabel(dest.category) }}</span>
               </div>
-              <div class="absolute top-4 left-4">
-                <span
-                  class="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-lg"
-                  >Trending</span
-                >
+              <div class="flex items-center gap-1 text-primary font-bold text-sm">
+                <span class="material-symbols-outlined text-base">auto_awesome</span>
+                <span>Gợi ý nổi bật</span>
               </div>
             </div>
-            <div class="p-stack-md">
-              <div class="flex justify-between items-start mb-2">
-                <h4
-                  class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors m-0"
-                >
-                  {{ dest.name }}
-                </h4>
-                <div class="flex items-center gap-1 text-primary">
-                  <span class="material-symbols-outlined text-sm">stars</span>
-                  <span class="text-xs font-bold">4.9</span>
-                </div>
+
+            <!-- Destination Title -->
+            <h3 class="text-xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors m-0">
+              {{ dest.name }}
+            </h3>
+
+            <!-- Location & Duration Chips -->
+            <div class="flex items-center gap-4 text-on-surface-variant text-xs font-medium mb-4">
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-primary">location_on</span>
+                {{ getTrendingCountry(dest.name) }}
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-primary">schedule</span>
+                {{ dest.days }} ngày
+              </span>
+            </div>
+
+            <!-- Description -->
+            <p class="text-sm text-on-surface-variant leading-relaxed flex-grow mb-6 line-clamp-3 m-0">
+              {{ dest.description }}
+            </p>
+
+            <!-- Horizontal Divider Line -->
+            <hr class="border-t border-border-glass/60 my-0 mb-4" />
+
+            <!-- Bottom Section: Budget & CTA button -->
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
+                  DỰ KIẾN CHI PHÍ
+                </span>
+                <span class="text-lg font-black text-primary mt-0.5">
+                  Từ {{ formatCurrency(dest.budget) }}
+                </span>
               </div>
-              <div class="flex items-center gap-3 text-on-surface-variant text-xs mb-3">
-                <span class="flex items-center gap-1"
-                  ><span class="material-symbols-outlined text-[14px]">location_on</span>
-                  {{ getTrendingCountry(dest.name) }}</span
-                >
-                <span class="flex items-center gap-1"
-                  ><span class="material-symbols-outlined text-[14px]">schedule</span>
-                  {{ dest.days }} ngày</span
-                >
-              </div>
-              <p class="text-sm text-on-surface-variant line-clamp-2 mb-4 leading-relaxed m-0">
-                {{ dest.description }}
-              </p>
-              <div class="flex justify-between items-center pt-3 border-t border-glass">
-                <span class="text-xs text-on-surface-variant uppercase font-bold tracking-tighter"
-                  >Dự kiến chi phí</span
-                >
-                <span class="text-lg font-bold text-tertiary"
-                  >~{{ formatCurrency(dest.budget) }}</span
-                >
-              </div>
+              <button
+                class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold border-none cursor-pointer flex items-center gap-1 shadow-md"
+              >
+                <span>Lập kế hoạch</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
             </div>
           </div>
         </div>
@@ -276,55 +322,73 @@
       </div>
 
       <!-- Status Filters -->
-      <div class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+      <div class="flex items-center gap-1.5 glass-panel p-1 rounded-full border border-border-glass shadow-sm mb-6 overflow-x-auto no-scrollbar w-fit max-w-full select-none">
         <button
-          [class.bg-primary/20]="filterStatus() === 'all'"
-          [class.text-primary]="filterStatus() === 'all'"
-          [class.border-primary/30]="filterStatus() === 'all'"
-          [class.bg-white/5]="filterStatus() !== 'all'"
-          [class.text-on-surface-variant]="filterStatus() !== 'all'"
-          [class.border-glass]="filterStatus() !== 'all'"
+          type="button"
           (click)="onFilterChange('all')"
-          class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border cursor-pointer hover:bg-white/10 transition-colors"
+          [class.bg-primary]="filterStatus() === 'all'"
+          [class.text-white]="filterStatus() === 'all'"
+          [class.shadow-md]="filterStatus() === 'all'"
+          [class.text-on-surface-variant]="filterStatus() !== 'all'"
+          [class.hover:text-on-surface]="filterStatus() !== 'all'"
+          class="px-5 py-2 rounded-full font-label-md text-xs font-bold transition-all border-none cursor-pointer whitespace-nowrap"
         >
           Tất cả ({{ trips().length }})
         </button>
         <button
-          [class.bg-primary/20]="filterStatus() === 'draft'"
-          [class.text-primary]="filterStatus() === 'draft'"
-          [class.border-primary/30]="filterStatus() === 'draft'"
-          [class.bg-white/5]="filterStatus() !== 'draft'"
-          [class.text-on-surface-variant]="filterStatus() !== 'draft'"
-          [class.border-glass]="filterStatus() !== 'draft'"
+          type="button"
           (click)="onFilterChange('draft')"
-          class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border cursor-pointer hover:bg-white/10 transition-colors"
+          [class.bg-primary]="filterStatus() === 'draft'"
+          [class.text-white]="filterStatus() === 'draft'"
+          [class.shadow-md]="filterStatus() === 'draft'"
+          [class.text-on-surface-variant]="filterStatus() !== 'draft'"
+          [class.hover:text-on-surface]="filterStatus() !== 'draft'"
+          class="px-5 py-2 rounded-full font-label-md text-xs font-bold transition-all border-none cursor-pointer whitespace-nowrap"
         >
           Nháp ({{ getTripsCountByStatus('draft') }})
         </button>
         <button
-          [class.bg-primary/20]="filterStatus() === 'active'"
-          [class.text-primary]="filterStatus() === 'active'"
-          [class.border-primary/30]="filterStatus() === 'active'"
-          [class.bg-white/5]="filterStatus() !== 'active'"
-          [class.text-on-surface-variant]="filterStatus() !== 'active'"
-          [class.border-glass]="filterStatus() !== 'active'"
+          type="button"
           (click)="onFilterChange('active')"
-          class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border cursor-pointer hover:bg-white/10 transition-colors"
+          [class.bg-primary]="filterStatus() === 'active'"
+          [class.text-white]="filterStatus() === 'active'"
+          [class.shadow-md]="filterStatus() === 'active'"
+          [class.text-on-surface-variant]="filterStatus() !== 'active'"
+          [class.hover:text-on-surface]="filterStatus() !== 'active'"
+          class="px-5 py-2 rounded-full font-label-md text-xs font-bold transition-all border-none cursor-pointer whitespace-nowrap"
         >
           Đang đi ({{ getTripsCountByStatus('active') }})
         </button>
         <button
-          [class.bg-primary/20]="filterStatus() === 'completed'"
-          [class.text-primary]="filterStatus() === 'completed'"
-          [class.border-primary/30]="filterStatus() === 'completed'"
-          [class.bg-white/5]="filterStatus() !== 'completed'"
-          [class.text-on-surface-variant]="filterStatus() !== 'completed'"
-          [class.border-glass]="filterStatus() !== 'completed'"
+          type="button"
           (click)="onFilterChange('completed')"
-          class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border cursor-pointer hover:bg-white/10 transition-colors"
+          [class.bg-primary]="filterStatus() === 'completed'"
+          [class.text-white]="filterStatus() === 'completed'"
+          [class.shadow-md]="filterStatus() === 'completed'"
+          [class.text-on-surface-variant]="filterStatus() !== 'completed'"
+          [class.hover:text-on-surface]="filterStatus() !== 'completed'"
+          class="px-5 py-2 rounded-full font-label-md text-xs font-bold transition-all border-none cursor-pointer whitespace-nowrap"
         >
           Đã hoàn thành ({{ getTripsCountByStatus('completed') }})
         </button>
+        <button
+          type="button"
+          (click)="onFilterChange('published')"
+          [class.bg-primary]="filterStatus() === 'published'"
+          [class.text-white]="filterStatus() === 'published'"
+          [class.shadow-md]="filterStatus() === 'published'"
+          [class.text-on-surface-variant]="filterStatus() !== 'published'"
+          [class.hover:text-on-surface]="filterStatus() !== 'published'"
+          class="px-5 py-2 rounded-full font-label-md text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+        >
+          <span class="material-symbols-outlined text-sm">public</span>
+          <span>Đã chia sẻ ({{ getTripsCountByStatus('published') }})</span>
+        </button>
+      </div>
+
+      <div *ngIf="publicationMessage()" class="mb-5 px-4 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-semibold flex items-center gap-2">
+        <span class="material-symbols-outlined">check_circle</span>
+        <span>{{ publicationMessage() }}</span>
       </div>
 
       <!-- Loading State -->
@@ -349,103 +413,130 @@
         <p class="text-on-surface-variant max-w-sm mb-6">
           Hãy bắt đầu lập kế hoạch bằng cách sử dụng thanh tìm kiếm hoặc tạo một chuyến đi mới.
         </p>
-        <button
-          class="btn-create-trip bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold border-none cursor-pointer hover:scale-105 transition-transform"
-          (click)="openModal()"
-        >
-          Bắt đầu tạo chuyến đi
-        </button>
       </div>
 
-      <!-- User Trips Grid -->
+      <!-- User Trips Grid (Minimalist Non-Image Bento Cards) -->
       <div
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         *ngIf="!isLoading() && !errorMessage() && getFilteredTrips().length > 0"
       >
         <div
-          class="glass-card rounded-xl overflow-hidden group transition-all duration-300 hover:translate-y-[-4px] hover:shadow-2xl border-glass cursor-pointer"
+          class="bg-surface-container-lowest border border-border-glass rounded-2xl p-6 flex flex-col hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group cursor-pointer"
           *ngFor="let trip of getFilteredTrips()"
           (click)="goToTrip(trip.id)"
         >
-          <div class="h-48 w-full relative">
-            <img
-              [src]="getTripImage(trip.destination, trip.id, trip.cover_image_url)"
-              [alt]="trip.title"
-              [attr.data-fallback-seed]="trip.id + '-' + trip.destination"
-              loading="lazy"
-              decoding="async"
-              (error)="handleImgError($event)"
-              class="w-full h-full object-cover"
-            />
-            <div class="absolute top-4 left-4 flex gap-2">
+          <!-- Decorative quarter-circle top-right background accent shape -->
+          <div
+            class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full pointer-events-none transition-transform duration-300 group-hover:scale-125"
+          ></div>
+
+          <!-- Top Header: Status Badges, Access Badge & Action Buttons -->
+          <div class="flex justify-between items-center mb-4 relative z-10">
+            <div class="flex items-center gap-2 flex-wrap">
               <!-- Status Badge -->
-              <span
-                class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-lg border"
+              <div
+                class="rounded-full px-3 py-1 flex items-center gap-1.5 backdrop-blur-md text-xs font-bold uppercase tracking-wider border"
                 [ngClass]="{
-                  'bg-emerald-600 text-white border-emerald-500': trip.status === 'active',
-                  'bg-blue-600 text-white border-blue-500': trip.status === 'completed',
-                  'bg-gray-600 text-white border-gray-500': trip.status === 'draft'
+                  'bg-emerald-500/15 text-emerald-500 border-emerald-500/30': trip.status === 'active',
+                  'bg-blue-500/15 text-blue-500 border-blue-500/30': trip.status === 'completed',
+                  'bg-slate-500/15 text-slate-400 border-slate-500/30': trip.status === 'draft'
                 }"
               >
-                {{
-                  trip.status === 'draft'
-                    ? 'Bản nháp'
-                    : trip.status === 'active'
-                      ? 'Đang đi'
-                      : 'Đã xong'
-                }}
-              </span>
+                <span class="material-symbols-outlined text-sm">
+                  {{ trip.status === 'active' ? 'flight_takeoff' : trip.status === 'completed' ? 'check_circle' : 'edit_note' }}
+                </span>
+                <span>
+                  {{
+                    trip.status === 'draft'
+                      ? 'Bản nháp'
+                      : trip.status === 'active'
+                        ? 'Đang đi'
+                        : 'Đã xong'
+                  }}
+                </span>
+              </div>
 
               <!-- Access Type Badge -->
-              <span
-                class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-lg border"
+              <div
+                class="rounded-full px-3 py-1 text-[11px] font-semibold border backdrop-blur-md"
                 [ngClass]="{
-                  'bg-indigo-600 text-white border-indigo-500': trip.access_type === 'owner',
-                  'bg-purple-600 text-white border-purple-500': trip.access_type === 'shared'
+                  'bg-primary/10 text-primary border-primary/20': trip.access_type === 'owner',
+                  'bg-purple-500/10 text-purple-400 border-purple-500/20': trip.access_type === 'shared'
                 }"
               >
                 {{ trip.access_type === 'owner' ? 'Chuyến đi của tôi' : 'Được chia sẻ' }}
-              </span>
+              </div>
+              <div *ngIf="trip.publication?.status === 'published'" class="rounded-full px-3 py-1 text-[11px] font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">public</span> Đang công khai
+              </div>
             </div>
-            <button class="btn-heart" title="Lưu chuyến đi" (click)="$event.stopPropagation()">
-              <svg viewBox="0 0 32 32" class="heart-icon">
-                <path
-                  d="M16 28c7-4.73 14-10 14-17A6.89 6.89 0 0 0 23 4c-3.36 0-5.86 2.78-7 4-1.14-1.21-3.64-4-7-4a6.89 6.89 0 0 0-7 7c0 7 7 12.27 14 17z"
-                ></path>
-              </svg>
+
+            <!-- Delete Button -->
+            <button
+              *ngIf="trip.access_type === 'owner'"
+              class="w-8 h-8 rounded-full bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 flex items-center justify-center backdrop-blur-md transition-all cursor-pointer border-none"
+              title="Xóa chuyến đi"
+              (click)="confirmDeleteTrip(trip, $event)"
+            >
+              <span class="material-symbols-outlined text-base">delete</span>
             </button>
           </div>
 
-          <div class="p-4">
-            <h4
-              class="font-bold text-lg text-on-surface group-hover:text-primary transition-colors m-0"
-            >
-              {{ trip.title }}
-            </h4>
-            <p class="text-on-surface-variant text-sm m-0 mt-1 flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
-              <span>{{ trip.destination }}</span>
-            </p>
-            <div class="flex items-center gap-2 text-on-surface-variant text-xs mb-4 mt-2">
-              <span class="material-symbols-outlined text-[16px]">calendar_month</span>
-              <span
-                >{{ trip.start_date | date: 'dd/MM/yyyy' }} -
-                {{ trip.end_date | date: 'dd/MM/yyyy' }}</span
-              >
+          <!-- Trip Title -->
+          <h3 class="text-xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors m-0">
+            {{ trip.title }}
+          </h3>
+
+          <!-- Location & Date Info -->
+          <div class="flex flex-wrap items-center gap-4 text-on-surface-variant text-xs font-medium mb-4">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-primary">location_on</span>
+              {{ trip.destination }}
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-primary">calendar_month</span>
+              {{ trip.start_date | date: 'dd/MM/yyyy' }} - {{ trip.end_date | date: 'dd/MM/yyyy' }}
+            </span>
+          </div>
+
+          <!-- Description / Travelers Info -->
+          <p class="text-sm text-on-surface-variant leading-relaxed flex-grow mb-6 m-0 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base text-on-surface-variant/60">group</span>
+            <span>Hành trình cho {{ trip.num_travelers }} thành viên</span>
+          </p>
+
+          <div *ngIf="trip.publication as publication" class="grid grid-cols-3 gap-2 mb-4 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+            <div class="text-center"><strong class="block text-on-surface">{{ publication.view_count }}</strong><span class="text-[9px] uppercase text-on-surface-variant">LƯỢT XEM</span></div>
+            <div class="text-center"><strong class="block text-on-surface">{{ publication.save_count }}</strong><span class="text-[9px] uppercase text-on-surface-variant">LƯỢT LƯU</span></div>
+            <div class="text-center"><strong class="block text-on-surface">{{ publication.clone_count }}</strong><span class="text-[9px] uppercase text-on-surface-variant">LƯỢT SỬ DỤNG</span></div>
+          </div>
+          <div *ngIf="trip.publication" class="flex gap-2 mb-4">
+            <button type="button" (click)="viewPublicTrip(trip, $event)" class="flex-1 px-3 py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs font-bold cursor-pointer flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">open_in_new</span>Xem công khai</button>
+            <button type="button" (click)="confirmUnpublishTrip(trip, $event)" class="flex-1 px-3 py-2 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-bold cursor-pointer flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">public_off</span>Gỡ khỏi cộng đồng</button>
+          </div>
+
+          <!-- Horizontal Divider Line -->
+          <hr class="border-t border-border-glass/60 my-0 mb-4" />
+
+          <!-- Bottom Section: Budget & Arrow Navigation -->
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
+                TỔNG NGÂN SÁCH
+              </span>
+              <span class="text-lg font-black text-primary mt-0.5" *ngIf="trip.budget">
+                {{ formatCurrency(trip.budget) }}
+              </span>
+              <span class="text-sm font-semibold text-on-surface-variant/70 mt-0.5" *ngIf="!trip.budget">
+                Chưa lập ngân sách
+              </span>
             </div>
 
-            <div
-              class="flex justify-between items-center pt-3 border-t border-glass text-xs font-semibold text-on-surface-variant"
+            <button
+              class="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary text-primary group-hover:text-on-primary border border-primary/20 flex items-center justify-center transition-all duration-200 shadow-md cursor-pointer border-none"
             >
-              <span class="flex items-center gap-1">
-                <span class="material-symbols-outlined text-[16px]">group</span>
-                <span>{{ trip.num_travelers }} người đi</span>
-              </span>
-              <span class="text-sm font-bold text-primary flex items-center gap-1" *ngIf="trip.budget">
-                <span class="material-symbols-outlined text-[16px]">payments</span>
-                <span>{{ formatCurrency(trip.budget) }}</span>
-              </span>
-            </div>
+              <span class="material-symbols-outlined text-lg">arrow_forward</span>
+            </button>
           </div>
         </div>
       </div>
@@ -494,6 +585,9 @@
             my_location
           </button>
           <button
+            type="button"
+            (click)="toggleDashboardMapStyle()"
+            [title]="mapStyle() === 'streets' ? 'Chuyển sang ảnh vệ tinh' : 'Chuyển sang bản đồ đường phố'"
             class="glass-card p-2 rounded-lg hover:bg-primary/20 transition-colors text-primary material-symbols-outlined border-none cursor-pointer"
           >
             layers
@@ -524,7 +618,7 @@
 
 <!-- Create Trip Modal Dialog -->
 <div
-  class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+  class="fixed inset-x-0 bottom-0 top-16 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
   *ngIf="isModalOpen()"
   (click)="closeModal()"
 >
@@ -694,9 +788,13 @@
           id="preferences"
           formControlName="preferences"
           class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none box-border"
-          placeholder="Chia sẻ mong muốn của bạn với AI (ví dụ: 'Nghỉ dưỡng sang chảnh, ăn nhiều hải sản, ít đi bộ')..."
+          placeholder="Ghi rõ các địa điểm muốn đến, cách nhau bằng dấu phẩy. Ví dụ: Hồ Gươm, Lăng Bác, Văn Miếu; thích bún chả và cà phê trứng."
           rows="3"
         ></textarea>
+        <p class="mt-2 text-xs text-on-surface-variant">
+          Các địa điểm nhận diện được trong Data sẽ được khóa vào lịch trình. AI
+          có thể xếp chặng 40–120 km và dành tối đa khoảng 6 giờ di chuyển mỗi ngày khi cần.
+        </p>
       </div>
 
       <div class="grid grid-cols-2 gap-4 mt-6">
@@ -736,7 +834,7 @@
 <button
   class="fixed bottom-margin-desktop right-margin-desktop w-16 h-16 bg-gradient-to-tr from-primary to-secondary rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 active:scale-90 transition-all z-40 group border-none cursor-pointer"
   (click)="openModal()"
-  title="Start New Plan"
+  title="Tạo chuyến đi mới"
 >
   <span class="material-symbols-outlined text-3xl group-hover:rotate-12 transition-transform"
     >add</span
@@ -744,6 +842,65 @@
   <span
     class="absolute right-20 bg-surface-container-high px-4 py-2 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-glass"
   >
-    Start New Plan
+    Tạo chuyến đi mới
   </span>
 </button>
+
+<!-- Unpublish Confirmation Modal: removes only the community publication -->
+<div *ngIf="isUnpublishModalOpen()" class="fixed inset-x-0 bottom-0 top-16 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+  <div class="bg-surface-container/95 border border-glass rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-2xl">public_off</span></div>
+      <div><h3 class="text-lg font-bold text-on-surface m-0">Gỡ khỏi Cộng đồng?</h3><p class="text-xs text-on-surface-variant m-0 mt-0.5">Chỉ bản chia sẻ công khai bị gỡ.</p></div>
+    </div>
+    <p class="text-sm text-on-surface-variant">Bạn có muốn gỡ <span class="font-bold text-on-surface">“{{ tripToUnpublish()?.title }}”</span> khỏi Cộng đồng không?</p>
+    <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 flex gap-2 text-sm text-emerald-400"><span class="material-symbols-outlined text-lg">verified</span><span>Chuyến đi gốc, lịch trình, hoạt động và chi phí vẫn được giữ nguyên trong “Chuyến đi của tôi”.</span></div>
+    <div class="flex justify-end gap-3 pt-2">
+      <button type="button" (click)="closeUnpublishModal()" [disabled]="isUnpublishing()" class="px-4 py-2.5 rounded-xl border border-glass text-sm font-semibold text-on-surface hover:bg-white/5 cursor-pointer bg-transparent">Hủy</button>
+      <button type="button" (click)="performUnpublishTrip()" [disabled]="isUnpublishing()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center gap-2 cursor-pointer border-none">
+        <span *ngIf="isUnpublishing()" class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+        <span>{{ isUnpublishing() ? 'Đang gỡ...' : 'Gỡ khỏi Cộng đồng' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Trip Confirmation Modal -->
+<div
+  *ngIf="isDeleteModalOpen()"
+  class="fixed inset-x-0 bottom-0 top-16 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+>
+  <div class="bg-surface-container/95 border border-glass rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+    <div class="flex items-center gap-3 text-rose-500">
+      <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-2xl">warning</span>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-on-surface m-0">Xóa chuyến đi?</h3>
+        <p class="text-xs text-on-surface-variant m-0 mt-0.5">Hành động này không thể hoàn tác.</p>
+      </div>
+    </div>
+
+    <p class="text-sm text-on-surface-variant">
+      Bạn có chắc chắn muốn xóa chuyến đi <span class="font-bold text-on-surface">"{{ tripToDelete()?.title }}"</span> tại {{ tripToDelete()?.destination }} không?
+    </p>
+
+    <div class="flex justify-end gap-3 pt-2">
+      <button
+        (click)="closeDeleteModal()"
+        [disabled]="isDeletingTrip()"
+        class="px-4 py-2.5 rounded-xl border border-glass text-sm font-semibold text-on-surface hover:bg-white/5 transition-all cursor-pointer bg-transparent"
+      >
+        Hủy
+      </button>
+      <button
+        (click)="performDeleteTrip()"
+        [disabled]="isDeletingTrip()"
+        class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-lg transition-all flex items-center gap-2 cursor-pointer border-none"
+      >
+        <span *ngIf="isDeletingTrip()" class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+        <span>{{ isDeletingTrip() ? 'Đang xóa...' : 'Xóa chuyến đi' }}</span>
+      </button>
+    </div>
+  </div>
+</div>

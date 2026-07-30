@@ -1,8 +1,8 @@
 declare const L: any;
 
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../../services/auth.service';
@@ -28,6 +28,7 @@ import {
   TripInvite,
   TripShareRole,
   TripHistoryEvent,
+  ItineraryQualityResponse,
 } from '../../services/trip.service';
 
 import { PlacePhotoService, BestRatedPlace } from '../../services/place-photo.service';
@@ -36,11 +37,20 @@ import {
   getInlineScenicFallback,
   resolveTravelCoverImage,
 } from '../../services/travel-cover-images';
-import { of } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { OsrmService } from '../../services/osrm.service';
+import { WeatherService, WeatherForecastResult, DailyWeather } from '../../services/weather.service';
+import { PwaService } from '../../services/pwa.service';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 import { CustomDatePickerComponent } from '../shared/custom-date-picker/custom-date-picker';
+import {
+  AuthorVerdict,
+  PublicActivityReview,
+  PublicTripService,
+  PublishTripRequest,
+} from '../../services/public-trip.service';
+import { EmergencyOption, JournalEntry, P1Service } from '../../services/p1.service';
 
 export interface RouteSegment {
   fromName: string;
@@ -58,6 +68,7 @@ export interface RouteSegment {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     RouterModule,
     DragDropModule,
     CustomSelectComponent,
@@ -66,15 +77,23 @@ export interface RouteSegment {
   templateUrl: './trip-detail.html',
   styleUrl: './trip-detail.css',
 })
-export class TripDetailComponent implements OnInit {
+export class TripDetailComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly tripService = inject(TripService);
   private readonly placePhotoService = inject(PlacePhotoService);
   private readonly aiStreamService = inject(AiStreamService);
+  private readonly weatherService = inject(WeatherService);
+  readonly pwaService = inject(PwaService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly osrmService = inject(OsrmService);
+  private readonly publicTripService = inject(PublicTripService);
+  private readonly p1Service = inject(P1Service);
+
+  // Weather State Signals
+  readonly weatherForecast = signal<WeatherForecastResult | null>(null);
+  readonly isLoadingWeather = signal<boolean>(false);
 
   // Dynamic Destination Images Cache
   readonly destinationImagesMap = signal<Map<string, string[]>>(new Map());
@@ -82,6 +101,12 @@ export class TripDetailComponent implements OnInit {
 
   // A local database of coordinates for popular destinations
   readonly destinationCoordinates: { [key: string]: [number, number] } = {
+    'quan lạn': [20.8752, 107.4925],
+    'quan lan': [20.8752, 107.4925],
+    'quảng ninh': [20.9500, 107.0833],
+    'quang ninh': [20.9500, 107.0833],
+    'vân đồn': [21.0815, 107.4619],
+    'van don': [21.0815, 107.4619],
     'phú quốc': [10.2181, 103.9607],
     'phu quoc': [10.2181, 103.9607],
     'đà nẵng': [16.0471, 108.2068],
@@ -105,17 +130,25 @@ export class TripDetailComponent implements OnInit {
   };
 
   getCoordinatesForDestination(destination: string | undefined): [number, number] {
-    if (!destination) return [16.0471, 108.2068];
-    const dest = destination.toLowerCase().trim();
-    if (this.destinationCoordinates[dest]) {
-      return this.destinationCoordinates[dest];
+    if (!destination) return [20.8752, 107.4925];
+    const cleanDest = destination.toLowerCase().replace(/[\(\)]/g, ' ').trim();
+    if (this.destinationCoordinates[cleanDest]) {
+      return this.destinationCoordinates[cleanDest];
     }
     for (const key in this.destinationCoordinates) {
-      if (dest.includes(key) || key.includes(dest)) {
+      if (cleanDest.includes(key) || key.includes(cleanDest)) {
         return this.destinationCoordinates[key];
       }
     }
-    return [16.0471, 108.2068];
+    const parts = cleanDest.split(/[,]/).map(p => p.trim()).filter(Boolean);
+    for (const part of parts) {
+      for (const key in this.destinationCoordinates) {
+        if (part.includes(key) || key.includes(part)) {
+          return this.destinationCoordinates[key];
+        }
+      }
+    }
+    return [20.8752, 107.4925];
   }
 
   // Leaflet Map instance & active markers
@@ -153,6 +186,13 @@ export class TripDetailComponent implements OnInit {
   readonly generationSummary = signal<ItineraryGenerationSummary | null>(null);
   readonly generationOptionsError = signal<string | null>(null);
   readonly errorMsg = signal<string | null>(null);
+  readonly itineraryQuality = signal<ItineraryQualityResponse | null>(null);
+  readonly isCheckingQuality = signal<boolean>(false);
+  readonly updatingLockId = signal<string | null>(null);
+  readonly journalEntries = signal<JournalEntry[]>([]);
+  readonly journalMessage = signal<string | null>(null);
+  readonly emergencyOptions = signal<EmergencyOption[]>([]);
+  readonly isLoadingEmergency = signal(false);
 
   // Chat Form/State
   readonly chatInput = signal<string>('');
@@ -169,6 +209,9 @@ export class TripDetailComponent implements OnInit {
   readonly isDeleting = signal<boolean>(false);
   readonly settingsSuccessMsg = signal<string | null>(null);
   readonly settingsErrorMsg = signal<string | null>(null);
+  readonly settingsSaveState = signal<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+  private settingsInitialized = false;
+  private settingsAutosaveTimer: ReturnType<typeof setTimeout> | null = null;
   readonly shareParticipants = signal<TripParticipant[]>([]);
   readonly shareInvites = signal<TripInvite[]>([]);
   readonly shareSuccessMsg = signal<string | null>(null);
@@ -176,6 +219,29 @@ export class TripDetailComponent implements OnInit {
   readonly isLoadingShares = signal<boolean>(false);
   readonly isSubmittingShare = signal<boolean>(false);
   readonly latestInviteUrl = signal<string | null>(null);
+  readonly isPublishWizardOpen = signal(false);
+  readonly isPublishingPublicTrip = signal(false);
+  readonly publishError = signal<string | null>(null);
+  readonly publishedPublicSlug = signal<string | null>(null);
+  readonly existingPublicSlug = signal<string | null>(null);
+  publicationReviews: Record<string, PublicActivityReview> = {};
+  publicationDraft = {
+    title: '',
+    summary: '',
+    actual_total_cost: '',
+    itinerary_rating: 5,
+    cost_rating: 5,
+    place_rating: 5,
+    best_places: '',
+    best_foods: '',
+    general_tips: '',
+    visibility: 'public' as 'public' | 'unlisted',
+    show_author_name: true,
+    show_cost: true,
+    allow_clone: true,
+    allow_partial_import: true,
+    author_confirmed: false,
+  };
 
   // Trip history drawer state
   readonly isHistoryOpen = signal<boolean>(false);
@@ -192,6 +258,10 @@ export class TripDetailComponent implements OnInit {
   readonly activeExploreCategory = signal<'attraction' | 'meal' | 'hotel' | 'cafe'>('attraction');
   readonly isLoadingExplore = signal<boolean>(false);
   readonly exploreError = signal<string | null>(null);
+  readonly exploreTotal = signal<number>(0);
+  readonly explorePage = signal<number>(1);
+  readonly exploreHasMore = signal<boolean>(false);
+  readonly exploreIsSearchResult = signal<boolean>(false);
   readonly bestRatedPlaces = signal<BestRatedPlace[]>([]);
   readonly isLoadingBestRated = signal<boolean>(false);
 
@@ -208,6 +278,8 @@ export class TripDetailComponent implements OnInit {
   readonly selectedBudgetItem = signal<BudgetItemResponse | null>(null);
   readonly isSubmittingBudget = signal<boolean>(false);
   readonly budgetError = signal<string | null>(null);
+  readonly groupSplitSummary = signal<any>(null);
+  readonly optimizingDayId = signal<string | null>(null);
 
   // Activity Modal State
   readonly isActivityModalOpen = signal<boolean>(false);
@@ -261,7 +333,10 @@ export class TripDetailComponent implements OnInit {
     planned_amount: [0, [Validators.required, Validators.min(0)]],
     actual_amount: [0, [Validators.required, Validators.min(0)]],
     date: [''],
+    paid_by: [''],
   });
+
+  readonly copiedSettlement = signal<boolean>(false);
 
   readonly provinces = [
     'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre',
@@ -287,7 +362,7 @@ export class TripDetailComponent implements OnInit {
   });
 
   readonly shareForm = this.fb.nonNullable.group({
-    email: [''],
+    recipient: [''],
     role: ['viewer' as TripShareRole, [Validators.required]],
     expires_in_days: [7, [Validators.required, Validators.min(1), Validators.max(30)]],
   });
@@ -305,6 +380,69 @@ export class TripDetailComponent implements OnInit {
     }
 
     this.loadTripData();
+    this.loadJournal();
+    this.settingsForm.valueChanges.subscribe(() => {
+      if (!this.settingsInitialized || !this.canManageShares()) return;
+      this.settingsSaveState.set('pending');
+      if (this.settingsAutosaveTimer) clearTimeout(this.settingsAutosaveTimer);
+      this.settingsAutosaveTimer = setTimeout(() => this.onSaveSettings(true), 1200);
+    });
+  }
+
+  loadJournal(): void {
+    this.p1Service.listJournal(this.tripId).subscribe({ next: response => this.journalEntries.set(response.data || []) });
+  }
+
+  hasCheckedIn(activityId: string): boolean {
+    return this.journalEntries().some(item => item.activity_id === activityId && item.is_check_in);
+  }
+
+  quickCheckIn(activity: ActivityResponse, event: Event): void {
+    event.stopPropagation();
+    if (!this.canEditTrip() || this.hasCheckedIn(activity.id)) return;
+    const payload = { activity_id: activity.id, entry_date: new Date().toISOString().slice(0, 10), note: `Check-in tại ${activity.title}`, photo_urls: [], actual_cost: null, rating: null, is_check_in: true };
+    if (!this.pwaService.isOnline()) {
+      this.pwaService.enqueueOfflineAction('check_in', this.tripId, payload);
+      this.journalMessage.set('Đã lưu check-in ngoại tuyến. Hệ thống sẽ đồng bộ khi có mạng.');
+      return;
+    }
+    this.p1Service.createJournal(this.tripId, payload).subscribe({
+      next: response => { this.journalEntries.update(items => [response.data, ...items]); this.journalMessage.set('Đã check-in hoạt động.'); },
+      error: err => this.journalMessage.set(err?.error?.message || 'Không thể check-in.'),
+    });
+  }
+
+  previewEmergency(reason: 'rain' | 'closed' | 'late' | 'skip'): void {
+    this.isLoadingEmergency.set(true);
+    this.p1Service.emergencyPreview(this.tripId, reason).subscribe({
+      next: response => { this.isLoadingEmergency.set(false); this.emergencyOptions.set(response.data || []); },
+      error: () => { this.isLoadingEmergency.set(false); this.journalMessage.set('Không thể tạo phương án khẩn cấp.'); },
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.settingsAutosaveTimer) clearTimeout(this.settingsAutosaveTimer);
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  warnAboutUnsavedChanges(event: BeforeUnloadEvent): void {
+    if (this.settingsSaveState() === 'pending' || this.settingsSaveState() === 'saving' || this.activityForm.dirty) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  @HostListener('window:online')
+  async syncPendingOfflineActions(): Promise<void> {
+    await this.pwaService.syncOfflineQueue(async action => {
+      if ((action.type === 'journal' || action.type === 'check_in') && action.tripId === this.tripId) {
+        await firstValueFrom(this.p1Service.createJournal(action.tripId, action.payload));
+        return;
+      }
+      throw new Error('Unsupported offline action');
+    });
+    this.loadJournal();
+    if (this.pwaService.pendingSyncCount() === 0) this.journalMessage.set('Đã đồng bộ dữ liệu ngoại tuyến.');
   }
 
   loadTripData(): void {
@@ -318,6 +456,7 @@ export class TripDetailComponent implements OnInit {
         if (res && res.data) {
           const t = res.data;
           this.trip.set(t);
+          this.pwaService.cacheTripLocally(t);
           this.settingsForm.patchValue({
             title: t.title,
             destination: t.destination,
@@ -327,24 +466,235 @@ export class TripDetailComponent implements OnInit {
             num_travelers: t.num_travelers,
             status: t.status,
           });
+          this.settingsForm.markAsPristine();
+          this.settingsInitialized = true;
 
-          // Fetch photo for active trip destination
+          // Fetch photo & weather for active trip destination
           if (t.destination) {
             this.fetchDestinationImage(t.destination);
+            this.fetchWeatherForecast(t.destination);
           }
           if (this.canManageShares()) {
             this.fetchShares();
+            this.loadPublicPublication();
           }
         }
       },
       error: (err) => {
         this.isLoadingDetail.set(false);
-        this.errorMsg.set('Không thể tải thông tin chuyến đi.');
+        // Try restoring from local offline cache
+        const offlineTrip = this.pwaService.getLocalCachedTrip(this.tripId);
+        if (offlineTrip) {
+          this.trip.set(offlineTrip);
+        } else {
+          this.errorMsg.set('Không thể tải thông tin chuyến đi.');
+        }
       },
     });
 
     this.fetchItinerary();
     this.fetchChatAndSuggestions();
+  }
+
+  fetchWeatherForecast(destination: string): void {
+    const coords = this.getCoordinatesForDestination(destination);
+    this.isLoadingWeather.set(true);
+    this.weatherService.getWeatherForecast(coords[0], coords[1]).subscribe({
+      next: (res) => {
+        this.isLoadingWeather.set(false);
+        this.weatherForecast.set(res);
+      },
+      error: () => {
+        this.isLoadingWeather.set(false);
+      },
+    });
+  }
+
+  getWeatherForDate(dateStr: string): DailyWeather | undefined {
+    const forecast = this.weatherForecast();
+    if (!forecast || !forecast.daily) return undefined;
+    return forecast.daily.find((d) => d.date === dateStr);
+  }
+
+  exportExcel(): void {
+    const tripData = this.trip();
+    const daysData = this.days();
+    if (!tripData || !daysData || daysData.length === 0) {
+      alert('Chưa có lịch trình để xuất file Excel.');
+      return;
+    }
+
+    const escapeXml = (str: string | number | null | undefined): string => {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    const formatActivityType = (type: string | null | undefined): string => {
+      switch (type) {
+        case 'transport':
+          return 'Di chuyển';
+        case 'meal':
+          return 'Ăn uống';
+        case 'attraction':
+          return 'Tham quan';
+        case 'hotel':
+          return 'Lưu trú';
+        default:
+          return 'Khác';
+      }
+    };
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-microsoft-com:office:spreadsheet"
+  xmlns:o="urn:schemas-microsoft-microsoft-com:office:office"
+  xmlns:x="urn:schemas-microsoft-microsoft-com:office:excel"
+  xmlns:ss="urn:schemas-microsoft-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Arial" ss:Size="11"/>
+      <Interior ss:Color="#2563EB" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1D4ED8"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="Title">
+      <Font ss:Bold="1" ss:Size="16" ss:Color="#1E293B" ss:FontName="Arial"/>
+    </Style>
+    <Style ss:ID="SubTitle">
+      <Font ss:Bold="1" ss:Size="12" ss:Color="#2563EB" ss:FontName="Arial"/>
+    </Style>
+    <Style ss:ID="MetaLabel">
+      <Font ss:Bold="1" ss:Color="#475569" ss:FontName="Arial" ss:Size="10"/>
+    </Style>
+    <Style ss:ID="Bold">
+      <Font ss:Bold="1" ss:FontName="Arial" ss:Size="10"/>
+    </Style>
+    <Style ss:ID="Number">
+      <NumberFormat ss:Format="#,##0"/>
+      <Font ss:FontName="Arial" ss:Size="10"/>
+      <Alignment ss:Horizontal="Right"/>
+    </Style>
+    <Style ss:ID="TotalNumber">
+      <NumberFormat ss:Format="#,##0"/>
+      <Font ss:Bold="1" ss:Color="#1E293B" ss:FontName="Arial" ss:Size="11"/>
+      <Interior ss:Color="#FEF08A" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Right"/>
+    </Style>
+    <Style ss:ID="TotalLabel">
+      <Font ss:Bold="1" ss:Color="#1E293B" ss:FontName="Arial" ss:Size="11"/>
+      <Interior ss:Color="#FEF08A" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="Normal">
+      <Font ss:FontName="Arial" ss:Size="10"/>
+    </Style>
+  </Styles>`;
+
+    // --- TAB 1: TỔNG QUAN ---
+    xml += `
+  <Worksheet ss:Name="Tổng quan">
+    <Table>
+      <Column ss:Width="180"/>
+      <Column ss:Width="350"/>
+      <Row ss:Height="25">
+        <Cell ss:StyleID="Title"><Data ss:Type="String">THÔNG TIN CHUYẾN ĐỊ</Data></Cell>
+      </Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Tên chuyến đi:</Data></Cell><Cell ss:StyleID="Bold"><Data ss:Type="String">${escapeXml(tripData.title)}</Data></Cell></Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Điểm đến:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(tripData.destination)}</Data></Cell></Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Thời gian:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(tripData.start_date)} đến ${escapeXml(tripData.end_date)}</Data></Cell></Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Số ngày:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="Number">${daysData.length}</Data></Cell></Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Số người đồng hành:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="Number">${tripData.num_travelers || 1}</Data></Cell></Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Ngân sách dự kiến:</Data></Cell><Cell ss:StyleID="Number"><Data ss:Type="Number">${tripData.budget || 0}</Data></Cell></Row>
+      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Ghi chú / Sở thích:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(tripData.preferences || 'Không')}</Data></Cell></Row>
+    </Table>
+  </Worksheet>`;
+
+    // --- TAB 2..N: TỪNG NGÀY ---
+    let totalTripCost = 0;
+
+    daysData.forEach((day) => {
+      const sheetName = `Ngày ${day.day_number}`;
+      const activities = day.activities || [];
+      let dayTotalCost = 0;
+
+      xml += `
+  <Worksheet ss:Name="${escapeXml(sheetName)}">
+    <Table>
+      <Column ss:Width="100"/>
+      <Column ss:Width="260"/>
+      <Column ss:Width="120"/>
+      <Column ss:Width="130"/>
+      <Column ss:Width="380"/>
+      
+      <Row ss:Height="24">
+        <Cell ss:StyleID="SubTitle"><Data ss:Type="String">LỊCH TRÌNH NGÀY ${day.day_number}${day.date ? ' (' + escapeXml(day.date) + ')' : ''}</Data></Cell>
+      </Row>
+      
+      <Row ss:Height="22">
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Giờ</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Hoạt động / Địa điểm</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Loại</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Chi phí (VNĐ)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Chi tiết / Địa chỉ &amp; Ghi chú</Data></Cell>
+      </Row>`;
+
+      activities.forEach((act) => {
+        const cost = Number(act.estimated_cost || 0);
+        dayTotalCost += cost;
+        totalTripCost += cost;
+
+        const timeStr = act.start_time
+          ? act.end_time
+            ? `${act.start_time} - ${act.end_time}`
+            : act.start_time
+          : '—';
+
+        const detailNote = [act.description || '', act.location?.address || act.notes || '']
+          .filter(Boolean)
+          .join(' | ');
+
+        xml += `
+      <Row>
+        <Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(timeStr)}</Data></Cell>
+        <Cell ss:StyleID="Bold"><Data ss:Type="String">${escapeXml(act.title || 'Hoạt động')}</Data></Cell>
+        <Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(formatActivityType(act.type))}</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">${cost}</Data></Cell>
+        <Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(detailNote)}</Data></Cell>
+      </Row>`;
+      });
+
+      // Total Row for Day
+      xml += `
+      <Row ss:Height="20">
+        <Cell ss:StyleID="TotalLabel"><Data ss:Type="String">TỔNG CỘNG NGÀY ${day.day_number}</Data></Cell>
+        <Cell ss:StyleID="TotalLabel"/>
+        <Cell ss:StyleID="TotalLabel"/>
+        <Cell ss:StyleID="TotalNumber"><Data ss:Type="Number">${dayTotalCost}</Data></Cell>
+        <Cell ss:StyleID="TotalLabel"/>
+      </Row>
+    </Table>
+  </Worksheet>`;
+    });
+
+    xml += `
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a');
+    const cleanDestination = (tripData.destination || 'Chuyen_di').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EFF]/g, '_');
+    const cleanTitle = (tripData.title || 'detail').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EFF]/g, '_');
+    const fileName = `Lich_trinh_${cleanDestination}_${cleanTitle}.xls`;
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   fetchDestinationImage(destination: string): void {
@@ -372,6 +722,7 @@ export class TripDetailComponent implements OnInit {
           // Sort days by day_number
           const sortedDays = res.data.sort((a, b) => a.day_number - b.day_number);
           this.days.set(sortedDays);
+          this.refreshItineraryQuality();
           if (this.activeSubTab() === 'route') {
             if (this.routeDayIndex() >= sortedDays.length) {
               this.routeDayIndex.set(0);
@@ -382,6 +733,37 @@ export class TripDetailComponent implements OnInit {
       },
       error: () => {
         this.isLoadingDays.set(false);
+      },
+    });
+  }
+
+  refreshItineraryQuality(): void {
+    this.isCheckingQuality.set(true);
+    this.tripService.checkItineraryQuality(this.tripId).subscribe({
+      next: (res) => {
+        this.isCheckingQuality.set(false);
+        this.itineraryQuality.set(res.data);
+      },
+      error: () => this.isCheckingQuality.set(false),
+    });
+  }
+
+  toggleActivityLock(activity: ActivityResponse, event: Event): void {
+    event.stopPropagation();
+    if (!this.canEditTrip() || this.updatingLockId()) return;
+    this.updatingLockId.set(activity.id);
+    this.tripService.updateActivity(activity.id, { is_locked: !activity.is_locked }).subscribe({
+      next: (res) => {
+        this.updatingLockId.set(null);
+        this.days.update(days => days.map(day => ({
+          ...day,
+          activities: day.activities.map(item => item.id === activity.id ? res.data : item),
+        })));
+        this.refreshItineraryQuality();
+      },
+      error: (err) => {
+        this.updatingLockId.set(null);
+        this.activityError.set(err?.error?.message || 'Không thể thay đổi trạng thái khóa hoạt động.');
       },
     });
   }
@@ -477,6 +859,160 @@ export class TripDetailComponent implements OnInit {
     return this.trip()?.role === 'owner';
   }
 
+  canPublishCompletedTrip(): boolean {
+    return this.canManageShares() && this.trip()?.status === 'completed' && this.days().length > 0;
+  }
+
+  openPublishWizard(): void {
+    if (!this.canPublishCompletedTrip()) {
+      this.publishError.set('Chỉ chủ sở hữu có thể chia sẻ chuyến đã hoàn thành và có lịch trình.');
+      return;
+    }
+    const currentTrip = this.trip();
+    this.publicationDraft.title = currentTrip?.title || '';
+    this.publicationDraft.summary =
+      `Lịch trình ${currentTrip?.destination || ''} ${this.days().length} ngày đã được tôi trải nghiệm và xác nhận.`;
+    this.publicationDraft.actual_total_cost = this.budgetSummary()?.budget_actual?.toString() || '';
+    this.publicationReviews = {};
+    for (const day of this.days()) {
+      for (const activity of day.activities || []) {
+        if (!activity.location_id) continue;
+        this.publicationReviews[activity.id] = {
+          activity_id: activity.id,
+          actual_status: 'visited',
+          author_verdict: 'recommended',
+          rating: 4,
+          next_traveler_note: '',
+          actual_cost: activity.estimated_cost,
+        };
+      }
+    }
+    this.publishError.set(null);
+    this.publishedPublicSlug.set(null);
+    this.isPublishWizardOpen.set(true);
+    if (this.existingPublicSlug()) {
+      this.publicTripService.getOwnerPublication(this.tripId).subscribe({
+        next: response => {
+          const publication = response.data;
+          this.publicationDraft.title = publication.title;
+          this.publicationDraft.summary = publication.summary;
+          this.publicationDraft.actual_total_cost = publication.actual_total_cost?.toString() || '';
+          this.publicationDraft.itinerary_rating = publication.itinerary_rating || 5;
+          this.publicationDraft.cost_rating = publication.cost_rating || 5;
+          this.publicationDraft.place_rating = publication.place_rating || 5;
+          this.publicationDraft.best_places = (publication.snapshot_json.review?.best_places || []).join(', ');
+          this.publicationDraft.best_foods = (publication.snapshot_json.review?.best_foods || []).join(', ');
+          this.publicationDraft.general_tips = publication.snapshot_json.review?.tips || '';
+          this.publicationDraft.show_author_name = publication.privacy_options?.['show_author_name'] ?? true;
+          this.publicationDraft.show_cost = publication.privacy_options?.['show_cost'] ?? true;
+          this.publicationDraft.allow_clone = publication.allow_clone;
+          this.publicationDraft.allow_partial_import = publication.allow_partial_import;
+          for (const day of publication.snapshot_json.days || []) {
+            for (const activity of day.activities || []) {
+              const activityId = activity.source_activity_id;
+              if (!activityId || !this.publicationReviews[activityId]) continue;
+              this.publicationReviews[activityId] = {
+                activity_id: activityId,
+                actual_status: activity.actual_status,
+                author_verdict: activity.author_verdict,
+                rating: activity.rating,
+                next_traveler_note: activity.next_traveler_note,
+                best_time: activity.best_time,
+                actual_wait_minutes: activity.actual_wait_minutes,
+                booking_required: activity.booking_required,
+                actual_cost: activity.actual_cost,
+              };
+            }
+          }
+        },
+      });
+    }
+  }
+
+  loadPublicPublication(): void {
+    if (!this.canManageShares()) return;
+    this.publicTripService.getOwnerPublication(this.tripId).subscribe({
+      next: response => {
+        if (response.data?.status === 'published') {
+          this.existingPublicSlug.set(response.data.slug);
+        }
+      },
+      error: () => this.existingPublicSlug.set(null),
+    });
+  }
+
+  publicationReview(activityId: string): PublicActivityReview {
+    if (!this.publicationReviews[activityId]) {
+      this.publicationReviews[activityId] = {
+        activity_id: activityId,
+        actual_status: 'visited',
+        author_verdict: 'recommended',
+        rating: 4,
+        next_traveler_note: '',
+      };
+    }
+    return this.publicationReviews[activityId];
+  }
+
+  verdictOptions(): Array<{ value: AuthorVerdict; label: string }> {
+    return [
+      { value: 'must_go', label: 'Nhất định nên đi' },
+      { value: 'recommended', label: 'Đáng đi' },
+      { value: 'preference_based', label: 'Tùy sở thích' },
+      { value: 'skip', label: 'Có thể bỏ qua' },
+    ];
+  }
+
+  publishCompletedTrip(): void {
+    if (!this.canPublishCompletedTrip() || this.isPublishingPublicTrip()) return;
+    if (!this.publicationDraft.author_confirmed) {
+      this.publishError.set('Bạn cần xác nhận đây là lịch trình thực tế chính thức.');
+      return;
+    }
+    const splitList = (value: string) =>
+      value.split(/[,;\n]+/).map(item => item.trim()).filter(Boolean);
+    const rawCost = this.publicationDraft.actual_total_cost.replace(/\D/g, '');
+    const payload: PublishTripRequest = {
+      title: this.publicationDraft.title.trim(),
+      summary: this.publicationDraft.summary.trim(),
+      visibility: this.publicationDraft.visibility,
+      actual_total_cost: rawCost ? Number(rawCost) : null,
+      itinerary_rating: Number(this.publicationDraft.itinerary_rating),
+      cost_rating: Number(this.publicationDraft.cost_rating),
+      place_rating: Number(this.publicationDraft.place_rating),
+      best_places: splitList(this.publicationDraft.best_places),
+      best_foods: splitList(this.publicationDraft.best_foods),
+      general_tips: this.publicationDraft.general_tips || null,
+      tags: [this.trip()?.destination || '', 'lịch trình thực tế'].filter(Boolean),
+      show_travel_month: true,
+      show_author_name: this.publicationDraft.show_author_name,
+      show_cost: this.publicationDraft.show_cost,
+      allow_clone: this.publicationDraft.allow_clone,
+      allow_partial_import: this.publicationDraft.allow_partial_import,
+      allow_comments: false,
+      activity_reviews: Object.values(this.publicationReviews),
+      author_confirmed: true,
+    };
+    this.isPublishingPublicTrip.set(true);
+    this.publishError.set(null);
+    this.publicTripService.publish(this.tripId, payload).subscribe({
+      next: response => {
+        this.isPublishingPublicTrip.set(false);
+        this.publishedPublicSlug.set(response.data.slug);
+        this.existingPublicSlug.set(response.data.slug);
+      },
+      error: error => {
+        this.isPublishingPublicTrip.set(false);
+        this.publishError.set(error?.error?.message || 'Không thể xuất bản lịch trình.');
+      },
+    });
+  }
+
+  viewPublishedTrip(): void {
+    const slug = this.publishedPublicSlug() || this.existingPublicSlug();
+    if (slug) this.router.navigate(['/community/trips', slug]);
+  }
+
   fetchShares(): void {
     if (!this.canManageShares()) return;
     this.isLoadingShares.set(true);
@@ -560,7 +1096,7 @@ export class TripDetailComponent implements OnInit {
   }
 
   getHistoryActorName(item: TripHistoryEvent): string {
-    return item.actor?.full_name || item.actor?.email || 'He thong';
+    return item.actor?.full_name || item.actor?.username || 'He thong';
   }
 
   getHistoryActorInitials(item: TripHistoryEvent): string {
@@ -643,22 +1179,25 @@ export class TripDetailComponent implements OnInit {
     this.latestInviteUrl.set(null);
 
     this.tripService.createTripInvite(this.tripId, {
-      email: value.email.trim() || null,
+      recipient: value.recipient.trim() || null,
       role: value.role,
       expires_in_days: value.expires_in_days,
     }).subscribe({
       next: (res) => {
         this.isSubmittingShare.set(false);
         const invite = res.data;
+        const hasRecipient = !!value.recipient.trim();
         this.shareSuccessMsg.set(
-          value.email.trim()
-            ? 'Da tao loi moi. Nguoi nhan can chap nhan o chuong thong bao de duoc chia se.'
-            : 'Da tao link moi chia se.'
+          hasRecipient
+            ? invite.email_sent
+              ? 'Đã tạo lời mời, gửi thông báo trong ứng dụng và gửi email cho người nhận.'
+              : 'Đã tạo lời mời và thông báo trong ứng dụng, nhưng email chưa gửi được. Bạn có thể copy link bên dưới.'
+            : 'Đã tạo link mời mở. Hãy copy link bên dưới để chia sẻ.',
         );
         if (invite?.accept_url) {
           this.latestInviteUrl.set(`${window.location.origin}${invite.accept_url}`);
         }
-        this.shareForm.patchValue({ email: '' });
+        this.shareForm.patchValue({ recipient: '' });
         this.fetchShares();
       },
       error: (err) => {
@@ -984,11 +1523,73 @@ export class TripDetailComponent implements OnInit {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
   }
 
+  openGoogleMaps(act: ActivityResponse, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (act.location?.lat && act.location?.lng) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${act.location.lat},${act.location.lng}`;
+      window.open(url, '_blank');
+    } else {
+      const q = encodeURIComponent(act.title + (act.location?.address ? ' ' + act.location.address : ''));
+      const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      window.open(url, '_blank');
+    }
+  }
+
+  optimizeDayRoute(dayId: string): void {
+    if (!this.canEditTrip() || this.optimizingDayId()) return;
+    this.optimizingDayId.set(dayId);
+    this.tripService.optimizeDayRoute(this.tripId, dayId).subscribe({
+      next: () => {
+        this.optimizingDayId.set(null);
+        this.fetchItinerary();
+      },
+      error: (err) => {
+        this.optimizingDayId.set(null);
+        alert(err?.error?.message || 'Có lỗi xảy ra khi tối ưu lộ trình.');
+      },
+    });
+  }
+
+  getTravelEstimate(currentAct: ActivityResponse, nextAct: ActivityResponse): { distanceKm: number; durationMin: number } | null {
+    if (!currentAct.location?.lat || !currentAct.location?.lng || !nextAct.location?.lat || !nextAct.location?.lng) {
+      return null;
+    }
+    const R = 6371;
+    const dLat = (nextAct.location.lat - currentAct.location.lat) * (Math.PI / 180);
+    const dLng = (nextAct.location.lng - currentAct.location.lng) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(currentAct.location.lat * (Math.PI / 180)) *
+        Math.cos(nextAct.location.lat * (Math.PI / 180)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanceKm = Math.round(R * c * 10) / 10;
+    const durationMin = Math.round(distanceKm * 2.5 + 5);
+    return { distanceKm, durationMin };
+  }
+
+  loadGroupSplitSummary(): void {
+    if (!this.tripId) return;
+    this.tripService.getGroupSplitSummary(this.tripId).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.groupSplitSummary.set(res.data);
+        }
+      },
+      error: () => {},
+    });
+  }
+
+
+
   // Budget Tracker logic
   switchSubTab(tab: 'itinerary' | 'route' | 'budget' | 'explore' | 'settings'): void {
     this.activeSubTab.set(tab);
     if (tab === 'budget') {
       this.loadBudgetData();
+      this.loadGroupSplitSummary();
     } else if (tab === 'explore') {
       this.loadExploreData();
       setTimeout(() => this.initOrRefreshExploreMap(), 100);
@@ -997,6 +1598,10 @@ export class TripDetailComponent implements OnInit {
         this.routeDayIndex.set(0);
       }
       setTimeout(() => this.initOrRefreshRouteMap(), 100);
+    } else if (tab === 'settings') {
+      if (this.canManageShares()) {
+        this.fetchShares();
+      }
     }
   }
 
@@ -1012,6 +1617,8 @@ export class TripDetailComponent implements OnInit {
       },
     });
 
+    this.loadGroupSplitSummary();
+
     this.tripService.listBudgetItems(this.tripId).subscribe({
       next: (res) => {
         this.isLoadingBudget.set(false);
@@ -1026,10 +1633,13 @@ export class TripDetailComponent implements OnInit {
     });
   }
 
+
   openBudgetModal(item: BudgetItemResponse | null = null): void {
     if (!this.canEditTrip()) return;
     this.selectedBudgetItem.set(item);
     this.budgetError.set(null);
+
+    const currentUserFullName = this.currentUser()?.full_name || 'Chủ chuyến đi';
 
     if (item) {
       this.budgetForm.reset({
@@ -1038,6 +1648,7 @@ export class TripDetailComponent implements OnInit {
         planned_amount: item.planned_amount,
         actual_amount: item.actual_amount,
         date: item.date || '',
+        paid_by: item.paid_by || currentUserFullName,
       });
     } else {
       this.budgetForm.reset({
@@ -1046,6 +1657,7 @@ export class TripDetailComponent implements OnInit {
         planned_amount: 0,
         actual_amount: 0,
         date: '',
+        paid_by: currentUserFullName,
       });
     }
 
@@ -1055,6 +1667,27 @@ export class TripDetailComponent implements OnInit {
   closeBudgetModal(): void {
     this.isBudgetModalOpen.set(false);
     this.selectedBudgetItem.set(null);
+  }
+
+  copySettlementMessage(): void {
+    const split = this.groupSplitSummary();
+    const tripData = this.trip();
+    if (!split || !split.settlements || split.settlements.length === 0) return;
+
+    let text = `💸 KẾ HOẠCH BÙ TRỪ NỢ NHÓM - ${tripData?.title || 'Chuyến đi'}\n`;
+    text += `(Tổng thực chi: ${this.formatCurrency(split.total_actual)} - Bình quân: ${this.formatCurrency(split.per_person_actual)}/người)\n\n`;
+    text += `👉 CÁC BƯỚC CHUYỂN TIỀN TỐI ƯU (TỐI GIẢN GIAO DỊCH):\n`;
+
+    split.settlements.forEach((s: any, idx: number) => {
+      text += `${idx + 1}. ${s.from_name} ➔ chuyển ${this.formatCurrency(s.amount)} ➔ cho ${s.to_name}\n`;
+    });
+
+    text += `\nCảm ơn mọi người! ✨`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      this.copiedSettlement.set(true);
+      setTimeout(() => this.copiedSettlement.set(false), 2500);
+    });
   }
 
   onSubmitBudgetItem(): void {
@@ -1074,6 +1707,7 @@ export class TripDetailComponent implements OnInit {
       planned_amount: val.planned_amount,
       actual_amount: val.actual_amount,
       date: val.date || null,
+      paid_by: val.paid_by || null,
     };
 
     const selectedItem = this.selectedBudgetItem();
@@ -1176,39 +1810,48 @@ export class TripDetailComponent implements OnInit {
   }
 
   // Explore sub-tab logic
-  loadExploreData(): void {
+  loadExploreData(page = 1, append = false): void {
     this.isLoadingExplore.set(true);
     this.exploreError.set(null);
-
-    const cat = this.activeExploreCategory();
-    let term = 'địa điểm du lịch';
-    if (cat === 'meal') term = 'quán ăn ngon';
-    else if (cat === 'hotel') term = 'khách sạn';
-    else if (cat === 'cafe') term = 'quán cà phê';
-
     const dest = this.trip()?.destination || '';
+    if (!dest) {
+      this.isLoadingExplore.set(false);
+      this.exploreError.set('Chuyến đi chưa có điểm đến.');
+      return;
+    }
 
-    this.tripService.searchLocations(term, dest).subscribe({
+    this.exploreIsSearchResult.set(false);
+    this.bestRatedPlaces.set([]);
+    this.tripService.exploreLocations(
+      dest,
+      this.activeExploreCategory(),
+      page,
+      36
+    ).subscribe({
       next: (res) => {
         this.isLoadingExplore.set(false);
         if (res && res.data) {
-          this.exploreLocations.set(res.data);
+          const nextItems = append
+            ? [...this.exploreLocations(), ...res.data.items]
+            : res.data.items;
+          this.exploreLocations.set(nextItems);
+          this.exploreTotal.set(res.data.total);
+          this.explorePage.set(res.data.page);
+          this.exploreHasMore.set(res.data.has_more);
           setTimeout(() => this.renderMapMarkers(), 50);
         }
       },
-      error: (err) => {
+      error: () => {
         this.isLoadingExplore.set(false);
-        this.exploreError.set('Không thể tải danh sách đề xuất.');
+        this.exploreError.set('Không thể tải địa điểm từ bộ dữ liệu.');
       },
     });
-
-    this.loadBestRatedPlaces(term);
   }
 
   onExploreCategoryChange(category: 'attraction' | 'meal' | 'hotel' | 'cafe'): void {
     this.activeExploreCategory.set(category);
     this.exploreQuery.set('');
-    this.loadExploreData();
+    this.loadExploreData(1, false);
   }
 
   onExploreSearch(): void {
@@ -1220,13 +1863,22 @@ export class TripDetailComponent implements OnInit {
 
     this.isLoadingExplore.set(true);
     this.exploreError.set(null);
+    this.exploreIsSearchResult.set(true);
+    this.exploreHasMore.set(false);
 
     const dest = this.trip()?.destination || '';
-    this.tripService.searchLocations(q, dest).subscribe({
+    this.tripService.searchLocations(
+      q,
+      dest,
+      40,
+      this.activeExploreCategory(),
+      true
+    ).subscribe({
       next: (res) => {
         this.isLoadingExplore.set(false);
         if (res && res.data) {
           this.exploreLocations.set(res.data);
+          this.exploreTotal.set(res.data.length);
           setTimeout(() => this.renderMapMarkers(), 50);
         }
       },
@@ -1237,6 +1889,13 @@ export class TripDetailComponent implements OnInit {
     });
 
     this.loadBestRatedPlaces(q);
+  }
+
+  loadMoreExplore(): void {
+    if (this.isLoadingExplore() || !this.exploreHasMore() || this.exploreIsSearchResult()) {
+      return;
+    }
+    this.loadExploreData(this.explorePage() + 1, true);
   }
 
   loadBestRatedPlaces(term: string): void {
@@ -1309,6 +1968,46 @@ export class TripDetailComponent implements OnInit {
     else if (cat.includes('cafe') || cat.includes('bar')) catVal = 'cafe';
     else if (cat.includes('attraction') || cat.includes('tourism') || cat.includes('museum')) catVal = 'attraction';
 
+    const executeAddActivity = (locationId: string) => {
+      let actType: ActivityType = 'other';
+      if (catVal === 'restaurant' || catVal === 'cafe') actType = 'meal';
+      else if (catVal === 'hotel') actType = 'hotel';
+      else if (catVal === 'attraction') actType = 'attraction';
+
+      const createActivityPayload = {
+        title: loc.name,
+        description: loc.address || '',
+        type: actType,
+        location_id: locationId,
+        start_time: null,
+        end_time: null,
+        estimated_cost: null,
+        notes: 'Thêm từ tab Khám phá',
+      };
+
+      this.tripService.addActivity(this.tripId, dayId, createActivityPayload).subscribe({
+        next: () => {
+          this.isSubmittingExploreActivity.set(false);
+          this.closeAddActivityFromExplore();
+          this.fetchItinerary();
+          alert(`Đã thêm "${loc.name}" vào lịch trình của bạn!`);
+        },
+        error: (err) => {
+          this.isSubmittingExploreActivity.set(false);
+          alert(err?.error?.message || 'Không thể thêm hoạt động vào lịch trình.');
+        }
+      });
+    };
+
+    if (loc.id) {
+      executeAddActivity(loc.id);
+      return;
+    }
+
+    const validPhotoUrl = (loc.photo_url && (loc.photo_url.startsWith('http://') || loc.photo_url.startsWith('https://')))
+      ? loc.photo_url
+      : null;
+
     const upsertPayload = {
       name: loc.name,
       address: loc.address,
@@ -1316,46 +2015,21 @@ export class TripDetailComponent implements OnInit {
       lng: loc.lng,
       category: catVal,
       google_place_id: loc.google_place_id,
-      photo_url: loc.photo_url,
+      photo_url: validPhotoUrl,
       rating: loc.rating,
     };
 
     this.tripService.upsertLocation(upsertPayload).subscribe({
       next: (upsertRes) => {
-        const locationId = upsertRes.data.id;
-        
-        let actType: ActivityType = 'other';
-        if (catVal === 'restaurant' || catVal === 'cafe') actType = 'meal';
-        else if (catVal === 'hotel') actType = 'hotel';
-        else if (catVal === 'attraction') actType = 'attraction';
-
-        const createActivityPayload = {
-          title: loc.name,
-          description: loc.address || '',
-          type: actType,
-          location_id: locationId,
-          start_time: null,
-          end_time: null,
-          estimated_cost: null,
-          notes: 'Thêm từ tab Khám phá',
-        };
-
-        this.tripService.addActivity(this.tripId, dayId, createActivityPayload).subscribe({
-          next: () => {
-            this.isSubmittingExploreActivity.set(false);
-            this.closeAddActivityFromExplore();
-            this.fetchItinerary();
-            alert(`Đã thêm "${loc.name}" vào lịch trình của bạn!`);
-          },
-          error: (err) => {
-            this.isSubmittingExploreActivity.set(false);
-            alert(err?.error?.message || 'Không thể thêm hoạt động vào lịch trình.');
-          }
-        });
+        executeAddActivity(upsertRes.data.id);
       },
-      error: () => {
-        this.isSubmittingExploreActivity.set(false);
-        alert('Không thể lưu thông tin địa điểm.');
+      error: (err) => {
+        if (loc.id) {
+          executeAddActivity(loc.id);
+        } else {
+          this.isSubmittingExploreActivity.set(false);
+          alert(err?.error?.message || 'Không thể lưu thông tin địa điểm.');
+        }
       }
     });
   }
@@ -1370,9 +2044,9 @@ export class TripDetailComponent implements OnInit {
   }
 
   // Save modified Trip Settings
-  onSaveSettings(): void {
+  onSaveSettings(isAutosave = false): void {
     if (!this.canManageShares()) return;
-    if (this.settingsForm.invalid) return;
+    if (this.settingsForm.invalid || this.isSavingSettings()) return;
 
     const val = this.settingsForm.getRawValue();
     if (new Date(val.end_date) < new Date(val.start_date)) {
@@ -1381,6 +2055,7 @@ export class TripDetailComponent implements OnInit {
     }
 
     this.isSavingSettings.set(true);
+    this.settingsSaveState.set('saving');
     this.settingsSuccessMsg.set(null);
     this.settingsErrorMsg.set(null);
 
@@ -1400,15 +2075,19 @@ export class TripDetailComponent implements OnInit {
     this.tripService.updateTrip(this.tripId, payload).subscribe({
       next: (res) => {
         this.isSavingSettings.set(false);
+        this.settingsSaveState.set('saved');
         if (res && res.data) {
           this.trip.set(res.data);
+          this.settingsForm.markAsPristine();
           this.settingsSuccessMsg.set('Đã lưu cài đặt chuyến đi thành công!');
           this.fetchItinerary(); // reload list of days in case dates were modified
           setTimeout(() => this.settingsSuccessMsg.set(null), 3000);
+          if (isAutosave) this.settingsSuccessMsg.set(null);
         }
       },
       error: (err) => {
         this.isSavingSettings.set(false);
+        this.settingsSaveState.set('error');
         this.settingsErrorMsg.set(err?.error?.message || 'Có lỗi xảy ra khi cập nhật cài đặt.');
       },
     });
@@ -1430,6 +2109,8 @@ export class TripDetailComponent implements OnInit {
     }
     this.settingsErrorMsg.set(null);
     this.settingsSuccessMsg.set(null);
+    this.settingsForm.markAsPristine();
+    this.settingsSaveState.set('idle');
   }
 
   // Delete Trip actions
@@ -1524,9 +2205,16 @@ export class TripDetailComponent implements OnInit {
 
       // Styled custom marker DivIcon
       const iconName = this.getExploreCategoryIcon(loc.category);
-      const html = `<div class="custom-map-pin" title="${loc.name}"><span class="material-symbols-outlined pin-emoji text-primary" style="font-size: 18px;">${iconName}</span></div>`;
+      const markerElement = document.createElement('div');
+      markerElement.className = 'custom-map-pin';
+      markerElement.title = loc.name;
+      const markerIcon = document.createElement('span');
+      markerIcon.className = 'material-symbols-outlined pin-emoji text-primary';
+      markerIcon.style.fontSize = '18px';
+      markerIcon.textContent = iconName;
+      markerElement.appendChild(markerIcon);
       const customIcon = L.divIcon({
-        html: html,
+        html: markerElement,
         className: 'custom-leaflet-pin',
         iconSize: [36, 36],
         iconAnchor: [18, 36],
@@ -1541,19 +2229,30 @@ export class TripDetailComponent implements OnInit {
       const popupContent = document.createElement('div');
       popupContent.className = 'custom-map-popup';
       popupContent.style.width = '200px';
-      popupContent.innerHTML = `
-        <div class="popup-title" style="font-weight: 700; font-size: 14px; margin-bottom: 4px; color: #222222; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${loc.name}</div>
-        <div class="popup-address" style="font-size: 12px; color: #6a6a6a; margin-bottom: 8px; line-height: 1.3; text-overflow: ellipsis; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: 32px;">${loc.address || ''}</div>
-        <button class="popup-btn-add" style="background-color: #ff385c; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; text-align: center; box-sizing: border-box; transition: background-color 0.2s;">Thêm vào lịch trình</button>
-      `;
+      const popupTitle = document.createElement('div');
+      popupTitle.className = 'popup-title';
+      popupTitle.style.cssText =
+        'font-weight:700;font-size:14px;margin-bottom:4px;color:#222;text-overflow:ellipsis;overflow:hidden;white-space:nowrap';
+      popupTitle.textContent = loc.name;
+
+      const popupAddress = document.createElement('div');
+      popupAddress.className = 'popup-address';
+      popupAddress.style.cssText =
+        'font-size:12px;color:#6a6a6a;margin-bottom:8px;line-height:1.3;text-overflow:ellipsis;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:32px';
+      popupAddress.textContent = loc.address || '';
+
+      const popupButton = document.createElement('button');
+      popupButton.type = 'button';
+      popupButton.className = 'popup-btn-add';
+      popupButton.style.cssText =
+        'background-color:#3b82f6;color:white;border:none;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;width:100%;text-align:center;box-sizing:border-box;transition:background-color .2s';
+      popupButton.textContent = 'Thêm vào lịch trình';
+      popupContent.append(popupTitle, popupAddress, popupButton);
 
       // Popup Action bind
-      const btn = popupContent.querySelector('.popup-btn-add');
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.openAddActivityFromExplore(loc);
-        });
-      }
+      popupButton.addEventListener('click', () => {
+        this.openAddActivityFromExplore(loc);
+      });
 
       marker.bindPopup(popupContent);
     });
@@ -1643,7 +2342,7 @@ export class TripDetailComponent implements OnInit {
       const lng = act.location!.lng!;
       
       // Draw single marker
-      let markerColor = '#ff385c';
+      let markerColor = '#3b82f6';
       if (act.type === 'meal') markerColor = '#f59e0b';
       else if (act.type === 'attraction') markerColor = '#3b82f6';
       else if (act.type === 'hotel') markerColor = '#a855f7';
@@ -1694,7 +2393,7 @@ export class TripDetailComponent implements OnInit {
 
           // Draw segment polyline
           const polyline = L.polyline(seg.geometryCoords, {
-            color: '#8083ff',
+            color: '#3b82f6',
             weight: 4,
             opacity: 0.85,
             dashArray: '10 6',
@@ -1720,7 +2419,7 @@ export class TripDetailComponent implements OnInit {
           const lat = act.location!.lat!;
           const lng = act.location!.lng!;
           
-          let markerColor = '#8083ff'; // Default primary tint
+          let markerColor = '#3b82f6'; // Default primary blue
           if (act.type === 'meal') markerColor = '#f59e0b';
           else if (act.type === 'attraction') markerColor = '#3b82f6';
           else if (act.type === 'hotel') markerColor = '#a855f7';
@@ -1870,5 +2569,48 @@ export class TripDetailComponent implements OnInit {
 
     img.onerror = null;
     img.src = this.svgFallback;
+  }
+
+  readonly activeTravelStyleTags = signal<string[]>(['Nghỉ dưỡng']);
+
+  toggleTravelStyleTag(tag: string): void {
+    const current = this.activeTravelStyleTags();
+    if (current.includes(tag)) {
+      if (current.length > 1) {
+        this.activeTravelStyleTags.set(current.filter((t) => t !== tag));
+      }
+    } else {
+      this.activeTravelStyleTags.set([...current, tag]);
+    }
+  }
+
+  isTravelStyleActive(tag: string): boolean {
+    return this.activeTravelStyleTags().includes(tag);
+  }
+
+  incrementTravelers(): void {
+    const current = Number(this.settingsForm.get('num_travelers')?.value || 1);
+    this.settingsForm.get('num_travelers')?.setValue(current + 1);
+  }
+
+  decrementTravelers(): void {
+    const current = Number(this.settingsForm.get('num_travelers')?.value || 1);
+    if (current > 1) {
+      this.settingsForm.get('num_travelers')?.setValue(current - 1);
+    }
+  }
+
+  onUnpublishFromCommunity(): void {
+    if (!this.tripId) return;
+    this.publicTripService.archive(this.tripId).subscribe({
+      next: () => {
+        this.publishedPublicSlug.set(null);
+        this.settingsSuccessMsg.set('Đã gỡ lịch trình khỏi Cộng đồng.');
+        setTimeout(() => this.settingsSuccessMsg.set(null), 3000);
+      },
+      error: (err: any) => {
+        this.settingsErrorMsg.set(err?.error?.message || 'Không thể gỡ lịch trình khỏi Cộng đồng.');
+      },
+    });
   }
 }

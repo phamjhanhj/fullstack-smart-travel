@@ -30,8 +30,8 @@ class CreateTripRequest(BaseModel):
 
 class UpdateTripRequest(BaseModel):
     """PUT /trips/{id} - toan bo field optional, chi update field duoc gui len."""
-    title: str | None = None
-    destination: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    destination: str | None = Field(default=None, min_length=1, max_length=200)
     start_date: dt.date | None = None
     end_date: dt.date | None = None
     budget: int | None = Field(default=None, ge=0)
@@ -46,6 +46,12 @@ class UpdateTripRequest(BaseModel):
         if value is None or value.startswith(("http://", "https://")):
             return value
         raise ValueError("cover_image_url must be an http or https URL")
+
+    @model_validator(mode="after")
+    def validate_dates_when_both_are_present(self) -> "UpdateTripRequest":
+        if self.start_date is not None and self.end_date is not None and self.end_date < self.start_date:
+            raise ValueError("end_date phai lon hon hoac bang start_date")
+        return self
 
 
 class TripResponse(BaseModel):
@@ -82,6 +88,15 @@ class TripDetailResponse(TripResponse):
     day_plans: list[DayPlanSummary] = Field(default_factory=list)
 
 
+class TripPublicationSummary(BaseModel):
+    id: uuid.UUID
+    slug: str
+    status: str
+    published_at: dt.datetime | None = None
+    view_count: int = 0
+    save_count: int = 0
+    clone_count: int = 0
+
 class TripListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -98,6 +113,7 @@ class TripListItem(BaseModel):
     owner: ShareUserBrief
     access_type: TripAccessType
     role: TripAccessRole
+    publication: TripPublicationSummary | None = None
 
 
 class TripListResponse(BaseModel):

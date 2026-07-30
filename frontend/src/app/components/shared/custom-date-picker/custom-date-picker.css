@@ -1,3 +1,13 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+:host(.is-open),
+:host:focus-within {
+  z-index: 250;
+}
+
 .custom-date-picker {
   position: relative;
   width: 100%;
@@ -49,7 +59,7 @@
   color: rgba(223, 226, 241, 0.4);
 }
 
-html.light .date-value.placeholder {
+:host-context(.light) .date-value.placeholder {
   color: rgba(70, 69, 84, 0.4);
 }
 
@@ -107,7 +117,7 @@ html.light .date-value.placeholder {
   color: var(--color-on-surface);
 }
 
-html.light .nav-btn:hover {
+:host-context(.light) .nav-btn:hover {
   background-color: rgba(0, 0, 0, 0.03);
 }
 
@@ -144,7 +154,7 @@ html.light .nav-btn:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-html.light .day-cell:hover:not(.selected):not(.disabled) {
+:host-context(.light) .day-cell:hover:not(.selected):not(.disabled) {
   background-color: rgba(0, 0, 0, 0.03);
 }
 
@@ -152,7 +162,7 @@ html.light .day-cell:hover:not(.selected):not(.disabled) {
   color: rgba(223, 226, 241, 0.25);
 }
 
-html.light .day-cell.other-month {
+:host-context(.light) .day-cell.other-month {
   color: rgba(70, 69, 84, 0.25);
 }
 
@@ -173,7 +183,7 @@ html.light .day-cell.other-month {
   background-color: transparent !important;
 }
 
-html.light .day-cell.disabled {
+:host-context(.light) .day-cell.disabled {
   color: rgba(0, 0, 0, 0.12) !important;
 }
 
