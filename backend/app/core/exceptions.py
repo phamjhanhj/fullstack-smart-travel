@@ -1,11 +1,15 @@
 """Custom exceptions and global exception handlers."""
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.response import envelope
+
+logger = logging.getLogger("app.error")
 
 
 class AppError(Exception):
@@ -69,8 +73,14 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def handle_unexpected_error(request: Request, exc: Exception):
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.error(
+            "Unhandled application exception request_id=%s method=%s path=%s",
+            request_id, request.method, request.url.path,
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
         return envelope(
             data=None,
-            message="Loi he thong, vui long thu lai sau",
+            message=f"Loi he thong, vui long thu lai sau (ma loi: {request_id})",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

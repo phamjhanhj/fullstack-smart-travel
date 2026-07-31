@@ -558,7 +558,7 @@ async def seed_quan_lan():
             existing.cover_image_url = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80"
             existing.snapshot_json = QUAN_LAN_SNAPSHOT
             existing.tags = ["Quan Lạn", "Quảng Ninh", "Biển đảo", "3 ngày 2 đêm", "Phượt xe máy", "Eo Gió", "Bãi Minh Châu"]
-            existing.save_count = 128
+            existing.save_count = 0
             existing.view_count = 1450
             existing.published_at = datetime.now(timezone.utc)
         else:
@@ -584,7 +584,7 @@ async def seed_quan_lan():
                 cover_image_url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
                 snapshot_json=QUAN_LAN_SNAPSHOT,
                 tags=["Quan Lạn", "Quảng Ninh", "Biển đảo", "3 ngày 2 đêm", "Phượt xe máy", "Eo Gió", "Bãi Minh Châu"],
-                save_count=128,
+                save_count=0,
                 view_count=1450,
                 published_at=datetime.now(timezone.utc),
             )

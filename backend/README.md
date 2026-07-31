@@ -95,6 +95,34 @@ uvicorn app.main:app --reload --port 8000
 
 Swagger UI: http://localhost:8000/docs
 
+## Nạp bộ dữ liệu địa điểm 63 tỉnh
+
+Chạy migration và kiểm tra dữ liệu trước khi import:
+
+```bash
+alembic upgrade head
+python -m scripts.validate_places_data
+python -m scripts.import_places_data --dry-run
+python -m scripts.import_places_data
+python -m scripts.smoke_grounded_places --destination "Đà Nẵng"
+```
+
+Importer đọc thư mục `../Data`, chuẩn hóa category, sinh stable UUID và upsert theo
+`source_dataset_id + source_place_id`. Có thể chạy lại mà không tạo bản ghi trùng.
+Bản ghi thiếu/sai tọa độ, chưa xác minh hoặc có `avoid_auto_schedule=true` được
+đánh dấu `needs_review` và không được tự động đưa vào lịch trình.
+
+Luồng sinh lịch trình ưu tiên dữ liệu trong PostgreSQL. Groq tạo bản nháp bằng
+candidate ID có sẵn; backend kiểm tra giờ mở cửa, tọa độ và thời gian di chuyển.
+Nếu có lỗi, Groq chỉ sửa bản nháp một lần, sau đó hệ thống dùng final guard/fallback.
+
+Màn Khám phá dùng hai luồng riêng:
+
+- `GET /api/locations/explore`: chỉ đọc Data nội bộ, hỗ trợ destination, category,
+  page và limit; không gọi API ngoài.
+- `GET /api/locations/search`: tìm trong Data trước, sau đó chỉ gọi Nominatim khi
+  người dùng chủ động tìm kiếm; kết quả có `result_source=dataset|external`.
+
 ## Biến môi trường quan trọng
 
 | Biến | Mô tả |
@@ -103,6 +131,9 @@ Swagger UI: http://localhost:8000/docs
 | `JWT_SECRET_KEY` | Khóa bí mật ký JWT — đổi giá trị random khi deploy |
 | `GROQ_API_KEY` | API key từ console.groq.com (bắt buộc cho module AI Chat) |
 | `GROQ_MODEL` | Mặc định `llama-3.3-70b-versatile` |
+| `GROQ_ITINERARY_TEMPERATURE` | Temperature thấp cho lịch trình ổn định, mặc định `0.2` |
+| `ROUTING_PROVIDER` | `haversine` (offline) hoặc `osrm` |
+| `OSRM_BASE_URL` | OSRM endpoint khi bật provider `osrm` |
 
 ## Lưu ý kỹ thuật
 

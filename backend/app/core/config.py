@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     FOURSQUARE_API_KEY: str = ""
 
     # CORS — danh sách domain được phép gọi API, phân tách bởi dấu phẩy
-    ALLOWED_ORIGINS: str = "http://localhost:4200"
+    ALLOWED_ORIGINS: str = "http://localhost:4200,http://100.110.155.58:4200,http://127.0.0.1:4200"
 
     ADMIN_EMAILS: str = ""
 
@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_AI_PER_MINUTE: int = 12
     RATE_LIMIT_SEARCH_PER_MINUTE: int = 60
     RATE_LIMIT_PHOTO_PER_MINUTE: int = 40
+    TRUST_PROXY_HEADERS: bool = False
 
     EXTERNAL_HTTP_TIMEOUT_SECONDS: float = 10.0
 
@@ -67,7 +68,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "Smart Travel PKA"
-    FRONTEND_BASE_URL: str = "http://localhost:4200"
+    FRONTEND_BASE_URL: str = "http://100.110.155.58:4200"
 
     @model_validator(mode="after")
     def validate_security_settings(self) -> "Settings":

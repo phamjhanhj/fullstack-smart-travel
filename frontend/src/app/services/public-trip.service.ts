@@ -47,8 +47,10 @@ export interface PublishTripRequest {
 
 export interface PublicTripAuthor {
   id: string;
+  profile_username?: string | null;
   full_name: string;
   avatar_url: string | null;
+  accepts_tour_bookings?: boolean;
 }
 
 export interface PublicSnapshotActivity {
@@ -147,8 +149,32 @@ export interface PublicTripListResponse {
   page: number;
   limit: number;
 }
-export interface PublicComment { id:string; content:string; is_verified_trip:boolean; created_at:string; user:{id:string;username:string;full_name:string;avatar_url:string|null}; }
+export interface PublicComment { id:string; content:string; is_verified_trip:boolean; rating?:number|null; created_at:string; user:{id:string;username:string;full_name:string;avatar_url:string|null}; }
 export interface PublicFeedback { comments:PublicComment[]; rating_average:number|null; rating_count:number; my_rating:number|null; }
+export interface CommunityReport {
+  id: string;
+  reporter_user_id: string;
+  publication_id: string | null;
+  reported_user_id: string | null;
+  reason: string;
+  details: string | null;
+  status: 'open' | 'upheld' | 'dismissed';
+  created_at: string;
+}
+export interface BookingInquiry {
+  id: string;
+  publication_id: string;
+  trip_title: string;
+  requester_user_id: string;
+  author_user_id: string;
+  contact_name: string;
+  contact_phone: string;
+  travelers: number;
+  message: string | null;
+  status: 'new' | 'contacted' | 'closed';
+  created_at: string;
+  updated_at: string | null;
+}
 export interface PersonalizedRecommendation { publication:PublicTripListItem; reason:string; score:number; }
 
 export interface PublicTripImportRequest {
@@ -190,6 +216,13 @@ export class PublicTripService {
 
   list(filters: {
     destination?: string;
+    search?: string;
+    maxCost?: number;
+    minDays?: number;
+    maxDays?: number;
+    minRating?: number;
+    travelerType?: string;
+    pace?: string;
     sort?: string;
     page?: number;
     limit?: number;
@@ -199,6 +232,13 @@ export class PublicTripService {
       .set('limit', String(filters.limit || 12))
       .set('sort', filters.sort || 'newest');
     if (filters.destination) params = params.set('destination', filters.destination);
+    if (filters.search) params = params.set('search', filters.search);
+    if (filters.maxCost) params = params.set('max_cost_per_person', String(filters.maxCost));
+    if (filters.minDays) params = params.set('min_days', String(filters.minDays));
+    if (filters.maxDays) params = params.set('max_days', String(filters.maxDays));
+    if (filters.minRating) params = params.set('min_rating', String(filters.minRating));
+    if (filters.travelerType) params = params.set('traveler_type', filters.travelerType);
+    if (filters.pace) params = params.set('pace', filters.pace);
     return this.http.get<ResponseEnvelope<PublicTripListResponse>>(`${this.baseUrl}/public-trips`, { params });
   }
 
@@ -212,6 +252,23 @@ export class PublicTripService {
   followStatus(authorId:string): Observable<ResponseEnvelope<{following:boolean}>> { return this.http.get<ResponseEnvelope<{following:boolean}>>(`${this.baseUrl}/authors/${authorId}/follow-status`); }
   follow(authorId:string) { return this.http.post(`${this.baseUrl}/authors/${authorId}/follow`, {}); }
   unfollow(authorId:string) { return this.http.delete(`${this.baseUrl}/authors/${authorId}/follow`); }
+  listCommunityReports(status: 'open' | 'upheld' | 'dismissed' = 'open'): Observable<ResponseEnvelope<CommunityReport[]>> {
+    return this.http.get<ResponseEnvelope<CommunityReport[]>>(`${this.baseUrl}/community-reports`, { params: { status } });
+  }
+  reviewCommunityReport(reportId: string, decision: 'uphold' | 'dismiss') {
+    return this.http.patch<ResponseEnvelope<{ id: string; status: string }>>(`${this.baseUrl}/community-reports/${reportId}`, { decision });
+  }
+  reportTrip(publicationId: string, reason: string, details?: string) {
+    return this.http.post(`${this.baseUrl}/public-trips/${publicationId}/report`, { reason, details: details || null });
+  }
+  sendBookingInquiry(publicationId: string, payload: { contact_name: string; contact_phone: string; travelers: number; message?: string | null }) {
+    return this.http.post(`${this.baseUrl}/public-trips/${publicationId}/booking-inquiries`, payload);
+  }
+  sentBookingInquiries(): Observable<ResponseEnvelope<BookingInquiry[]>> { return this.http.get<ResponseEnvelope<BookingInquiry[]>>(`${this.baseUrl}/booking-inquiries/sent`); }
+  receivedBookingInquiries(): Observable<ResponseEnvelope<BookingInquiry[]>> { return this.http.get<ResponseEnvelope<BookingInquiry[]>>(`${this.baseUrl}/booking-inquiries/received`); }
+  updateBookingInquiryStatus(inquiryId: string, status: 'new' | 'contacted' | 'closed') {
+    return this.http.patch<ResponseEnvelope<BookingInquiry>>(`${this.baseUrl}/booking-inquiries/${inquiryId}/status`, { status });
+  }
   recommendations(): Observable<ResponseEnvelope<PersonalizedRecommendation[]>> { return this.http.get<ResponseEnvelope<PersonalizedRecommendation[]>>(`${this.baseUrl}/recommendations/me`); }
   hideRecommendation(publicationId:string) { return this.http.post(`${this.baseUrl}/recommendations/${publicationId}/hide`, {}); }
 

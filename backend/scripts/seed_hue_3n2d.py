@@ -1001,7 +1001,7 @@ async def seed_hue() -> None:
                 "Di sản",
                 "Ẩm thực Huế",
             ],
-            "save_count": 286,
+            "save_count": 0,
             "view_count": 4380,
             "published_at": datetime.now(timezone.utc),
         }

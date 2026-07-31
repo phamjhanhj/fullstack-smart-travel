@@ -1030,7 +1030,7 @@ async def seed_ha_giang() -> None:
                 "Hẻm Tu Sản",
                 "Đông Bắc",
             ],
-            "save_count": 286,
+            "save_count": 0,
             "view_count": 3980,
             "published_at": datetime.now(timezone.utc),
         }

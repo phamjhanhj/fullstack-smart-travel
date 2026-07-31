@@ -26,6 +26,11 @@ class JournalCreate(BaseModel):
     actual_cost: int | None = Field(default=None, ge=0)
     rating: int | None = Field(default=None, ge=1, le=5)
     is_check_in: bool = False
+    is_shared: bool = False
+
+
+class JournalVisibilityUpdate(BaseModel):
+    is_shared: bool
 
 
 class JournalResponse(JournalCreate):

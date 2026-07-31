@@ -1,7 +1,7 @@
-<main class="relative z-10">
+<main class="relative">
   <!-- Offline Mode Warning Banner -->
   <div
-    class="mx-[80px] mt-6 px-6 py-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-between shadow-lg select-none animate-fade-in"
+    class="mx-4 md:mx-12 lg:mx-[80px] mt-6 px-6 py-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-between shadow-lg select-none animate-fade-in flex-wrap gap-3"
     *ngIf="!isOnline()"
   >
     <div class="flex items-center gap-3">
@@ -16,33 +16,9 @@
     <span class="px-3 py-1 rounded-lg bg-amber-500/20 text-xs font-bold text-amber-500">Ngoại tuyến</span>
   </div>
 
-  <!-- PWA Install App Banner -->
-  <div
-    class="mx-[80px] mt-4 px-6 py-4 rounded-2xl bg-primary/10 border border-primary/30 text-on-surface flex items-center justify-between shadow-lg select-none animate-fade-in"
-    *ngIf="isPwaInstallable()"
-  >
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-        <span class="material-symbols-outlined text-2xl">install_mobile</span>
-      </div>
-      <div>
-        <h4 class="font-bold text-sm text-on-surface m-0">Cài đặt ứng dụng Smart Travel Planner</h4>
-        <p class="text-xs text-on-surface-variant m-0 mt-0.5">
-          Cài đặt về màn hình chính để xem lịch trình ngoại tuyến và trải nghiệm mượt như ứng dụng di động.
-        </p>
-      </div>
-    </div>
-    <button
-      (click)="installPwaApp()"
-      class="px-5 py-2.5 bg-primary text-on-primary font-bold text-xs rounded-xl hover:brightness-110 transition-all cursor-pointer shadow-md shrink-0 border-none"
-    >
-      Cài đặt ngay
-    </button>
-  </div>
-
   <!-- Over-budget warnings banner -->
   <div
-    class="budget-warning-banner mx-[80px] mt-6 px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between shadow-lg select-none animate-fade-in"
+    class="budget-warning-banner mx-4 md:mx-12 lg:mx-[80px] mt-6 px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between shadow-lg select-none animate-fade-in flex-wrap gap-3"
     *ngIf="overBudgetTrips().length > 0"
   >
     <div class="flex items-center gap-3">
@@ -70,7 +46,7 @@
   </div>
 
   <!-- Active Tab: EXPLORE (Discovery Hub) -->
-  <div id="explore-view" *ngIf="activeTab() === 'explore'" class="flex items-start">
+  <div id="explore-view" *ngIf="activeTab() === 'explore'" class="flex flex-col md:flex-row items-start relative">
     <!-- Pinned Left Sidebar: sticky part of flex flow -->
     <aside
       class="hidden md:flex w-64 shrink-0 sticky top-16 h-[calc(100vh-64px)] bg-surface-container/60 backdrop-blur-lg border-r border-glass shadow-lg flex-col py-8 z-40 select-none overflow-y-auto"
@@ -97,12 +73,12 @@
     </aside>
     <!-- Mobile: horizontal scroll category bar -->
     <div
-      class="md:hidden flex flex-row gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-glass px-4 pt-4 w-full absolute top-0 left-0"
+      class="md:hidden flex flex-row gap-2 overflow-x-auto pb-3 pt-3 no-scrollbar border-b border-glass px-4 w-full sticky top-16 z-30 bg-surface/95 backdrop-blur-md"
     >
       <button
         *ngFor="let cat of categories"
         (click)="selectCategory(cat.id)"
-        class="flex items-center gap-2 px-4 py-2 whitespace-nowrap text-xs font-bold rounded-xl border cursor-pointer transition-all"
+        class="flex items-center gap-2 px-4 py-2 whitespace-nowrap text-xs font-bold rounded-xl border cursor-pointer transition-all shrink-0"
         [ngClass]="{
           'text-primary bg-primary/10 border-primary/20': selectedCategory() === cat.id,
           'text-on-surface-variant border-glass/40 bg-transparent': selectedCategory() !== cat.id,
@@ -114,10 +90,10 @@
     </div>
 
     <!-- Main Discovery Content: flex-1 fills remaining space, same padding as Trips/Map -->
-    <div class="flex-1 min-w-0 px-[80px] py-stack-lg space-y-stack-lg">
+    <div class="flex-1 min-w-0 px-4 md:px-12 lg:px-[80px] py-6 md:py-stack-lg space-y-6 md:space-y-stack-lg">
       <!-- Premium Hero Banner -->
       <section
-        class="relative rounded-3xl overflow-hidden min-h-[380px] flex items-center p-stack-lg group"
+        class="relative rounded-3xl overflow-hidden min-h-[300px] md:min-h-[380px] flex items-center p-6 md:p-stack-lg group"
       >
         <div
           class="absolute inset-0 z-0 transition-transform duration-700 group-hover:scale-105"
@@ -248,7 +224,7 @@
   </div>
 
   <!-- Active Tab: MY TRIPS (Personal Trips List) -->
-  <div id="trips-view" *ngIf="activeTab() === 'my-trips'" class="px-[80px] py-stack-lg">
+  <div id="trips-view" *ngIf="activeTab() === 'my-trips'" class="px-4 md:px-12 lg:px-[80px] py-6 md:py-stack-lg">
     <!-- Welcome Header -->
     <section class="mb-8">
       <h1
@@ -302,23 +278,12 @@
           Tổng ngân sách
         </p>
         <h2 class="text-3xl font-bold text-on-surface m-0">{{ getMapStats().totalBudget }}</h2>
-        <div class="mt-4 flex items-center text-status-warning text-sm gap-1">
-          <span class="material-symbols-outlined text-sm">warning</span>
-          <span>Kế hoạch chi tiêu chủ động</span>
-        </div>
       </div>
     </section>
 
     <section>
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-xl font-bold text-on-surface m-0">Chuyến đi hiện tại & Dự thảo</h3>
-        <button
-          class="flex items-center gap-2 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-bold text-sm px-6 py-3 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
-          (click)="openModal()"
-        >
-          <span class="material-symbols-outlined">add</span>
-          Tạo chuyến đi mới
-        </button>
       </div>
 
       <!-- Status Filters -->
@@ -544,7 +509,7 @@
   </div>
 
   <!-- Active Tab: MAP (Interactive Travel Map) -->
-  <div id="map-view" *ngIf="activeTab() === 'map'" class="px-[80px] py-stack-lg">
+  <div id="map-view" *ngIf="activeTab() === 'map'" class="px-4 md:px-12 lg:px-[80px] py-6 md:py-stack-lg">
     <section class="bg-surface-dim relative overflow-hidden">
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
@@ -618,28 +583,38 @@
 
 <!-- Create Trip Modal Dialog -->
 <div
-  class="fixed inset-x-0 bottom-0 top-16 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+  class="fixed inset-0 z-[9999] flex items-center justify-center p-5 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto transition-opacity duration-300"
   *ngIf="isModalOpen()"
   (click)="closeModal()"
 >
   <div
-    class="glass-card w-full max-w-lg rounded-2xl p-stack-lg shadow-2xl relative translate-y-0 transition-transform duration-300"
+    class="glass-card w-full max-w-[360px] sm:max-w-md md:max-w-lg rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl relative my-auto max-h-[82vh] overflow-y-auto border border-primary/20 bg-surface-container-high/95"
     (click)="$event.stopPropagation()"
   >
-    <button
-      class="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer"
-      (click)="closeModal()"
-    >
-      <span class="material-symbols-outlined">close</span>
-    </button>
-    <h2
-      class="font-headline-md text-headline-md text-on-surface mb-stack-md flex items-center gap-2 m-0"
-    >
-      <span class="material-symbols-outlined text-primary">auto_awesome</span>
-      Lên Kế Hoạch Chuyến Đi Mới
-    </h2>
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-border-glass shrink-0">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-lg sm:text-xl">auto_awesome</span>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-sm sm:text-base font-bold text-on-surface m-0 leading-tight">
+            Lên Kế Hoạch Chuyến Đi Mới
+          </h2>
+          <p class="text-[11px] text-on-surface-variant m-0 mt-0.5">Tạo lịch trình AI hoặc tự thiết kế</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="closeModal()"
+        class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all border-none cursor-pointer shrink-0"
+        title="Đóng"
+      >
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
 
-    <form [formGroup]="createForm" class="space-y-stack-md">
+    <form [formGroup]="createForm" class="space-y-3 sm:space-y-4">
       <div
         class="bg-error/10 border border-error/20 rounded-xl p-3 text-error text-xs text-center"
         *ngIf="modalErrorMessage()"
@@ -647,19 +622,28 @@
         <p class="m-0">{{ modalErrorMessage() }}</p>
       </div>
 
-      <!-- Title Input (Required implicitly behind scenes) -->
+      <!-- Title Input -->
       <div>
-        <label for="title" class="block font-label-md text-label-md text-on-surface-variant mb-1"
+        <label for="title" class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
           >Tên chuyến đi</label
         >
-        <input
-          id="title"
-          type="text"
-          formControlName="title"
-          class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-          placeholder="Ví dụ: Kỳ nghỉ hè ở Đà Nẵng"
-          [class.border-status-warning]="isFieldInvalid('title')"
-        />
+        <div class="relative flex items-center">
+          <input
+            id="title"
+            type="text"
+            formControlName="title"
+            class="w-full bg-surface-container-low border border-glass rounded-xl pl-3.5 pr-10 py-2.5 sm:py-3 text-xs sm:text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+            placeholder="Ví dụ: Kỳ nghỉ hè ở Đà Nẵng"
+            [class.border-status-warning]="isFieldInvalid('title')"
+          />
+          <button
+            type="button"
+            *ngIf="createForm.get('title')?.value"
+            (click)="createForm.get('title')?.setValue('')"
+            class="absolute right-3 text-on-surface-variant hover:text-on-surface text-xs font-bold bg-white/10 hover:bg-white/20 w-4 h-4 rounded-full flex items-center justify-center border-0 cursor-pointer transition-all"
+            title="Xóa nhanh"
+          >×</button>
+        </div>
         <span class="text-status-warning text-xs font-semibold block mt-1" *ngIf="isFieldInvalid('title')">
           Tên chuyến đi không được để trống.
         </span>
@@ -669,7 +653,7 @@
       <div>
         <label
           for="destination"
-          class="block font-label-md text-label-md text-on-surface-variant mb-1"
+          class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
           >Điểm đến</label
         >
         <app-custom-select
@@ -687,12 +671,12 @@
         </span>
       </div>
 
-      <!-- Start & End Date Inputs -->
-      <div class="grid grid-cols-2 gap-stack-md">
+      <!-- Start & End Date Inputs (Vertical on mobile, 2 cols on desktop) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label
             for="start_date"
-            class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
             >Ngày đi</label
           >
           <app-custom-date-picker
@@ -711,7 +695,7 @@
         <div>
           <label
             for="end_date"
-            class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
             >Ngày về</label
           >
           <app-custom-date-picker
@@ -731,15 +715,15 @@
       </div>
 
       <!-- Trip Duration Helper Badge -->
-      <div *ngIf="getTripDurationDays() as daysCount" class="bg-primary/10 border border-primary/20 text-primary-container rounded-xl p-3 text-xs flex items-center gap-2 font-medium">
+      <div *ngIf="getTripDurationDays() as daysCount" class="bg-primary/10 border border-primary/20 text-primary-container rounded-xl p-2.5 text-xs flex items-center gap-2 font-medium">
         <span class="material-symbols-outlined text-sm text-primary">calendar_today</span>
         <span>Thời gian đi dự kiến: <strong class="text-primary">{{ daysCount }} ngày</strong></span>
       </div>
 
-      <!-- Budget & Travelers Inputs -->
-      <div class="grid grid-cols-2 gap-stack-md">
+      <!-- Budget & Travelers Inputs (Vertical on mobile, 2 cols on desktop) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
-          <label for="budget" class="block font-label-md text-label-md text-on-surface-variant mb-1"
+          <label for="budget" class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
             >Tổng ngân sách</label
           >
           <div class="relative flex items-center">
@@ -748,23 +732,30 @@
               type="text"
               formControlName="budget"
               (input)="onBudgetInputChange($event)"
-              class="w-full bg-surface-container-low border border-glass rounded-xl pl-4 pr-14 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
-              placeholder="Ví dụ: 5.000.000"
+              class="w-full bg-surface-container-low border border-glass rounded-xl pl-3.5 pr-16 py-2.5 sm:py-3 text-xs sm:text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+              placeholder="Ví dụ: 5,000,000"
             />
-            <span class="absolute right-4 text-primary select-none font-bold text-xs pointer-events-none">VNĐ</span>
+            <button
+              type="button"
+              *ngIf="createForm.get('budget')?.value"
+              (click)="createForm.get('budget')?.setValue('')"
+              class="absolute right-10 text-on-surface-variant hover:text-on-surface text-xs font-bold bg-white/10 hover:bg-white/20 w-4 h-4 rounded-full flex items-center justify-center border-0 cursor-pointer transition-all"
+              title="Xóa nhanh"
+            >×</button>
+            <span class="absolute right-3 text-primary select-none font-bold text-xs pointer-events-none">VND</span>
           </div>
         </div>
         <div>
           <label
             for="num_travelers"
-            class="block font-label-md text-label-md text-on-surface-variant mb-1"
+            class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
             >Số người tham gia</label
           >
           <input
             id="num_travelers"
             type="number"
             formControlName="num_travelers"
-            class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
+            class="w-full bg-surface-container-low border border-glass rounded-xl px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all box-border"
             [class.border-status-warning]="isFieldInvalid('num_travelers')"
             min="1"
           />
@@ -781,32 +772,41 @@
       <div>
         <label
           for="preferences"
-          class="block font-label-md text-label-md text-on-surface-variant mb-1"
+          class="block font-label-md text-xs sm:text-sm text-on-surface-variant mb-1"
           >Sở thích & Ghi chú cho AI</label
         >
-        <textarea
-          id="preferences"
-          formControlName="preferences"
-          class="w-full bg-surface-container-low border border-glass rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none box-border"
-          placeholder="Ghi rõ các địa điểm muốn đến, cách nhau bằng dấu phẩy. Ví dụ: Hồ Gươm, Lăng Bác, Văn Miếu; thích bún chả và cà phê trứng."
-          rows="3"
-        ></textarea>
-        <p class="mt-2 text-xs text-on-surface-variant">
-          Các địa điểm nhận diện được trong Data sẽ được khóa vào lịch trình. AI
-          có thể xếp chặng 40–120 km và dành tối đa khoảng 6 giờ di chuyển mỗi ngày khi cần.
+        <div class="relative">
+          <textarea
+            id="preferences"
+            formControlName="preferences"
+            class="w-full bg-surface-container-low border border-glass rounded-xl pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none box-border"
+            placeholder="Ghi rõ các địa điểm muốn đến, cách nhau bằng dấu phẩy. Ví dụ: Hồ Gươm, Lăng Bác..."
+            rows="2"
+          ></textarea>
+          <button
+            type="button"
+            *ngIf="createForm.get('preferences')?.value"
+            (click)="createForm.get('preferences')?.setValue('')"
+            class="absolute right-3 top-3 text-on-surface-variant hover:text-on-surface text-xs font-bold bg-white/10 hover:bg-white/20 w-4 h-4 rounded-full flex items-center justify-center border-0 cursor-pointer transition-all"
+            title="Xóa nhanh"
+          >×</button>
+        </div>
+        <p class="mt-1.5 text-[11px] text-on-surface-variant leading-normal">
+          AI sẽ xếp chặng 40–120 km và dành tối đa 6 giờ di chuyển mỗi ngày khi cần.
         </p>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 mt-6">
+      <!-- Submit Buttons (Vertical 1 column on mobile, 2 columns on desktop) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mt-4 pt-1">
         <!-- Manual planning button -->
         <button
           type="button"
           (click)="onSubmitTrip('manual')"
-          class="bg-surface-container-high border border-glass hover:bg-surface-container-highest text-on-surface py-4 rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+          class="bg-surface-container-high border border-glass hover:bg-surface-container-highest text-on-surface py-3 rounded-xl font-bold text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           [disabled]="isSubmitting()"
         >
           <span *ngIf="isSubmitting() && submittingMode() === 'manual'" class="spinner-small"></span>
-          <span class="material-symbols-outlined" *ngIf="!(isSubmitting() && submittingMode() === 'manual')">edit_calendar</span>
+          <span class="material-symbols-outlined text-base" *ngIf="!(isSubmitting() && submittingMode() === 'manual')">edit_calendar</span>
           <span>{{
             isSubmitting() && submittingMode() === 'manual' ? submitProgressMessage() || 'Đang tạo...' : 'Tự lên lịch trình'
           }}</span>
@@ -816,11 +816,11 @@
         <button
           type="button"
           (click)="onSubmitTrip('ai')"
-          class="bg-primary-container text-on-primary py-4 rounded-xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer border-none"
+          class="bg-primary-container text-on-primary py-3 rounded-xl font-bold text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none"
           [disabled]="isSubmitting()"
         >
           <span *ngIf="isSubmitting() && submittingMode() === 'ai'" class="spinner-small"></span>
-          <span class="material-symbols-outlined" *ngIf="!(isSubmitting() && submittingMode() === 'ai')">auto_awesome</span>
+          <span class="material-symbols-outlined text-base" *ngIf="!(isSubmitting() && submittingMode() === 'ai')">auto_awesome</span>
           <span>{{
             isSubmitting() && submittingMode() === 'ai' ? submitProgressMessage() || 'Đang phân tích...' : 'Tạo bằng trợ lý AI'
           }}</span>
@@ -847,7 +847,7 @@
 </button>
 
 <!-- Unpublish Confirmation Modal: removes only the community publication -->
-<div *ngIf="isUnpublishModalOpen()" class="fixed inset-x-0 bottom-0 top-16 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+<div *ngIf="isUnpublishModalOpen()" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-y-auto">
   <div class="bg-surface-container/95 border border-glass rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-2xl">public_off</span></div>
@@ -858,7 +858,7 @@
     <div class="flex justify-end gap-3 pt-2">
       <button type="button" (click)="closeUnpublishModal()" [disabled]="isUnpublishing()" class="px-4 py-2.5 rounded-xl border border-glass text-sm font-semibold text-on-surface hover:bg-white/5 cursor-pointer bg-transparent">Hủy</button>
       <button type="button" (click)="performUnpublishTrip()" [disabled]="isUnpublishing()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center gap-2 cursor-pointer border-none">
-        <span *ngIf="isUnpublishing()" class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+        <span *ngIf="isUnpublishing()" class="material-symbols-outlined animate-spin text-[16px] text-primary">progress_activity</span>
         <span>{{ isUnpublishing() ? 'Đang gỡ...' : 'Gỡ khỏi Cộng đồng' }}</span>
       </button>
     </div>
@@ -868,7 +868,7 @@
 <!-- Delete Trip Confirmation Modal -->
 <div
   *ngIf="isDeleteModalOpen()"
-  class="fixed inset-x-0 bottom-0 top-16 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+  class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-y-auto"
 >
   <div class="bg-surface-container/95 border border-glass rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
     <div class="flex items-center gap-3 text-rose-500">
@@ -898,7 +898,7 @@
         [disabled]="isDeletingTrip()"
         class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-lg transition-all flex items-center gap-2 cursor-pointer border-none"
       >
-        <span *ngIf="isDeletingTrip()" class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+        <span *ngIf="isDeletingTrip()" class="material-symbols-outlined animate-spin text-[16px] text-primary">progress_activity</span>
         <span>{{ isDeletingTrip() ? 'Đang xóa...' : 'Xóa chuyến đi' }}</span>
       </button>
     </div>

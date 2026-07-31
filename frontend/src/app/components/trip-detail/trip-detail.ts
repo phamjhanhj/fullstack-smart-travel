@@ -1,6 +1,7 @@
 declare const L: any;
 
-import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import * as XLSX from 'xlsx-js-style';
+import { Component, HostListener, inject, OnDestroy, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -197,11 +198,75 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // Chat Form/State
   readonly chatInput = signal<string>('');
   readonly isSendingMessage = signal<boolean>(false);
-  readonly isChatOpen = signal<boolean>(true);
+  readonly isChatOpen = signal<boolean>(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   readonly activeRightTab = signal<'chat' | 'history'>('chat');
 
   // Sub-tabs switcher state
   readonly activeSubTab = signal<'itinerary' | 'route' | 'budget' | 'explore' | 'settings'>('itinerary');
+
+  // Custom Select Option Item Lists
+  readonly paceSelectOptions = [
+    { label: 'Thư giãn', value: 'relaxed' },
+    { label: 'Cân bằng', value: 'balanced' },
+    { label: 'Dày đặc', value: 'packed' }
+  ];
+
+  readonly budgetModeSelectOptions = [
+    { label: 'Tiết kiệm nghiêm ngặt', value: 'strict' },
+    { label: 'Linh hoạt 15%', value: 'flexible_15' },
+    { label: 'Thoải mái', value: 'comfort' }
+  ];
+
+  readonly transportModeSelectOptions = [
+    { label: 'Kết hợp linh hoạt', value: 'mixed' },
+    { label: 'Taxi / Grab', value: 'taxi' },
+    { label: 'Xe máy', value: 'motorbike' },
+    { label: 'Ô tô', value: 'car' },
+    { label: 'Đi bộ', value: 'walking' },
+    { label: 'Công cộng', value: 'public_transport' }
+  ];
+
+  readonly userPlacePrioritySelectOptions = [
+    { label: 'Cân bằng với tuyến đường', value: 'balanced' },
+    { label: 'Ưu tiên cao', value: 'high' }
+  ];
+
+  readonly activityTypeSelectOptions = [
+    { label: 'Tham quan / Giải trí', value: 'attraction' },
+    { label: 'Ăn uống / Ẩm thực', value: 'meal' },
+    { label: 'Khách sạn / Lưu trú', value: 'hotel' },
+    { label: 'Di chuyển / Vé tàu xe', value: 'transport' },
+    { label: 'Hạng mục khác', value: 'other' }
+  ];
+
+  readonly budgetCategorySelectOptions = [
+    { label: 'Phòng lưu trú / Khách sạn', value: 'hotel' },
+    { label: 'Ăn uống / Nhà hàng', value: 'food' },
+    { label: 'Phương tiện di chuyển', value: 'transport' },
+    { label: 'Vé vui chơi / Tham quan', value: 'activity' },
+    { label: 'Chi phí khác', value: 'other' }
+  ];
+
+  readonly memberRoleSelectOptions = [
+    { label: 'Xem', value: 'viewer' },
+    { label: 'Sửa', value: 'editor' }
+  ];
+
+  readonly ratingSelectOptions = [
+    { label: '5/5', value: 5 },
+    { label: '4/5', value: 4 },
+    { label: '3/5', value: 3 },
+    { label: '2/5', value: 2 },
+    { label: '1/5', value: 1 }
+  ];
+
+  readonly starRatingSelectOptions = [
+    { label: '★ 5/5', value: 5 },
+    { label: '★ 4/5', value: 4 },
+    { label: '★ 3/5', value: 3 },
+    { label: '★ 2/5', value: 2 },
+    { label: '★ 1/5', value: 1 }
+  ];
 
   // Settings State Signals
   readonly isSavingSettings = signal<boolean>(false);
@@ -268,6 +333,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // Day Selector from Explore State Signals
   readonly isAddActivityFromExploreOpen = signal<boolean>(false);
   readonly selectedExploreLocation = signal<LocationResponse | null>(null);
+  readonly selectedExploreDayId = signal<string>('');
+  readonly exploreStartTime = signal<string>('');
+  readonly exploreEndTime = signal<string>('');
   readonly isSubmittingExploreActivity = signal<boolean>(false);
 
   // Budget Tracker State Signals
@@ -279,7 +347,36 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly isSubmittingBudget = signal<boolean>(false);
   readonly budgetError = signal<string | null>(null);
   readonly groupSplitSummary = signal<any>(null);
-  readonly optimizingDayId = signal<string | null>(null);
+  readonly tripMemberNames = computed(() => {
+    const splitMembers = this.groupSplitSummary()?.members;
+    if (splitMembers && Array.isArray(splitMembers) && splitMembers.length > 0) {
+      return splitMembers as string[];
+    }
+    const names: string[] = [];
+    const ownerName = this.currentUser()?.full_name || 'Chủ chuyến đi';
+    names.push(ownerName);
+
+    const participants = this.shareParticipants();
+    if (participants && participants.length > 0) {
+      for (const p of participants) {
+        const pName = p.user?.full_name || (p.user?.email ? p.user.email.split('@')[0] : null) || p.user?.username;
+        if (pName && !names.includes(pName)) {
+          names.push(pName);
+        }
+      }
+    }
+
+    const numTravelers = this.trip()?.num_travelers || 1;
+    let idx = 1;
+    while (names.length < numTravelers) {
+      idx++;
+      const placeholder = `Thành viên ${idx}`;
+      if (!names.includes(placeholder)) {
+        names.push(placeholder);
+      }
+    }
+    return names;
+  });
 
   // Activity Modal State
   readonly isActivityModalOpen = signal<boolean>(false);
@@ -371,6 +468,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (!this.authService.isAuthenticated()) {
       this.router.navigate(['/login']);
       return;
+    }
+
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      this.isChatOpen.set(false);
     }
 
     this.tripId = this.route.snapshot.paramMap.get('id') || '';
@@ -524,16 +625,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const escapeXml = (str: string | number | null | undefined): string => {
-      if (str == null) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-    };
-
     const formatActivityType = (type: string | null | undefined): string => {
       switch (type) {
         case 'transport':
@@ -549,152 +640,343 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       }
     };
 
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-microsoft-com:office:spreadsheet"
-  xmlns:o="urn:schemas-microsoft-microsoft-com:office:office"
-  xmlns:x="urn:schemas-microsoft-microsoft-com:office:excel"
-  xmlns:ss="urn:schemas-microsoft-microsoft-com:office:spreadsheet">
-  <Styles>
-    <Style ss:ID="Header">
-      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Arial" ss:Size="11"/>
-      <Interior ss:Color="#2563EB" ss:Pattern="Solid"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1D4ED8"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="Title">
-      <Font ss:Bold="1" ss:Size="16" ss:Color="#1E293B" ss:FontName="Arial"/>
-    </Style>
-    <Style ss:ID="SubTitle">
-      <Font ss:Bold="1" ss:Size="12" ss:Color="#2563EB" ss:FontName="Arial"/>
-    </Style>
-    <Style ss:ID="MetaLabel">
-      <Font ss:Bold="1" ss:Color="#475569" ss:FontName="Arial" ss:Size="10"/>
-    </Style>
-    <Style ss:ID="Bold">
-      <Font ss:Bold="1" ss:FontName="Arial" ss:Size="10"/>
-    </Style>
-    <Style ss:ID="Number">
-      <NumberFormat ss:Format="#,##0"/>
-      <Font ss:FontName="Arial" ss:Size="10"/>
-      <Alignment ss:Horizontal="Right"/>
-    </Style>
-    <Style ss:ID="TotalNumber">
-      <NumberFormat ss:Format="#,##0"/>
-      <Font ss:Bold="1" ss:Color="#1E293B" ss:FontName="Arial" ss:Size="11"/>
-      <Interior ss:Color="#FEF08A" ss:Pattern="Solid"/>
-      <Alignment ss:Horizontal="Right"/>
-    </Style>
-    <Style ss:ID="TotalLabel">
-      <Font ss:Bold="1" ss:Color="#1E293B" ss:FontName="Arial" ss:Size="11"/>
-      <Interior ss:Color="#FEF08A" ss:Pattern="Solid"/>
-    </Style>
-    <Style ss:ID="Normal">
-      <Font ss:FontName="Arial" ss:Size="10"/>
-    </Style>
-  </Styles>`;
+    const wb = XLSX.utils.book_new();
 
-    // --- TAB 1: TỔNG QUAN ---
-    xml += `
-  <Worksheet ss:Name="Tổng quan">
-    <Table>
-      <Column ss:Width="180"/>
-      <Column ss:Width="350"/>
-      <Row ss:Height="25">
-        <Cell ss:StyleID="Title"><Data ss:Type="String">THÔNG TIN CHUYẾN ĐỊ</Data></Cell>
-      </Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Tên chuyến đi:</Data></Cell><Cell ss:StyleID="Bold"><Data ss:Type="String">${escapeXml(tripData.title)}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Điểm đến:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(tripData.destination)}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Thời gian:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(tripData.start_date)} đến ${escapeXml(tripData.end_date)}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Số ngày:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="Number">${daysData.length}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Số người đồng hành:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="Number">${tripData.num_travelers || 1}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Ngân sách dự kiến:</Data></Cell><Cell ss:StyleID="Number"><Data ss:Type="Number">${tripData.budget || 0}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="MetaLabel"><Data ss:Type="String">Ghi chú / Sở thích:</Data></Cell><Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(tripData.preferences || 'Không')}</Data></Cell></Row>
-    </Table>
-  </Worksheet>`;
+    // Palette & Styles Definition
+    const styles = {
+      banner: {
+        font: { name: 'Segoe UI', sz: 16, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1E1B4B' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      },
+      sectionHeader: {
+        font: { name: 'Segoe UI', sz: 12, bold: true, color: { rgb: '1E40AF' } },
+        fill: { fgColor: { rgb: 'DBEAFE' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      },
+      dayBanner: {
+        font: { name: 'Segoe UI', sz: 12, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '2563EB' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      },
+      tableHeader: {
+        font: { name: 'Segoe UI', sz: 10, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '3B82F6' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: {
+          top: { style: 'thin', color: { rgb: '1D4ED8' } },
+          bottom: { style: 'thin', color: { rgb: '1D4ED8' } },
+          left: { style: 'thin', color: { rgb: '1D4ED8' } },
+          right: { style: 'thin', color: { rgb: '1D4ED8' } }
+        }
+      },
+      labelBold: {
+        font: { name: 'Segoe UI', sz: 10, bold: true, color: { rgb: '334155' } },
+        fill: { fgColor: { rgb: 'F8FAFC' } },
+        alignment: { vertical: 'center' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+        }
+      },
+      cellText: {
+        font: { name: 'Segoe UI', sz: 10, color: { rgb: '0F172A' } },
+        alignment: { vertical: 'center', wrapText: true },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+        }
+      },
+      cellCenter: {
+        font: { name: 'Segoe UI', sz: 10, color: { rgb: '334155' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+        }
+      },
+      cellBoldText: {
+        font: { name: 'Segoe UI', sz: 10, bold: true, color: { rgb: '0F172A' } },
+        alignment: { vertical: 'center' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+        }
+      },
+      cellNumber: {
+        font: { name: 'Segoe UI', sz: 10, color: { rgb: '0F172A' } },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        numFmt: '#,##0',
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+        }
+      },
+      totalRowLabel: {
+        font: { name: 'Segoe UI', sz: 10, bold: true, color: { rgb: '78350F' } },
+        fill: { fgColor: { rgb: 'FEF3C7' } },
+        alignment: { vertical: 'center' },
+        border: {
+          top: { style: 'medium', color: { rgb: 'F59E0B' } },
+          bottom: { style: 'medium', color: { rgb: 'F59E0B' } },
+          left: { style: 'thin', color: { rgb: 'F59E0B' } },
+          right: { style: 'thin', color: { rgb: 'F59E0B' } }
+        }
+      },
+      totalRowNumber: {
+        font: { name: 'Segoe UI', sz: 11, bold: true, color: { rgb: 'B45309' } },
+        fill: { fgColor: { rgb: 'FEF3C7' } },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        numFmt: '#,##0',
+        border: {
+          top: { style: 'medium', color: { rgb: 'F59E0B' } },
+          bottom: { style: 'medium', color: { rgb: 'F59E0B' } },
+          left: { style: 'thin', color: { rgb: 'F59E0B' } },
+          right: { style: 'thin', color: { rgb: 'F59E0B' } }
+        }
+      }
+    };
 
-    // --- TAB 2..N: TỪNG NGÀY ---
-    let totalTripCost = 0;
+    const applyCellStyle = (ws: any, r: number, c: number, val: any, style: any, type: string = 's') => {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (!ws[cellRef]) ws[cellRef] = { v: val };
+      ws[cellRef].v = val;
+      ws[cellRef].t = type;
+      ws[cellRef].s = style;
+      if (style.numFmt) ws[cellRef].z = style.numFmt;
+    };
 
-    daysData.forEach((day) => {
-      const sheetName = `Ngày ${day.day_number}`;
-      const activities = day.activities || [];
-      let dayTotalCost = 0;
+    // ==========================================
+    // 1. SHEET TỔNG QUAN
+    // ==========================================
+    const wsSummary: any = {};
+    wsSummary['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 1, c: 4 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },
+      { s: { r: 12, c: 0 }, e: { r: 12, c: 4 } }
+    ];
 
-      xml += `
-  <Worksheet ss:Name="${escapeXml(sheetName)}">
-    <Table>
-      <Column ss:Width="100"/>
-      <Column ss:Width="260"/>
-      <Column ss:Width="120"/>
-      <Column ss:Width="130"/>
-      <Column ss:Width="380"/>
-      
-      <Row ss:Height="24">
-        <Cell ss:StyleID="SubTitle"><Data ss:Type="String">LỊCH TRÌNH NGÀY ${day.day_number}${day.date ? ' (' + escapeXml(day.date) + ')' : ''}</Data></Cell>
-      </Row>
-      
-      <Row ss:Height="22">
-        <Cell ss:StyleID="Header"><Data ss:Type="String">Giờ</Data></Cell>
-        <Cell ss:StyleID="Header"><Data ss:Type="String">Hoạt động / Địa điểm</Data></Cell>
-        <Cell ss:StyleID="Header"><Data ss:Type="String">Loại</Data></Cell>
-        <Cell ss:StyleID="Header"><Data ss:Type="String">Chi phí (VNĐ)</Data></Cell>
-        <Cell ss:StyleID="Header"><Data ss:Type="String">Chi tiết / Địa chỉ &amp; Ghi chú</Data></Cell>
-      </Row>`;
+    // Banner
+    for (let r = 0; r <= 1; r++) {
+      for (let c = 0; c <= 4; c++) {
+        applyCellStyle(wsSummary, r, c, '✈  SMART TRAVEL - KẾ HOẠCH DU LỊCH CHI TIẾT', styles.banner);
+      }
+    }
 
-      activities.forEach((act) => {
-        const cost = Number(act.estimated_cost || 0);
-        dayTotalCost += cost;
-        totalTripCost += cost;
+    // Section 1: Thông tin chuyến đi
+    for (let c = 0; c <= 4; c++) {
+      applyCellStyle(wsSummary, 3, c, '📋 THÔNG TIN TỔNG QUAN CHUYẾN ĐỊ', styles.sectionHeader);
+    }
 
-        const timeStr = act.start_time
-          ? act.end_time
-            ? `${act.start_time} - ${act.end_time}`
-            : act.start_time
-          : '—';
+    const infoList = [
+      ['Tên chuyến đi:', tripData.title || '', 's'],
+      ['Điểm đến:', tripData.destination || '', 's'],
+      ['Thời gian du lịch:', `${tripData.start_date || ''} đến ${tripData.end_date || ''}`, 's'],
+      ['Tổng số ngày:', daysData.length, 'n'],
+      ['Số người tham gia:', tripData.num_travelers || 1, 'n'],
+      ['Ngân sách dự kiến:', Number(tripData.budget || 0), 'num'],
+      ['Ghi chú / Sở thích:', tripData.preferences || 'Không có ghi chú', 's']
+    ];
 
-        const detailNote = [act.description || '', act.location?.address || act.notes || '']
-          .filter(Boolean)
-          .join(' | ');
-
-        xml += `
-      <Row>
-        <Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(timeStr)}</Data></Cell>
-        <Cell ss:StyleID="Bold"><Data ss:Type="String">${escapeXml(act.title || 'Hoạt động')}</Data></Cell>
-        <Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(formatActivityType(act.type))}</Data></Cell>
-        <Cell ss:StyleID="Number"><Data ss:Type="Number">${cost}</Data></Cell>
-        <Cell ss:StyleID="Normal"><Data ss:Type="String">${escapeXml(detailNote)}</Data></Cell>
-      </Row>`;
-      });
-
-      // Total Row for Day
-      xml += `
-      <Row ss:Height="20">
-        <Cell ss:StyleID="TotalLabel"><Data ss:Type="String">TỔNG CỘNG NGÀY ${day.day_number}</Data></Cell>
-        <Cell ss:StyleID="TotalLabel"/>
-        <Cell ss:StyleID="TotalLabel"/>
-        <Cell ss:StyleID="TotalNumber"><Data ss:Type="Number">${dayTotalCost}</Data></Cell>
-        <Cell ss:StyleID="TotalLabel"/>
-      </Row>
-    </Table>
-  </Worksheet>`;
+    infoList.forEach((info, idx) => {
+      const r = 4 + idx;
+      applyCellStyle(wsSummary, r, 0, info[0], styles.labelBold);
+      const isNum = info[2] === 'num';
+      applyCellStyle(wsSummary, r, 1, info[1], isNum ? styles.cellNumber : (info[2] === 'n' ? styles.cellCenter : styles.cellBoldText), isNum ? 'n' : (info[2] === 'n' ? 'n' : 's'));
+      for (let c = 2; c <= 4; c++) {
+        applyCellStyle(wsSummary, r, c, '', styles.cellText);
+      }
     });
 
-    xml += `
-</Workbook>`;
+    // Section 2: Tổng hợp các ngày
+    for (let c = 0; c <= 4; c++) {
+      applyCellStyle(wsSummary, 12, c, '📊 TỔNG HỢP LỊCH TRÌNH NỔI BẬT THEO NGÀY', styles.sectionHeader);
+    }
 
-    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const link = document.createElement('a');
+    const summaryHeaders = ['STT', 'Ngày Du Lịch', 'Số Hoạt Động', 'Tổng Chi Phí (VNĐ)', 'Ghi Chú Nổi Bật'];
+    summaryHeaders.forEach((h, c) => applyCellStyle(wsSummary, 13, c, h, styles.tableHeader));
+
+    let grandTotalCost = 0;
+
+    daysData.forEach((day, idx) => {
+      const r = 14 + idx;
+      const actCount = (day.activities || []).length;
+      const dayCost = (day.activities || []).reduce((sum, a) => sum + Number(a.estimated_cost || 0), 0);
+      grandTotalCost += dayCost;
+
+      applyCellStyle(wsSummary, r, 0, idx + 1, styles.cellCenter, 'n');
+      applyCellStyle(wsSummary, r, 1, `Ngày ${day.day_number}${day.date ? ' (' + day.date + ')' : ''}`, styles.cellBoldText);
+      applyCellStyle(wsSummary, r, 2, `${actCount} địa điểm/hoạt động`, styles.cellCenter);
+      applyCellStyle(wsSummary, r, 3, dayCost, styles.cellNumber, 'n');
+      applyCellStyle(wsSummary, r, 4, day.activities?.[0]?.title ? `Chính: ${day.activities[0].title}` : 'Lịch trình tự do', styles.cellText);
+    });
+
+    const summaryTotalR = 14 + daysData.length;
+    applyCellStyle(wsSummary, summaryTotalR, 0, 'TỔNG CỘNG CHUYẾN ĐỊ', styles.totalRowLabel);
+    applyCellStyle(wsSummary, summaryTotalR, 1, `${daysData.length} Ngày`, styles.totalRowLabel);
+    applyCellStyle(wsSummary, summaryTotalR, 2, '', styles.totalRowLabel);
+    applyCellStyle(wsSummary, summaryTotalR, 3, grandTotalCost, styles.totalRowNumber, 'n');
+    applyCellStyle(wsSummary, summaryTotalR, 4, '', styles.totalRowLabel);
+
+    wsSummary['!cols'] = [{ wch: 8 }, { wch: 24 }, { wch: 22 }, { wch: 22 }, { wch: 45 }];
+    wsSummary['!rows'] = [{ hpt: 22 }, { hpt: 22 }, { hpt: 10 }, { hpt: 24 }];
+    wsSummary['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: summaryTotalR + 1, c: 4 } });
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Tổng quan');
+
+    // ==========================================
+    // 2. SHEET LỊCH TRÌNH CHI TIẾT (TẤT CẢ CÁC NGÀY GỘP TẠI NƠI NÀY)
+    // ==========================================
+    const wsMaster: any = {};
+    const masterMerges: any[] = [{ s: { r: 0, c: 0 }, e: { r: 1, c: 4 } }];
+
+    // Master Banner
+    for (let r = 0; r <= 1; r++) {
+      for (let c = 0; c <= 4; c++) {
+        applyCellStyle(wsMaster, r, c, '🗺  LỊCH TRÌNH DỰ KIẾN CHI TIẾT TẤT CẢ CÁC NGÀY', styles.banner);
+      }
+    }
+
+    let currentRow = 3;
+
+    daysData.forEach((day) => {
+      // Day Header Banner
+      masterMerges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: 4 } });
+      for (let c = 0; c <= 4; c++) {
+        applyCellStyle(wsMaster, currentRow, c, `📅 NGÀY ${day.day_number}${day.date ? ' - ' + day.date : ''}`, styles.dayBanner);
+      }
+      currentRow++;
+
+      // Table Header
+      const headers = ['Khung Giờ', 'Tên Hoạt Động / Địa Điểm', 'Phân Loại', 'Chi Phí (VNĐ)', 'Địa Chỉ & Ghi Chú Chi Tiết'];
+      headers.forEach((h, c) => applyCellStyle(wsMaster, currentRow, c, h, styles.tableHeader));
+      currentRow++;
+
+      const activities = day.activities || [];
+      let dayCost = 0;
+
+      if (activities.length === 0) {
+        applyCellStyle(wsMaster, currentRow, 0, '—', styles.cellCenter);
+        applyCellStyle(wsMaster, currentRow, 1, 'Chưa có hoạt động nào được thêm vào ngày này', styles.cellText);
+        applyCellStyle(wsMaster, currentRow, 2, '—', styles.cellCenter);
+        applyCellStyle(wsMaster, currentRow, 3, 0, styles.cellNumber, 'n');
+        applyCellStyle(wsMaster, currentRow, 4, 'Dành thời gian tự do khám phá', styles.cellText);
+        currentRow++;
+      } else {
+        activities.forEach((act) => {
+          const cost = Number(act.estimated_cost || 0);
+          dayCost += cost;
+
+          const timeStr = act.start_time
+            ? act.end_time
+              ? `${act.start_time} - ${act.end_time}`
+              : act.start_time
+            : 'Cả ngày';
+
+          const note = [act.description || '', act.location?.address || act.notes || ''].filter(Boolean).join(' | ');
+
+          applyCellStyle(wsMaster, currentRow, 0, timeStr, styles.cellCenter);
+          applyCellStyle(wsMaster, currentRow, 1, act.title || 'Hoạt động', styles.cellBoldText);
+          applyCellStyle(wsMaster, currentRow, 2, formatActivityType(act.type), styles.cellCenter);
+          applyCellStyle(wsMaster, currentRow, 3, cost, styles.cellNumber, 'n');
+          applyCellStyle(wsMaster, currentRow, 4, note, styles.cellText);
+          currentRow++;
+        });
+      }
+
+      // Day Subtotal
+      applyCellStyle(wsMaster, currentRow, 0, `TỔNG CỘNG NGÀY ${day.day_number}`, styles.totalRowLabel);
+      applyCellStyle(wsMaster, currentRow, 1, '', styles.totalRowLabel);
+      applyCellStyle(wsMaster, currentRow, 2, '', styles.totalRowLabel);
+      applyCellStyle(wsMaster, currentRow, 3, dayCost, styles.totalRowNumber, 'n');
+      applyCellStyle(wsMaster, currentRow, 4, '', styles.totalRowLabel);
+      currentRow += 2; // Spacing row
+    });
+
+    wsMaster['!merges'] = masterMerges;
+    wsMaster['!cols'] = [{ wch: 16 }, { wch: 32 }, { wch: 16 }, { wch: 20 }, { wch: 50 }];
+    wsMaster['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: currentRow, c: 4 } });
+    XLSX.utils.book_append_sheet(wb, wsMaster, 'Lịch trình chi tiết');
+
+    // ==========================================
+    // 3. EACH INDIVIDUAL DAY SHEET
+    // ==========================================
+    daysData.forEach((day) => {
+      const sheetName = `Ngày ${day.day_number}`;
+      const wsDay: any = {};
+      wsDay['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 1, c: 4 } }
+      ];
+
+      // Banner
+      for (let r = 0; r <= 1; r++) {
+        for (let c = 0; c <= 4; c++) {
+          applyCellStyle(wsDay, r, c, `📅 LỊCH TRÌNH NGÀY ${day.day_number}${day.date ? ' (' + day.date + ')' : ''}`, styles.dayBanner);
+        }
+      }
+
+      const headers = ['Khung Giờ', 'Tên Hoạt Động / Địa Điểm', 'Phân Loại', 'Chi Phí (VNĐ)', 'Chi Tiết / Địa Chỉ & Ghi Chú'];
+      headers.forEach((h, c) => applyCellStyle(wsDay, 3, c, h, styles.tableHeader));
+
+      const activities = day.activities || [];
+      let dayCost = 0;
+      let r = 4;
+
+      if (activities.length === 0) {
+        applyCellStyle(wsDay, r, 0, '—', styles.cellCenter);
+        applyCellStyle(wsDay, r, 1, 'Chưa có hoạt động', styles.cellText);
+        applyCellStyle(wsDay, r, 2, '—', styles.cellCenter);
+        applyCellStyle(wsDay, r, 3, 0, styles.cellNumber, 'n');
+        applyCellStyle(wsDay, r, 4, 'Thời gian tự do', styles.cellText);
+        r++;
+      } else {
+        activities.forEach((act) => {
+          const cost = Number(act.estimated_cost || 0);
+          dayCost += cost;
+
+          const timeStr = act.start_time
+            ? act.end_time
+              ? `${act.start_time} - ${act.end_time}`
+              : act.start_time
+            : 'Cả ngày';
+
+          const note = [act.description || '', act.location?.address || act.notes || ''].filter(Boolean).join(' | ');
+
+          applyCellStyle(wsDay, r, 0, timeStr, styles.cellCenter);
+          applyCellStyle(wsDay, r, 1, act.title || 'Hoạt động', styles.cellBoldText);
+          applyCellStyle(wsDay, r, 2, formatActivityType(act.type), styles.cellCenter);
+          applyCellStyle(wsDay, r, 3, cost, styles.cellNumber, 'n');
+          applyCellStyle(wsDay, r, 4, note, styles.cellText);
+          r++;
+        });
+      }
+
+      // Total Row
+      applyCellStyle(wsDay, r, 0, `TỔNG CỘNG NGÀY ${day.day_number}`, styles.totalRowLabel);
+      applyCellStyle(wsDay, r, 1, '', styles.totalRowLabel);
+      applyCellStyle(wsDay, r, 2, '', styles.totalRowLabel);
+      applyCellStyle(wsDay, r, 3, dayCost, styles.totalRowNumber, 'n');
+      applyCellStyle(wsDay, r, 4, '', styles.totalRowLabel);
+
+      wsDay['!cols'] = [{ wch: 16 }, { wch: 30 }, { wch: 16 }, { wch: 20 }, { wch: 50 }];
+      wsDay['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: r + 1, c: 4 } });
+      XLSX.utils.book_append_sheet(wb, wsDay, sheetName);
+    });
+
     const cleanDestination = (tripData.destination || 'Chuyen_di').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EFF]/g, '_');
     const cleanTitle = (tripData.title || 'detail').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EFF]/g, '_');
-    const fileName = `Lich_trinh_${cleanDestination}_${cleanTitle}.xls`;
-    link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const fileName = `Lich_trinh_${cleanDestination}_${cleanTitle}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
   }
 
   fetchDestinationImage(destination: string): void {
@@ -1210,8 +1492,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   copyLatestInviteUrl(): void {
     const url = this.latestInviteUrl();
     if (!url) return;
-    navigator.clipboard?.writeText(url).then(() => {
-      this.shareSuccessMsg.set('Da copy link moi.');
+    this.copyToClipboard(url).then(() => {
+      this.shareSuccessMsg.set('Đã copy link mời.');
+    }).catch(err => {
+      console.error('Copy invite error:', err);
     });
   }
 
@@ -1520,7 +1804,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   formatCurrency(value: number | null | undefined): string {
     if (value === null || value === undefined) return 'N/A';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} VND`;
   }
 
   openGoogleMaps(act: ActivityResponse, event?: Event): void {
@@ -1537,20 +1821,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  optimizeDayRoute(dayId: string): void {
-    if (!this.canEditTrip() || this.optimizingDayId()) return;
-    this.optimizingDayId.set(dayId);
-    this.tripService.optimizeDayRoute(this.tripId, dayId).subscribe({
-      next: () => {
-        this.optimizingDayId.set(null);
-        this.fetchItinerary();
-      },
-      error: (err) => {
-        this.optimizingDayId.set(null);
-        alert(err?.error?.message || 'Có lỗi xảy ra khi tối ưu lộ trình.');
-      },
-    });
-  }
 
   getTravelEstimate(currentAct: ActivityResponse, nextAct: ActivityResponse): { distanceKm: number; durationMin: number } | null {
     if (!currentAct.location?.lat || !currentAct.location?.lng || !nextAct.location?.lat || !nextAct.location?.lng) {
@@ -1638,6 +1908,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (!this.canEditTrip()) return;
     this.selectedBudgetItem.set(item);
     this.budgetError.set(null);
+    this.loadGroupSplitSummary();
 
     const currentUserFullName = this.currentUser()?.full_name || 'Chủ chuyến đi';
 
@@ -1669,6 +1940,30 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.selectedBudgetItem.set(null);
   }
 
+  private copyToClipboard(text: string): Promise<void> {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    } else {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful ? Promise.resolve() : Promise.reject(new Error('execCommand copy failed'));
+      } catch (err) {
+        document.body.removeChild(textArea);
+        return Promise.reject(err);
+      }
+    }
+  }
+
   copySettlementMessage(): void {
     const split = this.groupSplitSummary();
     const tripData = this.trip();
@@ -1684,9 +1979,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
     text += `\nCảm ơn mọi người! ✨`;
 
-    navigator.clipboard.writeText(text).then(() => {
+    this.copyToClipboard(text).then(() => {
       this.copiedSettlement.set(true);
       setTimeout(() => this.copiedSettlement.set(false), 2500);
+    }).catch(err => {
+      console.error('Copy error:', err);
     });
   }
 
@@ -1803,6 +2100,34 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return Math.min(Math.round((cat.actual / target) * 100), 100);
   }
 
+  // ── Budget Comparison Chart Helpers ──
+  getBudgetComparisonMax(): number {
+    const summary = this.budgetSummary();
+    if (!summary?.categories) return 1;
+    let max = 0;
+    for (const cat of summary.categories) {
+      max = Math.max(max, cat.planned, cat.actual, cat.itinerary_planned || 0);
+    }
+    return max || 1;
+  }
+
+  getCategoryBarHeight(value: number): number {
+    const max = this.getBudgetComparisonMax();
+    return Math.round((value / max) * 100);
+  }
+
+  getCategoryVariance(cat: any): number {
+    const planned = cat.itinerary_planned || cat.planned || 0;
+    if (planned <= 0) return 0;
+    return Math.round(((cat.actual - planned) / planned) * 100);
+  }
+
+  getCategoryDistributionPercent(cat: any): number {
+    const summary = this.budgetSummary();
+    const total = summary?.budget_actual || 0;
+    if (total <= 0) return 0;
+    return Math.round((cat.actual / total) * 100);
+  }
 
 
   goBack(): void {
@@ -1946,18 +2271,168 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   openAddActivityFromExplore(location: LocationResponse): void {
     if (!this.canEditTrip()) return;
     this.selectedExploreLocation.set(location);
+    const daysList = this.days();
+    const activeDay = daysList[this.activeDayIndex()] || daysList[0];
+    this.selectedExploreDayId.set(activeDay ? activeDay.id : '');
+    this.exploreStartTime.set('');
+    this.exploreEndTime.set('');
     this.isAddActivityFromExploreOpen.set(true);
   }
 
   closeAddActivityFromExplore(): void {
     this.isAddActivityFromExploreOpen.set(false);
     this.selectedExploreLocation.set(null);
+    this.selectedExploreDayId.set('');
+    this.exploreStartTime.set('');
+    this.exploreEndTime.set('');
   }
 
-  confirmAddActivityFromExplore(dayId: string): void {
+  isValidTime24h(val: string | null | undefined): boolean {
+    if (!val) return true;
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(val);
+  }
+
+  formatTime24h(raw: string): string {
+    if (!raw) return '';
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+
+    let h1 = digits[0];
+    let h2 = '';
+    let mStartIdx = 2;
+
+    if (parseInt(h1, 10) > 2) {
+      h2 = h1;
+      h1 = '0';
+      mStartIdx = 1;
+    } else if (digits.length >= 2) {
+      h2 = digits[1];
+      if (h1 === '2' && parseInt(h2, 10) > 3) {
+        h2 = '3';
+      }
+    }
+
+    const hours = h1 + h2;
+    if (hours.length < 2) {
+      return hours;
+    }
+
+    const mDigits = digits.slice(mStartIdx);
+    if (mDigits.length === 0) {
+      return `${hours}:`;
+    }
+
+    let m1 = mDigits[0];
+    if (parseInt(m1, 10) > 5) {
+      m1 = '5';
+    }
+
+    const m2 = mDigits.length > 1 ? mDigits[1] : '';
+
+    return `${hours}:${m1}${m2}`.slice(0, 5);
+  }
+
+  onExploreTimeInput(event: Event, type: 'start' | 'end'): void {
+    const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+    let raw = input.value;
+
+    if (inputEvent.inputType === 'deleteContentBackward' && raw.endsWith(':')) {
+      raw = raw.slice(0, -1);
+    }
+
+    const masked = this.formatTime24h(raw);
+    input.value = masked;
+    if (type === 'start') {
+      this.exploreStartTime.set(masked);
+    } else {
+      this.exploreEndTime.set(masked);
+    }
+  }
+
+  onExploreTimeBlur(event: Event, type: 'start' | 'end'): void {
+    const input = event.target as HTMLInputElement;
+    let val = input.value?.trim();
+    if (!val) return;
+
+    if (val.endsWith(':')) val += '00';
+    else if (/^\d{2}:\d{1}$/.test(val)) val += '0';
+
+    if (this.isValidTime24h(val)) {
+      input.value = val;
+      if (type === 'start') {
+        this.exploreStartTime.set(val);
+      } else {
+        this.exploreEndTime.set(val);
+      }
+    }
+  }
+
+  onTimeInputControl(event: Event, formGroup: 'activityForm' | 'generateOptionsForm', fieldName: string): void {
+    const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+    let raw = input.value;
+
+    if (inputEvent.inputType === 'deleteContentBackward' && raw.endsWith(':')) {
+      raw = raw.slice(0, -1);
+    }
+
+    const masked = this.formatTime24h(raw);
+    input.value = masked;
+
+    if (formGroup === 'activityForm') {
+      this.activityForm.get(fieldName)?.setValue(masked, { emitEvent: true });
+    } else if (formGroup === 'generateOptionsForm') {
+      this.generateOptionsForm.get(fieldName)?.setValue(masked, { emitEvent: true });
+    }
+  }
+
+  normalizeTimeOnBlur(event: Event, formGroup: 'activityForm' | 'generateOptionsForm', fieldName: string): void {
+    const input = event.target as HTMLInputElement;
+    let val = input.value?.trim();
+    if (!val) return;
+
+    if (val.endsWith(':')) val += '00';
+    else if (/^\d{2}:\d{1}$/.test(val)) val += '0';
+
+    if (this.isValidTime24h(val)) {
+      input.value = val;
+      if (formGroup === 'activityForm') {
+        this.activityForm.get(fieldName)?.setValue(val);
+      } else if (formGroup === 'generateOptionsForm') {
+        this.generateOptionsForm.get(fieldName)?.setValue(val);
+      }
+    }
+  }
+
+  confirmAddActivityFromExplore(targetDayId?: string): void {
     if (!this.canEditTrip()) return;
+    const dayId = targetDayId || this.selectedExploreDayId();
+    if (!dayId) return;
+
     const loc = this.selectedExploreLocation();
     if (!loc) return;
+
+    let startTime = this.exploreStartTime();
+    let endTime = this.exploreEndTime();
+
+    if (startTime) {
+      if (startTime.endsWith(':')) startTime += '00';
+      else if (/^\d{2}:\d{1}$/.test(startTime)) startTime += '0';
+      if (!this.isValidTime24h(startTime)) {
+        alert('Giờ bắt đầu không hợp lệ (định dạng 24h từ 00:00 đến 23:59).');
+        return;
+      }
+    }
+
+    if (endTime) {
+      if (endTime.endsWith(':')) endTime += '00';
+      else if (/^\d{2}:\d{1}$/.test(endTime)) endTime += '0';
+      if (!this.isValidTime24h(endTime)) {
+        alert('Giờ kết thúc không hợp lệ (định dạng 24h từ 00:00 đến 23:59).');
+        return;
+      }
+    }
 
     this.isSubmittingExploreActivity.set(true);
 
@@ -1979,8 +2454,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         description: loc.address || '',
         type: actType,
         location_id: locationId,
-        start_time: null,
-        end_time: null,
+        start_time: startTime || null,
+        end_time: endTime || null,
         estimated_cost: null,
         notes: 'Thêm từ tab Khám phá',
       };
@@ -2438,8 +2913,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           
           const popupContent = `
             <div style="padding: 4px;">
-              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: #1e293b;">#${idx + 1} - ${act.title}</div>
-              <div style="font-size: 12px; color: #4b5563;">${act.location?.name || ''}</div>
+              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: var(--color-on-surface, #e2e8f1);">#${idx + 1} - ${act.title}</div>
+              <div style="font-size: 12px; color: var(--color-on-surface-variant, #94a3b8);">${act.location?.name || ''}</div>
               ${act.start_time ? `<div style="font-size: 11px; margin-top: 4px; color: #4f46e5;">🕒 ${act.start_time}</div>` : ''}
             </div>
           `;
@@ -2480,7 +2955,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     let raw = value.replace(/\D/g, '');
     if (raw) {
       const num = Number(raw);
-      const formatted = num.toLocaleString('vi-VN');
+      const formatted = num.toLocaleString('en-US');
       input.value = formatted;
       this.settingsForm.get('budget')?.setValue(formatted, { emitEvent: false });
     } else {
@@ -2493,7 +2968,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (val === null || val === undefined || val === '') return '';
     const clean = val.toString().replace(/\D/g, '');
     if (!clean) return '';
-    return Number(clean).toLocaleString('vi-VN');
+    return Number(clean).toLocaleString('en-US');
   }
 
   openDatePicker(input: HTMLInputElement): void {

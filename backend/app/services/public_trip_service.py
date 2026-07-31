@@ -8,7 +8,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,6 +16,7 @@ from app.core.exceptions import AppError, ForbiddenError, NotFoundError
 from app.models.activity import Activity
 from app.models.budget import BudgetItem
 from app.models.location import Location
+from app.models.p2_features import PublicTripRating
 from app.models.public_trip import (
     ActivityPublicationSource,
     PublicTripImport,
@@ -279,6 +280,9 @@ async def upsert_publication(
     snapshot = await build_snapshot(db, trip, payload)
     now = datetime.now(timezone.utc)
     ratings = [v for v in (payload.itinerary_rating, payload.cost_rating, payload.place_rating) if v]
+    if publish and not ratings:
+        raise AppError("Bạn phải đánh giá chuyến đi trước khi công khai.", status_code=422)
+
     actual_total = snapshot["cost_summary"]["actual"]
     values = {
         "title": payload.title,
@@ -324,6 +328,10 @@ async def upsert_publication(
             **values,
         )
         db.add(publication)
+        # The publication UUID must exist before creating the author's rating.
+        # Without this flush, a first-time publish inserts a rating with a NULL
+        # publication_id and PostgreSQL returns an internal server error.
+        await db.flush()
     else:
         for key, value in values.items():
             setattr(publication, key, value)
@@ -333,6 +341,33 @@ async def upsert_publication(
     if publish:
         publication.author_confirmed_at = now
         publication.published_at = publication.published_at or now
+
+        # Store Author's rating in PublicTripRating table
+        author_rating_val = int(round(sum(ratings) / len(ratings))) if ratings else 5
+        author_rating_rec = await db.scalar(
+            select(PublicTripRating).where(
+                PublicTripRating.publication_id == publication.id,
+                PublicTripRating.user_id == actor.id
+            )
+        )
+        if author_rating_rec:
+            author_rating_rec.rating = author_rating_val
+            author_rating_rec.is_verified_trip = True
+        else:
+            db.add(PublicTripRating(
+                publication_id=publication.id,
+                user_id=actor.id,
+                rating=author_rating_val,
+                is_verified_trip=True
+            ))
+        await db.flush()
+
+        # Recalculate average rating across ALL PublicTripRating records
+        avg_rating = await db.scalar(
+            select(func.avg(PublicTripRating.rating)).where(PublicTripRating.publication_id == publication.id)
+        )
+        if avg_rating is not None:
+            publication.overall_rating = round(float(avg_rating), 1)
     await db.flush()
     await trip_history_service.record_history_event(
         db,
@@ -388,8 +423,10 @@ def publication_payload(
         "overall_rating": float(publication.overall_rating) if publication.overall_rating is not None else None,
         "author": {
             "id": author.id,
-            "full_name": author.full_name if show_name else "Người dùng Aether",
+            "profile_username": author.username if show_name and author.is_public_profile else None,
+            "full_name": author.full_name if show_name else "Người dùng Smart Travel",
             "avatar_url": author.avatar_url if show_name else None,
+            "accepts_tour_bookings": bool(author.is_public_profile and author.accepts_tour_bookings and show_name),
         },
         "is_saved": is_saved,
     }
@@ -399,9 +436,13 @@ async def list_publications(
     db: AsyncSession,
     *,
     destination: str | None,
+    search: str | None = None,
     max_cost_per_person: int | None,
     min_days: int | None,
     max_days: int | None,
+    min_rating: float | None = None,
+    traveler_type: str | None = None,
+    pace: str | None = None,
     sort: str,
     page: int,
     limit: int,
@@ -413,12 +454,27 @@ async def list_publications(
     ]
     if destination:
         filters.append(PublicTripPublication.destination.ilike(f"%{destination.strip()}%"))
+    if search:
+        keyword = f"%{search.strip()}%"
+        filters.append(
+            or_(
+                PublicTripPublication.title.ilike(keyword),
+                PublicTripPublication.summary.ilike(keyword),
+                PublicTripPublication.destination.ilike(keyword),
+            )
+        )
     if max_cost_per_person is not None:
         filters.append(PublicTripPublication.actual_cost_per_person <= max_cost_per_person)
     if min_days is not None:
         filters.append(PublicTripPublication.duration_days >= min_days)
     if max_days is not None:
         filters.append(PublicTripPublication.duration_days <= max_days)
+    if min_rating is not None:
+        filters.append(PublicTripPublication.overall_rating >= min_rating)
+    if traveler_type:
+        filters.append(PublicTripPublication.traveler_type == traveler_type)
+    if pace:
+        filters.append(PublicTripPublication.pace == pace)
     order = {
         "most_saved": PublicTripPublication.save_count.desc(),
         "lowest_cost": PublicTripPublication.actual_cost_per_person.asc().nullslast(),
@@ -500,7 +556,8 @@ async def save_publication(db: AsyncSession, publication_id: uuid.UUID, user_id:
     if existing:
         return False
     db.add(PublicTripSave(publication_id=publication_id, user_id=user_id))
-    publication.save_count += 1
+    await db.flush()
+    publication.save_count = await _actual_save_count(db, publication_id)
     await db.commit()
     return True
 
@@ -518,11 +575,16 @@ async def unsave_publication(db: AsyncSession, publication_id: uuid.UUID, user_i
         return False
     publication = await db.get(PublicTripPublication, publication_id)
     await db.delete(existing)
+    await db.flush()
     if publication:
-        publication.save_count = max(publication.save_count - 1, 0)
+        publication.save_count = await _actual_save_count(db, publication_id)
     await db.commit()
     return True
 
+
+async def _actual_save_count(db: AsyncSession, publication_id: uuid.UUID) -> int:
+    """Keep the cached counter equal to real save rows, including seeded trips."""
+    return int((await db.execute(select(func.count(PublicTripSave.id)).where(PublicTripSave.publication_id == publication_id))).scalar_one())
 
 async def list_saved_publications(
     db: AsyncSession,

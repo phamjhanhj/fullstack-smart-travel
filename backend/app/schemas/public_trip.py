@@ -52,8 +52,10 @@ class UpsertPublicTripRequest(BaseModel):
 
 class PublicTripAuthor(BaseModel):
     id: uuid.UUID
+    profile_username: str | None = None
     full_name: str
     avatar_url: str | None = None
+    accepts_tour_bookings: bool = False
 
 
 class PublicTripResponse(BaseModel):

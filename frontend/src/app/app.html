@@ -1,8 +1,8 @@
 @if (isAuthenticated() && !isAuthPage()) {
-  <header class="app-header fixed top-0 left-0 w-full z-[200] bg-surface/70 backdrop-blur-xl border-b border-border-glass px-10 h-16 flex items-center justify-between select-none">
+  <header class="app-header fixed top-0 left-0 w-full z-[200] bg-surface/70 backdrop-blur-xl border-b border-border-glass px-4 md:px-10 h-16 flex items-center justify-between select-none">
     <div class="flex items-center gap-2 cursor-pointer" routerLink="/dashboard" [queryParams]="{tab: 'explore'}">
       <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">travel_explore</span>
-      <span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Aether Travel</span>
+      <span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Smart Travel</span>
     </div>
     <nav class="hidden md:flex items-center gap-8 h-16">
       <a 
@@ -104,7 +104,7 @@
           </div>
 
           <div *ngIf="isLoadingInvites()" class="py-8 text-center text-xs text-on-surface-variant flex flex-col items-center gap-2">
-            <div class="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             <span>Đang tải lời mời...</span>
           </div>
 

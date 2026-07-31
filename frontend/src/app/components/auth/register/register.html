@@ -9,7 +9,7 @@
         <div class="absolute bottom-margin-desktop left-margin-desktop z-10 max-w-xl">
           <span class="font-label-md text-label-md text-primary uppercase tracking-widest mb-stack-sm block">Featured Destination</span>
           <h2 class="font-display-lg text-display-lg text-white mb-stack-md leading-tight">Vịnh Hạ Long</h2>
-          <p class="font-body-lg text-body-lg text-on-surface-variant">Khám phá vẻ đẹp kỳ vĩ của di sản thiên nhiên thế giới với hành trình được cá nhân hóa bởi trí tuệ nhân tạo.</p>
+          <p class="font-body-lg text-body-lg text-white/80">Khám phá vẻ đẹp kỳ vĩ của di sản thiên nhiên thế giới với hành trình được cá nhân hóa bởi trí tuệ nhân tạo.</p>
         </div>
       </div>
       <!-- Slide 2: Sapa -->
@@ -19,7 +19,7 @@
         <div class="absolute bottom-margin-desktop left-margin-desktop z-10 max-w-xl">
           <span class="font-label-md text-label-md text-primary uppercase tracking-widest mb-stack-sm block">Hidden Gems</span>
           <h2 class="font-display-lg text-display-lg text-white mb-stack-md leading-tight">Vùng Cao Sapa</h2>
-          <p class="font-body-lg text-body-lg text-on-surface-variant">Lạc bước giữa những ruộng bậc thang mờ sương và trải nghiệm văn hóa bản địa độc đáo nhất.</p>
+          <p class="font-body-lg text-body-lg text-white/80">Lạc bước giữa những ruộng bậc thang mờ sương và trải nghiệm văn hóa bản địa độc đáo nhất.</p>
         </div>
       </div>
     </div>
@@ -30,16 +30,16 @@
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20">
           <span class="material-symbols-outlined text-on-primary-fixed" style="font-variation-settings: 'FILL' 1;">explore</span>
         </div>
-        <span class="font-headline-md text-headline-md font-bold tracking-tight text-white">Aether Travel</span>
+        <span class="font-headline-md text-headline-md font-bold tracking-tight text-white">Smart Travel</span>
       </div>
     </div>
 
     <!-- Navigation Controls -->
     <div class="absolute bottom-margin-desktop right-margin-desktop z-20 flex gap-4">
-      <button class="w-12 h-12 rounded-full glass-card flex items-center justify-center text-white hover:bg-white/20 transition-all border-glass cursor-pointer" (click)="prevSlide()">
+      <button class="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-all border border-white/20 cursor-pointer" (click)="prevSlide()">
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
-      <button class="w-12 h-12 rounded-full glass-card flex items-center justify-center text-white hover:bg-white/20 transition-all border-glass cursor-pointer" (click)="nextSlide()">
+      <button class="w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-all border border-white/20 cursor-pointer" (click)="nextSlide()">
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
     </div>
@@ -179,7 +179,7 @@
             [disabled]="isLoading() || successMessage()"
           >
             <ng-container *ngIf="isLoading(); else notLoading">
-              <span class="animate-spin material-symbols-outlined">progress_activity</span>
+              <span class="animate-spin material-symbols-outlined text-primary">progress_activity</span>
               <span>Đang tạo tài khoản...</span>
             </ng-container>
             <ng-template #notLoading>

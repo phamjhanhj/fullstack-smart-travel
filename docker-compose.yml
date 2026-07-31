@@ -1,0 +1,93 @@
+name: smart-travel
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: smart-travel-db
+    restart: unless-stopped
+    environment:
+      # Full PostgreSQL connection information for local Docker deployment.
+      POSTGRES_DB: smart_travel
+      POSTGRES_USER: smart_travel
+      POSTGRES_PASSWORD: smart_travel_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smart_travel -d smart_travel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - smart-travel-network
+
+  backend:
+    container_name: smart-travel-backend
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    environment:
+      ENVIRONMENT: development
+      # Database host is the Compose service name "db", not localhost.
+      DATABASE_URL: postgresql+asyncpg://smart_travel:smart_travel_password@db:5432/smart_travel
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-docker-dev-secret-change-before-production}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_SECONDS: 3600
+      REFRESH_TOKEN_EXPIRE_SECONDS: 604800
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      FOURSQUARE_API_KEY: ${FOURSQUARE_API_KEY:-}
+      ROUTING_PROVIDER: ${ROUTING_PROVIDER:-haversine}
+      OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
+      ALLOWED_ORIGINS: http://localhost:4200
+      FRONTEND_BASE_URL: http://localhost:4200
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Smart Travel PKA}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - smart-travel-network
+
+  frontend:
+    container_name: smart-travel-frontend
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - smart-travel-network
+
+volumes:
+  postgres_data:
+    name: smart-travel-postgres-data
+
+networks:
+  smart-travel-network:
+    name: smart-travel-network
+    driver: bridge

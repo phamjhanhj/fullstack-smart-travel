@@ -20,7 +20,8 @@ from app.models.public_trip import (
     PublicTripSave,
 )
 from app.models.p1_features import UserNotification, TripJournalEntry, SavedTripCollection, SavedTripCollectionItem
-from app.models.p2_features import PublicTripComment, PublicTripRating, AuthorFollow, HiddenRecommendation
+from app.models.p2_features import PublicTripComment, PublicTripRating, AuthorFollow, HiddenRecommendation, CommunityReport, TourBookingInquiry
+from app.models.rate_limit import ApiRateLimitBucket
 
 __all__ = [
     "User",
@@ -49,4 +50,7 @@ __all__ = [
     "PublicTripRating",
     "AuthorFollow",
     "HiddenRecommendation",
+    "CommunityReport",
+    "TourBookingInquiry",
+    "ApiRateLimitBucket",
 ]

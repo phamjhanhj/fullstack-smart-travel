@@ -55,15 +55,16 @@ async def get_group_split_summary(db: AsyncSession, trip: Trip) -> dict:
     owner_stmt = select(User).where(User.id == trip.user_id)
     res_owner = await db.execute(owner_stmt)
     owner = res_owner.scalar_one_or_none()
-    owner_name = owner.full_name or (owner.email.split('@')[0] if owner and owner.email else "Chủ chuyến đi")
+    owner_name = (owner.full_name if owner and owner.full_name else None) or (owner.email.split('@')[0] if owner and owner.email else "Chủ chuyến đi")
 
-    shared_members = await trip_share_service.list_trip_shares(db, trip.id, owner if owner else None)
+    participants, _ = await trip_share_service.list_share_state(db, trip.id)
     
     member_names = [owner_name]
-    for s in shared_members:
-        if getattr(s, "shared_with_user", None) and s.shared_with_user and s.shared_with_user.full_name:
-            if s.shared_with_user.full_name not in member_names:
-                member_names.append(s.shared_with_user.full_name)
+    for p in participants:
+        if getattr(p, "user", None) and p.user:
+            name = p.user.full_name or (p.user.email.split('@')[0] if p.user.email else p.user.username)
+            if name and name not in member_names:
+                member_names.append(name)
 
     needed = max(1, trip.num_travelers or 1)
     idx = 1
@@ -156,6 +157,7 @@ async def get_group_split_summary(db: AsyncSession, trip: Trip) -> dict:
         "total_actual": total_actual,
         "total_planned": total_planned,
         "per_person_actual": round(total_actual / len(member_names)) if member_names else 0,
+        "per_person_planned": round(total_planned / len(member_names)) if member_names else 0,
         "members_summary": balances,
         "settlements": settlements,
         "currency": "VND"

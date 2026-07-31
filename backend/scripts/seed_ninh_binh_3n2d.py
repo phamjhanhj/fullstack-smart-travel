@@ -972,7 +972,7 @@ async def seed_ninh_binh() -> None:
                 "Động Am Tiên",
                 "Đạp xe",
             ],
-            "save_count": 184,
+            "save_count": 0,
             "view_count": 2160,
             "published_at": datetime.now(timezone.utc),
         }

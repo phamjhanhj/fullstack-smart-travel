@@ -97,9 +97,13 @@ async def archive_trip_publication(
 @public_trips_router.get("")
 async def list_public_trips(
     destination: str | None = Query(default=None, max_length=120),
+    search: str | None = Query(default=None, max_length=200),
     max_cost_per_person: int | None = Query(default=None, ge=0),
     min_days: int | None = Query(default=None, ge=1),
     max_days: int | None = Query(default=None, ge=1),
+    min_rating: float | None = Query(default=None, ge=1, le=5),
+    traveler_type: str | None = Query(default=None, max_length=40),
+    pace: str | None = Query(default=None, max_length=30),
     sort: str = Query(default="newest"),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=12, ge=1, le=50),
@@ -109,9 +113,13 @@ async def list_public_trips(
     publications, total = await public_trip_service.list_publications(
         db,
         destination=destination,
+        search=search,
         max_cost_per_person=max_cost_per_person,
         min_days=min_days,
         max_days=max_days,
+        min_rating=min_rating,
+        traveler_type=traveler_type,
+        pace=pace,
         sort=sort,
         page=page,
         limit=limit,

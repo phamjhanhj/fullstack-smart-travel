@@ -1,6 +1,7 @@
 """Business logic - Module 2: Users."""
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import update
@@ -12,11 +13,22 @@ from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.schemas.user import ChangePasswordRequest, UpdateProfileRequest
 
+logger = logging.getLogger(__name__)
+
 
 async def update_profile(db: AsyncSession, user: User, payload: UpdateProfileRequest) -> User:
     """Cap nhat tung field duoc gui len (PATCH semantics) - bo qua field None."""
     update_data = payload.model_dump(exclude_unset=True, exclude_none=False)
+    # A private profile can never advertise tour-booking availability.
+    # Publishing an individual trip remains independent from profile privacy.
+    effective_public = update_data.get("is_public_profile", user.is_public_profile)
+    if not effective_public:
+        update_data["accepts_tour_bookings"] = False
 
+    privacy_before = {
+        "is_public_profile": bool(user.is_public_profile),
+        "accepts_tour_bookings": bool(user.accepts_tour_bookings),
+    }
     for field, value in update_data.items():
         if field == "preferences_json" and value is not None:
             # value la UserPreferences object hoac dict tu model_dump -> luu dang dict (JSON column)
@@ -25,6 +37,12 @@ async def update_profile(db: AsyncSession, user: User, payload: UpdateProfileReq
 
     await db.commit()
     await db.refresh(user)
+    privacy_after = {
+        'is_public_profile': bool(user.is_public_profile),
+        'accepts_tour_bookings': bool(user.accepts_tour_bookings),
+    }
+    if privacy_before != privacy_after:
+        logger.info('profile_privacy_changed user_id=%s before=%s after=%s', user.id, privacy_before, privacy_after)
     return user
 
 

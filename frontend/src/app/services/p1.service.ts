@@ -8,6 +8,7 @@ export interface UserNotification { id:string; type:string; title:string; messag
 export interface NotificationList { items:UserNotification[]; unread_count:number; }
 export interface JournalEntry { id:string; trip_id:string; user_id:string; activity_id:string|null; entry_date:string; note:string|null; photo_urls:string[]; actual_cost:number|null; rating:number|null; is_check_in:boolean; created_at:string; updated_at:string|null; }
 export interface SavedCollection { id:string; name:string; description:string|null; item_count:number; created_at:string; }
+export interface SavedCollectionDetail extends SavedCollection { items: any[]; }
 export interface EmergencyOption { id:string; title:string; description:string; impact:string; requires_confirmation:boolean; }
 
 @Injectable({ providedIn: 'root' })
@@ -20,7 +21,9 @@ export class P1Service {
   listJournal(tripId:string): Observable<ResponseEnvelope<JournalEntry[]>> { return this.http.get<ResponseEnvelope<JournalEntry[]>>(`${this.baseUrl}/trips/${tripId}/journal`); }
   createJournal(tripId:string, payload:Partial<JournalEntry>): Observable<ResponseEnvelope<JournalEntry>> { return this.http.post<ResponseEnvelope<JournalEntry>>(`${this.baseUrl}/trips/${tripId}/journal`, payload); }
   listCollections(): Observable<ResponseEnvelope<SavedCollection[]>> { return this.http.get<ResponseEnvelope<SavedCollection[]>>(`${this.baseUrl}/collections`); }
-  createCollection(name:string, description?:string) { return this.http.post(`${this.baseUrl}/collections`, { name, description: description || null }); }
+  getCollectionDetail(collectionId:string): Observable<ResponseEnvelope<SavedCollectionDetail>> { return this.http.get<ResponseEnvelope<SavedCollectionDetail>>(`${this.baseUrl}/collections/${collectionId}`); }
+  deleteCollection(collectionId:string): Observable<ResponseEnvelope<any>> { return this.http.delete<ResponseEnvelope<any>>(`${this.baseUrl}/collections/${collectionId}`); }
+  createCollection(name:string, description?:string): Observable<ResponseEnvelope<SavedCollection>> { return this.http.post<ResponseEnvelope<SavedCollection>>(`${this.baseUrl}/collections`, { name, description: description || null }); }
   addToCollection(collectionId:string, publicationId:string) { return this.http.post(`${this.baseUrl}/collections/${collectionId}/items/${publicationId}`, {}); }
   emergencyPreview(tripId:string, reason:string, activityId?:string) : Observable<ResponseEnvelope<EmergencyOption[]>> { return this.http.post<ResponseEnvelope<EmergencyOption[]>>(`${this.baseUrl}/trips/${tripId}/emergency/preview`, { reason, activity_id: activityId || null }); }
 }

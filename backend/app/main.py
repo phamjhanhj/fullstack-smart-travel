@@ -6,6 +6,10 @@ Locations, Budget, AI Chat & Suggestions). Chat suggestions extraction prompt ad
 """
 from __future__ import annotations
 
+import logging
+import time
+import uuid
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -30,6 +34,37 @@ app = FastAPI(
     description="API cho he thong goi y dia diem va lap lich trinh du lich thong minh tich hop AI",
     version="1.0.0",
 )
+
+logger = logging.getLogger("app.request")
+
+
+@app.middleware("http")
+async def request_context_middleware(request, call_next):
+    """Attach a safe correlation ID and log request failures without payloads."""
+    request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+    request.state.request_id = request_id
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "Unhandled request failure request_id=%s method=%s path=%s",
+            request_id,
+            request.method,
+            request.url.path,
+        )
+        raise
+    response.headers["X-Request-ID"] = request_id
+    if response.status_code >= 500:
+        logger.error(
+            "Server error request_id=%s method=%s path=%s status=%s duration_ms=%d",
+            request_id,
+            request.method,
+            request.url.path,
+            response.status_code,
+            round((time.perf_counter() - started) * 1000),
+        )
+    return response
 
 # --- CORS ----------------------------------------------------------------------
 app.add_middleware(

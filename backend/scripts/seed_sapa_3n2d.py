@@ -1038,7 +1038,7 @@ async def seed_sapa() -> None:
                 "Tàu hỏa leo núi",
                 "Cáp treo",
             ],
-            "save_count": 236,
+            "save_count": 0,
             "view_count": 3180,
             "published_at": datetime.now(timezone.utc),
         }

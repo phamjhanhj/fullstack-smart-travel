@@ -62,17 +62,37 @@ def test_trip_update_fields_are_validated() -> None:
 
 @pytest.mark.asyncio
 async def test_group_split_uses_num_travelers(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_summary(_db, _trip):
-        return {"budget_actual": 900_000, "budget_planned": 1_200_000}
+    owner = SimpleNamespace(full_name="Chủ chuyến đi", email="owner@example.com")
 
-    monkeypatch.setattr(budget_service, "get_trip_summary", fake_summary)
-    trip = SimpleNamespace(id="trip-1", num_travelers=3)
+    class FakeResult:
+        def scalar_one_or_none(self):
+            return owner
 
-    result = await budget_service.get_group_split_summary(None, trip)
+    class FakeDb:
+        async def execute(self, _statement):
+            return FakeResult()
+
+    async def fake_share_state(_db, _trip_id):
+        return [], []
+
+    async def fake_budget_items(_db, _trip_id, category=None):
+        return [SimpleNamespace(
+            actual_amount=900_000,
+            planned_amount=1_200_000,
+            paid_by=None,
+            participants=None,
+        )]
+
+    monkeypatch.setattr(budget_service.trip_share_service, "list_share_state", fake_share_state)
+    monkeypatch.setattr(budget_service, "list_budget_items", fake_budget_items)
+    trip = SimpleNamespace(id="trip-1", user_id="owner-1", num_travelers=3)
+
+    result = await budget_service.get_group_split_summary(FakeDb(), trip)
 
     assert result["companions_count"] == 3
     assert result["per_person_actual"] == 300_000
     assert result["per_person_planned"] == 400_000
+    assert sum(item["net_balance"] for item in result["members_summary"]) == 0
 
 
 @pytest.mark.asyncio

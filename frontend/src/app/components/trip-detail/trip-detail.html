@@ -245,22 +245,6 @@
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span class="font-bold text-xs">Xuất Excel</span>
             </button>
-            <button
-              *ngIf="canEditTrip()"
-              class="flex items-center gap-2 px-5 py-2.5 bg-primary/20 border border-primary/40 rounded-xl hover:bg-primary/30 transition-all group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-              (click)="onGenerateItinerary()"
-              [disabled]="isGenerating()"
-            >
-              <span
-                class="material-symbols-outlined text-primary group-hover:rotate-12 transition-transform"
-                [class.animate-spin]="isGenerating()"
-              >
-                {{ isGenerating() ? 'progress_activity' : 'auto_awesome' }}
-              </span>
-              <span class="font-bold text-xs text-primary">{{
-                isGenerating() ? 'Đang lên lịch AI...' : 'Tạo lịch trình bằng AI'
-              }}</span>
-            </button>
           </div>
         </div>
 
@@ -407,17 +391,8 @@
           </div>
           <h3 class="text-lg font-bold text-on-surface">Chưa có lịch trình ngày nào</h3>
           <p class="text-sm text-on-surface-variant max-w-md">
-            Bấm nút "Tạo lịch trình bằng AI" để được đề xuất lịch trình ăn uống, tham quan, lưu trú
-            chi tiết nhất hoặc tự thiết lập thủ công.
+            Vui lòng thêm hoạt động thủ công hoặc chọn các điểm đến hấp dẫn từ tab Khám phá địa điểm để bắt đầu lên lịch trình.
           </p>
-          <button
-            *ngIf="canEditTrip()"
-            class="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer"
-            (click)="onGenerateItinerary()"
-            [disabled]="isGenerating()"
-          >
-            Lập kế hoạch AI ngay
-          </button>
         </div>
 
         <!-- Itinerary Loaded View -->
@@ -478,18 +453,6 @@
               <div class="flex items-center gap-2">
                 <button
                   *ngIf="canEditTrip()"
-                  class="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-400 text-sm font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                  (click)="optimizeDayRoute(day.id)"
-                  [disabled]="optimizingDayId() === day.id"
-                  title="Tự động sắp xếp thứ tự các điểm theo đường đi ngắn nhất"
-                >
-                  <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="optimizingDayId() === day.id">
-                    {{ optimizingDayId() === day.id ? 'sync' : 'near_me' }}
-                  </span>
-                  <span>{{ optimizingDayId() === day.id ? 'Đang tối ưu...' : 'Tối ưu lộ trình' }}</span>
-                </button>
-                <button
-                  *ngIf="canEditTrip()"
                   class="flex items-center gap-1.5 px-4 py-2 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary text-sm font-bold rounded-xl transition-all cursor-pointer"
                   (click)="openActivityModal(day.id)"
                 >
@@ -509,9 +472,6 @@
                   <span class="material-symbols-outlined" [ngClass]="quality.error_count ? 'text-red-400' : quality.warning_count ? 'text-amber-400' : 'text-emerald-400'">fact_check</span>
                   <strong>Chất lượng lịch trình: {{ quality.score }}/100</strong>
                 </div>
-                <button type="button" class="text-xs text-primary font-bold" (click)="refreshItineraryQuality()" [disabled]="isCheckingQuality()">
-                  {{ isCheckingQuality() ? 'Đang kiểm tra...' : 'Kiểm tra lại' }}
-                </button>
               </div>
               <div *ngIf="quality.issues.length" class="mt-3 space-y-1.5 text-sm">
                 <p *ngFor="let issue of quality.issues" class="m-0" [ngClass]="issue.severity === 'error' ? 'text-red-300' : 'text-amber-200'">• {{ issue.message }}</p>
@@ -520,14 +480,16 @@
             </section>
 
             <div class="glass-card rounded-2xl p-4 mb-5 border border-border-glass">
-              <div class="flex flex-wrap items-center gap-2">
-                <strong class="text-sm mr-2">Kế hoạch khẩn cấp:</strong>
-                <button type="button" class="px-3 py-1.5 rounded-lg border border-blue-500/30 text-blue-300 text-xs" (click)="previewEmergency('rain')">Trời mưa</button>
-                <button type="button" class="px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-300 text-xs" (click)="previewEmergency('closed')">Địa điểm đóng cửa</button>
-                <button type="button" class="px-3 py-1.5 rounded-lg border border-purple-500/30 text-purple-300 text-xs" (click)="previewEmergency('late')">Bị trễ</button>
-                <span *ngIf="isLoadingEmergency()" class="text-xs text-on-surface-variant">Đang tạo phương án...</span>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <strong class="text-xs sm:text-sm font-bold text-on-surface">Kế hoạch khẩn cấp:</strong>
+                <div class="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
+                  <button type="button" class="px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs font-semibold text-center truncate transition-colors" (click)="previewEmergency('rain')">Trời mưa</button>
+                  <button type="button" class="px-2.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-semibold text-center truncate transition-colors" (click)="previewEmergency('closed')">Đóng cửa</button>
+                  <button type="button" class="px-2.5 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-semibold text-center truncate transition-colors" (click)="previewEmergency('late')">Bị trễ</button>
+                </div>
+                <span *ngIf="isLoadingEmergency()" class="text-xs text-on-surface-variant">Đang tạo...</span>
               </div>
-              <div *ngIf="emergencyOptions().length" class="grid md:grid-cols-2 gap-2 mt-3">
+              <div *ngIf="emergencyOptions().length" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                 <article *ngFor="let option of emergencyOptions()" class="rounded-xl bg-white/5 border border-glass p-3">
                   <strong class="text-sm">{{ option.title }}</strong><p class="text-xs text-on-surface-variant my-1">{{ option.description }}</p><small class="text-amber-300">{{ option.impact }}</small>
                 </article>
@@ -552,7 +514,7 @@
 
             <!-- Timeline of activities -->
             <div
-              class="relative ml-6 pl-8 border-l-2 border-dashed border-glass space-y-6"
+              class="relative ml-2 pl-5 sm:ml-6 sm:pl-8 border-l-2 border-dashed border-glass space-y-4 sm:space-y-6"
               *ngIf="day.activities.length > 0"
               cdkDropList
               [cdkDropListDisabled]="!canEditTrip()"
@@ -562,7 +524,7 @@
               <div class="relative" *ngFor="let act of day.activities; let actIdx = index" cdkDrag>
                 <!-- Color-coded marker nodes -->
                 <div
-                  class="absolute -left-[41px] top-4 w-4 h-4 rounded-full border-4 border-bg-slate-deep z-10"
+                  class="absolute -left-[29px] sm:-left-[41px] top-4 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 sm:border-4 border-bg-slate-deep z-10"
                   [ngClass]="{
                     'bg-activity-transport': act.type === 'transport',
                     'bg-activity-hotel': act.type === 'hotel',
@@ -578,93 +540,97 @@
 
                 <!-- Activity details glass-card -->
                 <div
-                  class="glass-card rounded-2xl p-5 flex gap-5 border border-glass cursor-pointer hover:border-primary/40 hover:bg-white/[0.03] transition-colors"
+                  class="glass-card rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row gap-3 sm:gap-5 border border-glass cursor-pointer hover:border-primary/40 hover:bg-white/[0.03] transition-colors"
                   [class.cursor-pointer]="canEditTrip()"
                   (click)="canEditTrip() && openEditActivityModal(day.id, act)"
                 >
-                  <!-- Thumbnail preview -->
-                  <div
-                    class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-surface-container-low flex items-center justify-center text-xl select-none"
-                  >
-                    <ng-container *ngIf="act.location?.photo_url; else fallbackIcon">
-                      <img
-                        [src]="act.location!.photo_url"
-                        class="w-full h-full object-cover"
-                        [alt]="act.title"
-                        [attr.data-fallback-seed]="act.id || act.title"
-                        loading="lazy"
-                        decoding="async"
-                        (error)="handleImgError($event)"
-                      />
-                    </ng-container>
-                    <ng-template #fallbackIcon>
-                      <span class="material-symbols-outlined text-primary text-xl">{{ getActivityIcon(act.type) }}</span>
-                    </ng-template>
-                  </div>
+                  <!-- Top Row on Mobile / Left Column on Desktop: Thumbnail & Title -->
+                  <div class="flex items-start gap-3 flex-1 min-w-0">
+                    <!-- Thumbnail preview -->
+                    <div
+                      class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 bg-surface-container-low flex items-center justify-center text-xl select-none"
+                    >
+                      <ng-container *ngIf="act.location?.photo_url; else fallbackIcon">
+                        <img
+                          [src]="act.location!.photo_url"
+                          class="w-full h-full object-cover"
+                          [alt]="act.title"
+                          [attr.data-fallback-seed]="act.id || act.title"
+                          loading="lazy"
+                          decoding="async"
+                          (error)="handleImgError($event)"
+                        />
+                      </ng-container>
+                      <ng-template #fallbackIcon>
+                        <span class="material-symbols-outlined text-primary text-xl">{{ getActivityIcon(act.type) }}</span>
+                      </ng-template>
+                    </div>
 
-                  <!-- Details -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-start mb-1 gap-2">
-                      <h3 class="font-bold text-lg text-on-surface truncate" [title]="act.title">
+                    <!-- Title & Details -->
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-bold text-sm sm:text-base text-on-surface leading-snug break-words m-0" [title]="act.title">
                         {{ act.title }}
                       </h3>
-                      <div class="flex items-center gap-1.5 shrink-0">
-                        <button *ngIf="canEditTrip()" type="button" class="flex items-center justify-center p-1 rounded-lg border border-emerald-500/30" [ngClass]="hasCheckedIn(act.id) ? 'text-emerald-300 bg-emerald-500/10' : 'text-on-surface-variant'" (click)="quickCheckIn(act, $event)" [disabled]="hasCheckedIn(act.id)" [title]="hasCheckedIn(act.id) ? 'Đã check-in' : 'Check-in nhanh'">
-                          <span class="material-symbols-outlined text-[18px]">{{ hasCheckedIn(act.id) ? 'where_to_vote' : 'add_location_alt' }}</span>
-                        </button>
-                        <button
-                          *ngIf="canEditTrip()"
-                          type="button"
-                          class="flex items-center justify-center p-1 rounded-lg border transition-colors"
-                          [ngClass]="act.is_locked ? 'text-amber-300 border-amber-500/40 bg-amber-500/10' : 'text-on-surface-variant border-transparent hover:text-amber-300'"
-                          [disabled]="updatingLockId() === act.id"
-                          (click)="toggleActivityLock(act, $event)"
-                          [title]="act.is_locked ? 'Mở khóa hoạt động' : 'Khóa để AI không thay đổi'"
-                        >
-                          <span class="material-symbols-outlined text-[18px]">{{ act.is_locked ? 'lock' : 'lock_open' }}</span>
-                        </button>
-                        <button
-                          class="flex items-center gap-1 text-xs text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                          (click)="openGoogleMaps(act, $event)"
-                          title="Mở dẫn đường Google Maps"
-                        >
-                          <span class="material-symbols-outlined text-[14px]">explore</span>
-                          <span>Dẫn đường</span>
-                        </button>
-                        <button
-                          *ngIf="canEditTrip()"
-                          class="text-on-surface-variant hover:text-status-warning transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
-                          (click)="$event.stopPropagation(); onDeleteActivity(act.id)"
-                          title="Xóa hoạt động"
-                        >
-                          <span class="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                        <div
-                          *ngIf="canEditTrip()"
-                          class="text-on-surface-variant hover:text-on-surface transition-colors cursor-grab active:cursor-grabbing flex items-center justify-center p-1"
-                          cdkDragHandle
-                          (click)="$event.stopPropagation()"
-                          title="Kéo thả để sắp xếp"
-                        >
-                          <span class="material-symbols-outlined text-[20px]">drag_indicator</span>
-                        </div>
+                      <p
+                        class="text-xs sm:text-sm text-on-surface-variant mt-1 line-clamp-2 m-0"
+                        *ngIf="act.description"
+                      >
+                        {{ act.description }}
+                      </p>
+                      <p class="text-xs text-primary/80 mt-1 flex items-center gap-1 m-0" *ngIf="act.notes">
+                        <span class="material-symbols-outlined text-[14px]">info</span>
+                        <em>Lưu ý: {{ act.notes }}</em>
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons & Tags (Flexible Row below on Mobile, or Column on Right for Desktop) -->
+                  <div class="flex flex-col justify-between gap-2 border-t sm:border-t-0 border-glass/40 pt-2.5 sm:pt-0 shrink-0">
+                    <!-- Top Actions Bar -->
+                    <div class="flex items-center justify-between sm:justify-end gap-1.5 flex-wrap">
+                      <button *ngIf="canEditTrip()" type="button" class="flex items-center justify-center p-1 rounded-lg border border-emerald-500/30" [ngClass]="hasCheckedIn(act.id) ? 'text-emerald-300 bg-emerald-500/10' : 'text-on-surface-variant'" (click)="quickCheckIn(act, $event)" [disabled]="hasCheckedIn(act.id)" [title]="hasCheckedIn(act.id) ? 'Đã check-in' : 'Check-in nhanh'">
+                        <span class="material-symbols-outlined text-[16px] sm:text-[18px]">{{ hasCheckedIn(act.id) ? 'where_to_vote' : 'add_location_alt' }}</span>
+                      </button>
+                      <button
+                        *ngIf="canEditTrip()"
+                        type="button"
+                        class="flex items-center justify-center p-1 rounded-lg border transition-colors"
+                        [ngClass]="act.is_locked ? 'text-amber-300 border-amber-500/40 bg-amber-500/10' : 'text-on-surface-variant border-transparent hover:text-amber-300'"
+                        [disabled]="updatingLockId() === act.id"
+                        (click)="toggleActivityLock(act, $event)"
+                        [title]="act.is_locked ? 'Mở khóa hoạt động' : 'Khóa để AI không thay đổi'"
+                      >
+                        <span class="material-symbols-outlined text-[16px] sm:text-[18px]">{{ act.is_locked ? 'lock' : 'lock_open' }}</span>
+                      </button>
+                      <button
+                        class="flex items-center gap-1 text-[11px] sm:text-xs text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 px-2 sm:px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        (click)="openGoogleMaps(act, $event)"
+                        title="Mở dẫn đường Google Maps"
+                      >
+                        <span class="material-symbols-outlined text-[13px]">explore</span>
+                        <span>Dẫn đường</span>
+                      </button>
+                      <button
+                        *ngIf="canEditTrip()"
+                        class="text-on-surface-variant hover:text-status-warning transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
+                        (click)="$event.stopPropagation(); onDeleteActivity(act.id)"
+                        title="Xóa hoạt động"
+                      >
+                        <span class="material-symbols-outlined text-[16px] sm:text-[18px]">delete</span>
+                      </button>
+                      <div
+                        *ngIf="canEditTrip()"
+                        class="text-on-surface-variant hover:text-on-surface transition-colors cursor-grab active:cursor-grabbing flex items-center justify-center p-1"
+                        cdkDragHandle
+                        (click)="$event.stopPropagation()"
+                        title="Kéo thả để sắp xếp"
+                      >
+                        <span class="material-symbols-outlined text-[18px] sm:text-[20px]">drag_indicator</span>
                       </div>
                     </div>
 
-                    <p
-                      class="text-sm text-on-surface-variant mb-2 line-clamp-2"
-                      *ngIf="act.description"
-                    >
-                      {{ act.description }}
-                    </p>
-                    <p class="text-xs text-primary/80 mb-3 flex items-center gap-1" *ngIf="act.notes">
-                      <span class="material-symbols-outlined text-[14px]">info</span>
-                      <em>Lưu ý: {{ act.notes }}</em>
-                    </p>
-
-                    <div
-                      class="flex flex-wrap items-center gap-4 text-xs font-semibold text-on-surface-variant"
-                    >
+                    <!-- Bottom Metadata Badges (Time, Cost, Category Tag) -->
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-semibold text-on-surface-variant pt-1 sm:pt-0">
                       <span class="flex items-center gap-1" *ngIf="act.start_time">
                         <span class="material-symbols-outlined text-[14px]">schedule</span>
                         {{ act.start_time }}{{ act.end_time ? ' - ' + act.end_time : '' }}
@@ -1619,7 +1585,7 @@
                       formControlName="budget"
                       (input)="onBudgetInputChange($event)"
                       class="w-full bg-surface-container-low border border-glass rounded-2xl py-3 pl-4 pr-14 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none font-mono text-base font-bold"
-                      placeholder="Ví dụ: 15.000.000"
+                      placeholder="Ví dụ: 15,000,000"
                     />
                     <span class="absolute right-4 text-xs font-bold text-primary select-none pointer-events-none">VNĐ</span>
                   </div>
@@ -1757,13 +1723,11 @@
                 </div>
                 <div class="space-y-1">
                   <label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Quyền</label>
-                  <select
+                  <app-custom-select
                     formControlName="role"
-                    class="bg-surface-container-low border border-glass rounded-xl py-2.5 px-3 text-on-surface outline-none text-xs font-medium cursor-pointer"
-                  >
-                    <option value="viewer">Xem</option>
-                    <option value="editor">Sửa</option>
-                  </select>
+                    [items]="memberRoleSelectOptions"
+                    placeholder="Chọn quyền"
+                  ></app-custom-select>
                 </div>
                 <div class="space-y-1">
                   <label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Hạn (ngày)</label>
@@ -1822,14 +1786,14 @@
                       </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
-                      <select
-                        class="bg-transparent border border-glass rounded-lg py-1 px-1.5 text-[11px] font-bold text-on-surface outline-none cursor-pointer"
-                        [value]="participant.role"
-                        (change)="onUpdateParticipantRole(participant, $any($event.target).value)"
-                      >
-                        <option value="viewer">Xem</option>
-                        <option value="editor">Sửa</option>
-                      </select>
+                      <app-custom-select
+                        [ngModel]="participant.role"
+                        [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="onUpdateParticipantRole(participant, $event)"
+                        [items]="memberRoleSelectOptions"
+                        [placeholder]="participant.role === 'editor' ? 'Sửa' : 'Xem'"
+                        class="min-w-[90px]"
+                      ></app-custom-select>
                       <button
                         type="button"
                         class="text-status-warning hover:bg-rose-500/10 p-1.5 rounded-lg border-none bg-transparent cursor-pointer transition-colors"
@@ -1876,7 +1840,7 @@
                   <span>Xuất bản Cộng đồng</span>
                 </h3>
                 <p class="text-on-surface-variant text-xs opacity-80 leading-relaxed m-0">
-                  Chia sẻ lịch trình tuyệt vời của bạn để truyền cảm hứng cho những người đam mê du lịch khác trong cộng đồng Aether Travel.
+                  Chia sẻ lịch trình tuyệt vời của bạn để truyền cảm hứng cho những người đam mê du lịch khác trong cộng đồng Smart Travel.
                 </p>
               </div>
 
@@ -2359,7 +2323,7 @@
           <input [(ngModel)]="publicationDraft.title" class="publish-input" maxlength="200" />
         </label>
         <label class="text-sm font-semibold">Tổng chi phí thực tế
-          <input [(ngModel)]="publicationDraft.actual_total_cost" class="publish-input" inputmode="numeric" placeholder="Ví dụ: 4.200.000" />
+          <input [(ngModel)]="publicationDraft.actual_total_cost" class="publish-input" inputmode="numeric" placeholder="Ví dụ: 4,200,000" />
         </label>
       </div>
       <label class="block text-sm font-semibold mt-4">Tóm tắt trải nghiệm
@@ -2368,19 +2332,31 @@
 
       <div class="grid md:grid-cols-3 gap-4 mt-4">
         <label class="text-sm font-semibold">Lịch trình
-          <select [(ngModel)]="publicationDraft.itinerary_rating" class="publish-input">
-            <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">{{ rating }}/5</option>
-          </select>
+          <div class="mt-1">
+            <app-custom-select
+              [(ngModel)]="publicationDraft.itinerary_rating"
+              [items]="ratingSelectOptions"
+              placeholder="Đánh giá"
+            ></app-custom-select>
+          </div>
         </label>
         <label class="text-sm font-semibold">Chi phí phù hợp
-          <select [(ngModel)]="publicationDraft.cost_rating" class="publish-input">
-            <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">{{ rating }}/5</option>
-          </select>
+          <div class="mt-1">
+            <app-custom-select
+              [(ngModel)]="publicationDraft.cost_rating"
+              [items]="ratingSelectOptions"
+              placeholder="Đánh giá"
+            ></app-custom-select>
+          </div>
         </label>
         <label class="text-sm font-semibold">Địa điểm
-          <select [(ngModel)]="publicationDraft.place_rating" class="publish-input">
-            <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">{{ rating }}/5</option>
-          </select>
+          <div class="mt-1">
+            <app-custom-select
+              [(ngModel)]="publicationDraft.place_rating"
+              [items]="ratingSelectOptions"
+              placeholder="Đánh giá"
+            ></app-custom-select>
+          </div>
         </label>
       </div>
 
@@ -2393,22 +2369,21 @@
                 <span class="text-[11px] text-primary font-bold">NGÀY {{ day.day_number }} · {{ activity.start_time }}</span>
                 <h4 class="font-bold mt-1">{{ activity.title }}</h4>
               </div>
-              <select
-                class="publish-select"
+              <app-custom-select
                 [ngModel]="publicationReview(activity.id).author_verdict"
                 (ngModelChange)="publicationReview(activity.id).author_verdict = $event"
-              >
-                <option *ngFor="let option of verdictOptions()" [ngValue]="option.value">{{ option.label }}</option>
-              </select>
+                [items]="verdictOptions()"
+                placeholder="Nhận xét"
+                class="min-w-[140px]"
+              ></app-custom-select>
             </div>
-            <div class="grid md:grid-cols-[120px_1fr] gap-3">
-              <select
-                class="publish-input"
+            <div class="grid md:grid-cols-[140px_1fr] gap-3">
+              <app-custom-select
                 [ngModel]="publicationReview(activity.id).rating"
                 (ngModelChange)="publicationReview(activity.id).rating = $event"
-              >
-                <option *ngFor="let rating of [5,4,3,2,1]" [ngValue]="rating">★ {{ rating }}/5</option>
-              </select>
+                [items]="starRatingSelectOptions"
+                placeholder="Đánh giá"
+              ></app-custom-select>
               <input
                 class="publish-input"
                 placeholder="Ghi chú cho người đi sau: giờ đẹp, gửi xe, xếp hàng..."
@@ -2460,279 +2435,7 @@
 
 <!-- ==================== MODALS LIST ==================== -->
 
-<!-- MODAL 0: Advanced AI itinerary generation -->
-<div class="modal-scrim" *ngIf="isGenerateOptionsOpen()" (click)="closeGenerateOptions()">
-  <div class="modal-card max-w-2xl" (click)="$event.stopPropagation()">
-    <div class="p-6 border-b border-glass flex justify-between items-center bg-white/5 select-none">
-      <div>
-        <h2 class="text-lg font-bold text-on-surface">Tạo lịch trình AI nâng cao</h2>
-        <p class="text-xs text-on-surface-variant mt-1">
-          {{ trip()?.destination }} · {{ trip()?.num_travelers }} người
-        </p>
-      </div>
-      <button
-        class="text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
-        (click)="closeGenerateOptions()"
-        [disabled]="isGenerating()"
-      >
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
 
-    <form [formGroup]="generateOptionsForm" (ngSubmit)="onSubmitGenerateOptions()" class="p-6 space-y-5 max-h-[76vh] overflow-y-auto">
-      <div
-        class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 text-status-warning text-sm flex items-center gap-3"
-        *ngIf="generationOptionsError()"
-      >
-        <span class="material-symbols-outlined">error</span>
-        <span>{{ generationOptionsError() }}</span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <label for="gen-departure" class="text-xs font-bold text-on-surface-variant block uppercase">Đi từ đâu</label>
-          <input
-            id="gen-departure"
-            type="text"
-            formControlName="departure_location"
-            placeholder="VD: Hà Nội, TP. Hồ Chí Minh"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          />
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-arrival-transport" class="text-xs font-bold text-on-surface-variant block uppercase">Đến điểm du lịch bằng</label>
-          <input
-            id="gen-arrival-transport"
-            type="text"
-            formControlName="arrival_transport"
-            placeholder="VD: xe khách, máy bay, tàu hỏa, ô tô tự lái"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          />
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-departure-time" class="text-xs font-bold text-on-surface-variant block uppercase">Giờ xuất phát</label>
-          <input
-            id="gen-departure-time"
-            type="text"
-            formControlName="departure_time"
-            placeholder="18:00"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-            [class.border-status-warning]="isGenerateFieldInvalid('departure_time')"
-          />
-          <div class="text-status-warning text-xs font-semibold" *ngIf="isGenerateFieldInvalid('departure_time')">
-            Giờ phải có định dạng HH:MM.
-          </div>
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-travel-hours" class="text-xs font-bold text-on-surface-variant block uppercase">Thời gian di chuyển dự kiến</label>
-          <input
-            id="gen-travel-hours"
-            type="number"
-            min="0"
-            step="0.5"
-            formControlName="estimated_travel_hours"
-            placeholder="6"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-            [class.border-status-warning]="isGenerateFieldInvalid('estimated_travel_hours')"
-          />
-          <div class="text-status-warning text-xs font-semibold" *ngIf="isGenerateFieldInvalid('estimated_travel_hours')">
-            Số giờ di chuyển không được âm.
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <label for="gen-pace" class="text-xs font-bold text-on-surface-variant block uppercase">Nhịp độ</label>
-          <select
-            id="gen-pace"
-            formControlName="pace"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          >
-            <option value="relaxed">Thư giãn</option>
-            <option value="balanced">Cân bằng</option>
-            <option value="packed">Dày đặc</option>
-          </select>
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-budget" class="text-xs font-bold text-on-surface-variant block uppercase">Ngân sách</label>
-          <select
-            id="gen-budget"
-            formControlName="budget_mode"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          >
-            <option value="strict">Tiết kiệm nghiêm ngặt</option>
-            <option value="flexible_15">Linh hoạt 15%</option>
-            <option value="comfort">Thoải mái</option>
-          </select>
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-transport" class="text-xs font-bold text-on-surface-variant block uppercase">Di chuyển</label>
-          <select
-            id="gen-transport"
-            formControlName="transport_mode"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          >
-            <option value="mixed">Kết hợp linh hoạt</option>
-            <option value="taxi">Taxi / Grab</option>
-            <option value="motorbike">Xe máy</option>
-            <option value="car">Ô tô</option>
-            <option value="walking">Đi bộ</option>
-            <option value="public_transport">Công cộng</option>
-          </select>
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-priority" class="text-xs font-bold text-on-surface-variant block uppercase">Điểm muốn đi</label>
-          <select
-            id="gen-priority"
-            formControlName="prioritize_user_places"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          >
-            <option value="balanced">Cân bằng với tuyến đường</option>
-            <option value="high">Ưu tiên cao</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <label for="gen-start" class="text-xs font-bold text-on-surface-variant block uppercase">Bắt đầu mỗi ngày</label>
-          <input
-            id="gen-start"
-            type="text"
-            formControlName="daily_start_time"
-            placeholder="08:30"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-            [class.border-status-warning]="isGenerateFieldInvalid('daily_start_time')"
-          />
-          <div class="text-status-warning text-xs font-semibold" *ngIf="isGenerateFieldInvalid('daily_start_time')">
-            Giờ phải có định dạng HH:MM.
-          </div>
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-end" class="text-xs font-bold text-on-surface-variant block uppercase">Kết thúc mỗi ngày</label>
-          <input
-            id="gen-end"
-            type="text"
-            formControlName="daily_end_time"
-            placeholder="21:30"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-            [class.border-status-warning]="isGenerateFieldInvalid('daily_end_time')"
-          />
-          <div class="text-status-warning text-xs font-semibold" *ngIf="isGenerateFieldInvalid('daily_end_time')">
-            Giờ phải có định dạng HH:MM.
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <label for="gen-must" class="text-xs font-bold text-on-surface-variant block uppercase">Muốn ghé</label>
-          <textarea
-            id="gen-must"
-            formControlName="must_visit_text"
-            rows="3"
-            placeholder="VD: Bà Nà Hills, biển Mỹ Khê"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          ></textarea>
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-avoid" class="text-xs font-bold text-on-surface-variant block uppercase">Muốn tránh</label>
-          <textarea
-            id="gen-avoid"
-            formControlName="avoid_places_text"
-            rows="3"
-            placeholder="VD: nơi quá đông, chợ đêm"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-on-surface-variant block uppercase">Sở thích</label>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-          <label class="flex items-center gap-2 rounded-xl border border-glass bg-white/5 px-3 py-2 text-sm text-on-surface cursor-pointer">
-            <input type="checkbox" formControlName="interest_foodie" class="accent-primary" />
-            <span>Ẩm thực</span>
-          </label>
-          <label class="flex items-center gap-2 rounded-xl border border-glass bg-white/5 px-3 py-2 text-sm text-on-surface cursor-pointer">
-            <input type="checkbox" formControlName="interest_culture" class="accent-primary" />
-            <span>Văn hóa</span>
-          </label>
-          <label class="flex items-center gap-2 rounded-xl border border-glass bg-white/5 px-3 py-2 text-sm text-on-surface cursor-pointer">
-            <input type="checkbox" formControlName="interest_nature" class="accent-primary" />
-            <span>Thiên nhiên</span>
-          </label>
-          <label class="flex items-center gap-2 rounded-xl border border-glass bg-white/5 px-3 py-2 text-sm text-on-surface cursor-pointer">
-            <input type="checkbox" formControlName="interest_cafe" class="accent-primary" />
-            <span>Cafe</span>
-          </label>
-          <label class="flex items-center gap-2 rounded-xl border border-glass bg-white/5 px-3 py-2 text-sm text-on-surface cursor-pointer">
-            <input type="checkbox" formControlName="interest_beaches" class="accent-primary" />
-            <span>Biển</span>
-          </label>
-          <label class="flex items-center gap-2 rounded-xl border border-glass bg-white/5 px-3 py-2 text-sm text-on-surface cursor-pointer">
-            <input type="checkbox" formControlName="interest_adventure" class="accent-primary" />
-            <span>Phiêu lưu</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <label for="gen-diet" class="text-xs font-bold text-on-surface-variant block uppercase">Ăn uống</label>
-          <input
-            id="gen-diet"
-            type="text"
-            formControlName="dietary_notes"
-            placeholder="VD: ăn chay, dị ứng hải sản"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          />
-        </div>
-
-        <div class="space-y-1.5">
-          <label for="gen-mobility" class="text-xs font-bold text-on-surface-variant block uppercase">Sức khỏe / di chuyển</label>
-          <input
-            id="gen-mobility"
-            type="text"
-            formControlName="mobility_notes"
-            placeholder="VD: có trẻ nhỏ, hạn chế leo dốc"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          />
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-glass/40">
-        <button
-          type="button"
-          class="px-5 py-2.5 bg-white/5 border border-glass text-on-surface text-sm font-bold rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
-          (click)="closeGenerateOptions()"
-          [disabled]="isGenerating()"
-        >
-          Hủy
-        </button>
-        <button
-          type="submit"
-          class="px-5 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          [disabled]="isGenerating()"
-        >
-          <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="isGenerating()">
-            {{ isGenerating() ? 'progress_activity' : 'auto_awesome' }}
-          </span>
-          <span>{{ isGenerating() ? 'Đang tạo...' : 'Tạo lịch trình' }}</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <!-- MODAL 1: Add manual Activity Dialog -->
 <div class="modal-scrim" *ngIf="isActivityModalOpen()" (click)="closeActivityModal()">
@@ -2796,17 +2499,12 @@
           <label for="act-type" class="text-xs font-bold text-on-surface-variant block uppercase"
             >Phân loại *</label
           >
-          <select
-            id="act-type"
+          <app-custom-select
             formControlName="type"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          >
-            <option value="attraction">Tham quan / Giải trí</option>
-            <option value="meal">Ăn uống / Ẩm thực</option>
-            <option value="hotel">Khách sạn / Lưu trú</option>
-            <option value="transport">Di chuyển / Vé tàu xe</option>
-            <option value="other">Hạng mục khác</option>
-          </select>
+            [items]="activityTypeSelectOptions"
+            placeholder="Chọn phân loại"
+            [isInvalid]="isFieldInvalid('type')"
+          ></app-custom-select>
         </div>
 
         <div class="space-y-1.5">
@@ -2835,6 +2533,9 @@
             type="text"
             formControlName="start_time"
             placeholder="VD: 08:30"
+            maxlength="5"
+            (input)="onTimeInputControl($event, 'activityForm', 'start_time')"
+            (blur)="normalizeTimeOnBlur($event, 'activityForm', 'start_time')"
             class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
             [class.border-status-warning]="isFieldInvalid('start_time')"
           />
@@ -2855,6 +2556,9 @@
             type="text"
             formControlName="end_time"
             placeholder="VD: 11:00"
+            maxlength="5"
+            (input)="onTimeInputControl($event, 'activityForm', 'end_time')"
+            (blur)="normalizeTimeOnBlur($event, 'activityForm', 'end_time')"
             class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
             [class.border-status-warning]="isFieldInvalid('end_time')"
           />
@@ -2960,17 +2664,11 @@
         <label for="bud-category" class="text-xs font-bold text-on-surface-variant block uppercase"
           >Hạng mục chi tiêu *</label
         >
-        <select
-          id="bud-category"
+        <app-custom-select
           formControlName="category"
-          class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-        >
-          <option value="hotel">Phòng lưu trú / Khách sạn</option>
-          <option value="food">Ăn uống / Nhà hàng</option>
-          <option value="transport">Phương tiện di chuyển</option>
-          <option value="activity">Vé vui chơi / Tham quan</option>
-          <option value="other">Chi phí khác</option>
-        </select>
+          [items]="budgetCategorySelectOptions"
+          placeholder="Chọn hạng mục chi tiêu"
+        ></app-custom-select>
       </div>
 
       <!-- Costs -->
@@ -3018,16 +2716,11 @@
           <label for="bud-paid-by" class="text-xs font-bold text-on-surface-variant block uppercase"
             >Người ứng tiền (Ai trả?)</label
           >
-          <select
-            id="bud-paid-by"
+          <app-custom-select
             formControlName="paid_by"
-            class="w-full bg-surface-container-low border border-glass rounded-xl py-3 px-4 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
-          >
-            <option value="">-- Chọn thành viên ứng tiền --</option>
-            <option *ngFor="let member of groupSplitSummary()?.members || [currentUser()?.full_name || 'Chủ chuyến đi']" [value]="member">
-              {{ member }}
-            </option>
-          </select>
+            [items]="tripMemberNames()"
+            placeholder="-- Chọn thành viên ứng tiền --"
+          ></app-custom-select>
         </div>
       </div>
 
@@ -3053,15 +2746,18 @@
   </div>
 </div>
 
-<!-- MODAL 3: Day Selector Dialog from Explore tab -->
+<!-- MODAL 3: Day Selector & Timing Dialog from Explore tab -->
 <div
   class="modal-scrim"
   *ngIf="isAddActivityFromExploreOpen()"
   (click)="closeAddActivityFromExplore()"
 >
-  <div class="modal-card max-w-sm" (click)="$event.stopPropagation()">
+  <div class="modal-card max-w-md" (click)="$event.stopPropagation()">
     <div class="p-6 border-b border-glass flex justify-between items-center bg-white/5 select-none">
-      <h2 class="text-lg font-bold text-on-surface">Chọn ngày lên lịch trình</h2>
+      <h2 class="text-lg font-bold text-on-surface flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">add_location_alt</span>
+        Thêm địa điểm vào lịch trình
+      </h2>
       <button
         class="text-on-surface-variant hover:text-on-surface bg-transparent border-none cursor-pointer flex items-center justify-center p-1"
         (click)="closeAddActivityFromExplore()"
@@ -3071,24 +2767,96 @@
     </div>
 
     <div class="p-6 space-y-4">
-      <p class="text-sm text-on-surface-variant">
-        Thêm địa điểm <strong>{{ selectedExploreLocation()?.name }}</strong> vào lịch trình ngày
-        nào?
-      </p>
+      <!-- Location Preview Card -->
+      <div
+        class="rounded-xl border border-glass bg-white/5 p-3 text-sm text-on-surface-variant"
+        *ngIf="selectedExploreLocation() as loc"
+      >
+        <div class="flex items-center gap-2 font-bold text-on-surface mb-0.5">
+          <span class="material-symbols-outlined text-primary text-[18px]">place</span>
+          <span>{{ loc.name }}</span>
+        </div>
+        <div class="text-xs text-on-surface-variant line-clamp-1 pl-6" *ngIf="loc.address">
+          {{ loc.address }}
+        </div>
+      </div>
 
-      <!-- List of selectable days -->
-      <div class="flex flex-col gap-2 max-h-56 overflow-y-auto pr-1" *ngIf="days().length > 0">
-        <button
-          *ngFor="let day of days()"
-          class="w-full flex justify-between items-center p-4 border border-glass rounded-xl bg-white/5 hover:bg-primary/20 hover:border-primary/50 text-on-surface text-sm font-bold transition-all cursor-pointer"
-          (click)="confirmAddActivityFromExplore(day.id)"
-          [disabled]="isSubmittingExploreActivity()"
-        >
-          <span>Ngày {{ day.day_number }}</span>
-          <span class="text-xs text-on-surface-variant font-medium"
-            >({{ day.date | date: 'dd/MM/yyyy' }})</span
+      <div *ngIf="days().length > 0" class="space-y-4">
+        <!-- Select Day -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-on-surface-variant block uppercase">
+            Chọn ngày *
+          </label>
+          <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+            <button
+              *ngFor="let day of days()"
+              type="button"
+              class="flex justify-between items-center px-3 py-2.5 border rounded-xl text-xs font-bold transition-all cursor-pointer text-left"
+              [ngClass]="selectedExploreDayId() === day.id ? 'border-primary bg-primary/20 text-primary shadow-sm' : 'border-glass bg-white/5 hover:bg-white/10 text-on-surface'"
+              (click)="selectedExploreDayId.set(day.id)"
+            >
+              <span>Ngày {{ day.day_number }}</span>
+              <span class="text-[11px] opacity-75 font-normal">
+                {{ day.date | date: 'dd/MM' }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Time Picker (24h Format) -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-on-surface-variant uppercase flex items-center justify-between">
+            <span>Thời gian tham quan (tùy chọn)</span>
+            <span class="text-[10px] text-primary/80 font-normal lowercase">Định dạng 24h</span>
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <span class="text-[11px] text-on-surface-variant block mb-1">Giờ bắt đầu</span>
+              <input
+                type="text"
+                placeholder="08:30"
+                maxlength="5"
+                [value]="exploreStartTime()"
+                (input)="onExploreTimeInput($event, 'start')"
+                (blur)="onExploreTimeBlur($event, 'start')"
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-2 px-3 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
+              />
+            </div>
+            <div>
+              <span class="text-[11px] text-on-surface-variant block mb-1">Giờ kết thúc</span>
+              <input
+                type="text"
+                placeholder="10:30"
+                maxlength="5"
+                [value]="exploreEndTime()"
+                (input)="onExploreTimeInput($event, 'end')"
+                (blur)="onExploreTimeBlur($event, 'end')"
+                class="w-full bg-surface-container-low border border-glass rounded-xl py-2 px-3 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm font-medium"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end gap-3 pt-3 border-t border-glass/40">
+          <button
+            type="button"
+            class="px-4 py-2 bg-white/5 border border-glass text-on-surface text-xs font-bold rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+            (click)="closeAddActivityFromExplore()"
+            [disabled]="isSubmittingExploreActivity()"
           >
-        </button>
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="px-5 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl hover:brightness-110 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            (click)="confirmAddActivityFromExplore()"
+            [disabled]="isSubmittingExploreActivity() || !selectedExploreDayId()"
+          >
+            <span class="material-symbols-outlined text-sm" *ngIf="!isSubmittingExploreActivity()">add</span>
+            <span>{{ isSubmittingExploreActivity() ? 'Đang lưu...' : 'Thêm vào lịch trình' }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Warning if no days generated -->
@@ -3097,8 +2865,8 @@
         *ngIf="days().length === 0"
       >
         <p class="flex items-center justify-center gap-1.5">
-            <span class="material-symbols-outlined text-sm text-status-warning">warning</span>
-            <span>Chuyến đi chưa được lên kế hoạch lịch trình ngày nào.</span>
+          <span class="material-symbols-outlined text-sm text-status-warning">warning</span>
+          <span>Chuyến đi chưa được lên kế hoạch lịch trình ngày nào.</span>
         </p>
         <p class="text-xs text-on-surface-variant">
           Vui lòng chọn tab "Lịch trình" và tạo các ngày du lịch trước.

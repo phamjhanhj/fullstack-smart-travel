@@ -11,7 +11,7 @@ import { AuthService } from '../../../services/auth.service';
     <main class="min-h-screen flex items-center justify-center bg-surface p-6">
       <section class="glass-card max-w-lg w-full rounded-3xl border border-glass p-8 text-center">
         <div *ngIf="isLoading()" class="space-y-4">
-          <div class="w-10 h-10 mx-auto rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
+          <div class="w-10 h-10 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <h1 class="text-xl font-bold">Đang xác minh email...</h1>
         </div>
         <div *ngIf="!isLoading() && isSuccess()" class="space-y-4">

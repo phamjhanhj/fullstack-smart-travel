@@ -39,6 +39,13 @@ export const routes: Routes = [
       import('./components/profile/profile').then((module) => module.UserProfileComponent),
   },
   {
+    path: 'community/moderation',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/community/moderation/community-moderation').then(
+        (module) => module.CommunityModerationComponent,
+      ),
+  },  {
     path: 'community',
     loadComponent: () =>
       import('./components/community/community-list').then(
@@ -46,6 +53,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'community/users/:username',
+    loadComponent: () =>
+      import('./components/community/public-user-profile/public-user-profile').then(
+        (module) => module.PublicUserProfileComponent,
+      ),
+  },  {
     path: 'community/trips/:slug',
     loadComponent: () =>
       import('./components/community/public-trip-detail').then(

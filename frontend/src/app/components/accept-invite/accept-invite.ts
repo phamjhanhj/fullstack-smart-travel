@@ -13,9 +13,7 @@ import { AuthService } from '../../services/auth.service';
       <div class="glass-card rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl border border-glass">
         <!-- Loading State -->
         <div *ngIf="isLoading()" class="space-y-4 py-6">
-          <div class="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center mx-auto animate-pulse">
-            <span class="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
-          </div>
+          <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <h2 class="text-xl font-bold text-on-surface">Đang xử lý lời mời...</h2>
           <p class="text-sm text-on-surface-variant opacity-80">Vui lòng chờ trong giây lát.</p>
         </div>

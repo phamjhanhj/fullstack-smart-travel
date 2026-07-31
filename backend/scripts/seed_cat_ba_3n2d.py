@@ -957,7 +957,7 @@ async def seed_cat_ba() -> None:
                 "Đỉnh Ngự Lâm",
                 "Động Trung Trang",
             ],
-            "save_count": 156,
+            "save_count": 0,
             "view_count": 1830,
             "published_at": datetime.now(timezone.utc),
         }

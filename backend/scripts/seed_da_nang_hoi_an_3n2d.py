@@ -1050,7 +1050,7 @@ async def seed_da_nang_hoi_an() -> None:
                 "Di sản",
                 "Miền Trung",
             ],
-            "save_count": 354,
+            "save_count": 0,
             "view_count": 5210,
             "published_at": datetime.now(timezone.utc),
         }

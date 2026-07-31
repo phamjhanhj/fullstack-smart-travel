@@ -3,7 +3,7 @@
   <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative mb-8">
     <div>
       <h1 class="font-headline-xl text-headline-xl mb-2 gradient-text">Cộng đồng Lịch trình</h1>
-      <p class="font-body-lg text-body-lg text-on-surface-variant">Khám phá những chuyến đi thực tế được chia sẻ bởi cộng đồng Aether Travel.</p>
+      <p class="font-body-lg text-body-lg text-on-surface-variant">Khám phá những chuyến đi thực tế được chia sẻ bởi cộng đồng Smart Travel.</p>
     </div>
     <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-2 border border-border-glass shadow-sm">
       <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
@@ -11,7 +11,52 @@
     </div>
   </header>
 
-  <!-- Filters & Navigation Bar (Light & Dark Theme Compatible) -->
+  <!-- User Search Bar -->
+  <div class="mb-6 relative" (click)="$event.stopPropagation()">
+    <div class="relative glass-panel rounded-2xl border border-border-glass overflow-hidden">
+      <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary text-xl">person_search</span>
+      <input
+        [value]="userSearchQuery()"
+        (input)="onUserSearchInput($any($event.target).value)"
+        (focus)="onUserSearchFocus($event)"
+        class="w-full bg-transparent border-none text-on-surface pl-12 pr-4 py-3.5 focus:ring-1 focus:ring-primary font-body-md text-body-md placeholder:text-on-surface-variant/60 outline-none"
+        placeholder="Tìm kiếm người dùng theo tên đăng nhập hoặc họ tên..."
+        type="text"
+      />
+      <span *ngIf="isSearchingUsers()" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+    </div>
+    <!-- User search dropdown -->
+    <div *ngIf="isUserSearchFocused() && (userSearchResults().length > 0 || (userSearchQuery().length > 0 && !isSearchingUsers()))" class="absolute left-0 right-0 top-full mt-1 z-[200] rounded-2xl glass-panel bg-surface-container/95 border border-border-glass backdrop-blur-xl shadow-2xl overflow-hidden max-h-[320px] overflow-y-auto">
+      <button
+        type="button"
+        *ngFor="let user of userSearchResults()"
+        (click)="goToUserProfile(user.username)"
+        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-container-high/60 transition-colors border-none cursor-pointer bg-transparent text-left border-b border-border-glass/30 last:border-b-0"
+      >
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-violet-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden border border-border-glass">
+          <img *ngIf="user.avatar_url" [src]="user.avatar_url" class="w-full h-full object-cover" alt="">
+          <span *ngIf="!user.avatar_url" class="material-symbols-outlined text-lg text-primary">person</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-on-surface truncate">{{ user.full_name }}</span>
+            <span *ngIf="user.accepts_tour_bookings" class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 text-[10px] font-bold border border-amber-500/30">Nhà tổ chức tour</span>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-on-surface-variant mt-0.5">
+            <span>&#64;{{ user.username }}</span>
+            <span *ngIf="user.public_trips_count > 0">· {{ user.public_trips_count }} lịch trình</span>
+          </div>
+        </div>
+        <span class="material-symbols-outlined text-on-surface-variant text-sm">arrow_forward_ios</span>
+      </button>
+      <div *ngIf="userSearchResults().length === 0 && userSearchQuery().length > 0 && !isSearchingUsers()" class="px-4 py-6 text-center text-sm text-on-surface-variant">
+        <span class="material-symbols-outlined text-2xl mb-2 block text-on-surface-variant/40">search_off</span>
+        Không tìm thấy người dùng phù hợp
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Navigation Bar -->
   <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 sticky top-16 z-40 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-md py-4">
     <div class="flex items-center gap-1.5 glass-panel p-1 rounded-full border border-border-glass">
       <button
@@ -42,7 +87,7 @@
     </div>
 
     <div class="flex items-center gap-3 w-full md:w-auto" *ngIf="view() === 'explore'">
-      <!-- Search Input Box -->
+      <!-- Destination Search -->
       <div class="relative flex-1 md:w-64 glass-panel rounded-full overflow-hidden border border-border-glass">
         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
         <input
@@ -54,7 +99,7 @@
         />
       </div>
 
-      <!-- Custom Sort Dropdown (Matching destination modal style, without emojis) -->
+      <!-- Sort Dropdown -->
       <div class="relative">
         <button
           type="button"
@@ -65,7 +110,6 @@
           <span class="material-symbols-outlined text-sm text-on-surface-variant transition-transform" [class.rotate-180]="isSortOpen()">expand_more</span>
         </button>
 
-        <!-- Floating Dropdown Menu -->
         <div
           *ngIf="isSortOpen()"
           (click)="$event.stopPropagation()"
@@ -87,15 +131,99 @@
         </div>
       </div>
 
-      <!-- Filter Button -->
+      <!-- Advanced Filter Toggle Button -->
       <button
-        (click)="load()"
-        [disabled]="loading()"
-        class="bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] text-white px-5 py-2 rounded-full font-label-md text-label-md font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 transition-all border-none cursor-pointer disabled:opacity-50"
+        (click)="toggleFilterPanel($event)"
+        class="relative bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] text-white px-5 py-2 rounded-full font-label-md text-label-md font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 transition-all border-none cursor-pointer"
       >
-        <span *ngIf="loading()" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-        <span class="material-symbols-outlined text-[18px]" *ngIf="!loading()">tune</span>
+        <span class="material-symbols-outlined text-[18px]">tune</span>
         <span>Bộ lọc</span>
+        <span *ngIf="activeFilterCount > 0" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">{{ activeFilterCount }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Advanced Filter Panel (Collapsible) -->
+  <div *ngIf="isFilterOpen() && view() === 'explore'" class="mb-8 glass-panel rounded-2xl border border-border-glass p-6 space-y-5 animate-fade-in">
+    <div class="flex items-center justify-between">
+      <h3 class="font-bold text-on-surface text-base flex items-center gap-2 m-0">
+        <span class="material-symbols-outlined text-primary">filter_alt</span>
+        Bộ lọc nâng cao
+      </h3>
+      <button type="button" (click)="resetFilters()" class="text-xs text-rose-400 hover:text-rose-300 font-bold cursor-pointer bg-transparent border-none flex items-center gap-1 transition-colors">
+        <span class="material-symbols-outlined text-sm">restart_alt</span>
+        Đặt lại tất cả
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Keyword Search -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Từ khóa</label>
+        <input [(ngModel)]="filterSearch" type="text" placeholder="Tìm theo tiêu đề, mô tả..."
+          class="w-full bg-surface-container/60 border border-border-glass rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-1 focus:ring-primary" />
+      </div>
+
+      <!-- Max Budget -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Ngân sách tối đa (VND/người)</label>
+        <input [(ngModel)]="filterMaxCost" type="number" placeholder="VD: 5000000" min="0"
+          class="w-full bg-surface-container/60 border border-border-glass rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-1 focus:ring-primary" />
+      </div>
+
+      <!-- Min Days -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Số ngày tối thiểu</label>
+        <input [(ngModel)]="filterMinDays" type="number" placeholder="VD: 2" min="1"
+          class="w-full bg-surface-container/60 border border-border-glass rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-1 focus:ring-primary" />
+      </div>
+
+      <!-- Max Days -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Số ngày tối đa</label>
+        <input [(ngModel)]="filterMaxDays" type="number" placeholder="VD: 7" min="1"
+          class="w-full bg-surface-container/60 border border-border-glass rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-1 focus:ring-primary" />
+      </div>
+
+      <!-- Rating -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Đánh giá tối thiểu</label>
+        <div class="flex gap-2">
+          <button *ngFor="let r of ratingOptions" type="button"
+            (click)="filterMinRating = r.value"
+            [class.bg-primary]="filterMinRating === r.value"
+            [class.text-white]="filterMinRating === r.value"
+            [class.bg-surface-container/60]="filterMinRating !== r.value"
+            [class.text-on-surface]="filterMinRating !== r.value"
+            class="flex-1 px-2 py-2 rounded-xl text-xs font-bold border border-border-glass cursor-pointer transition-all hover:bg-surface-container-high">
+            {{ r.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Traveler Type -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Đối tượng</label>
+        <select [(ngModel)]="filterTravelerType"
+          class="w-full bg-surface-container/60 border border-border-glass rounded-xl px-3 py-2.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary cursor-pointer appearance-none">
+          <option *ngFor="let opt of travelerTypeOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+
+      <!-- Pace -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block">Nhịp độ</label>
+        <select [(ngModel)]="filterPace"
+          class="w-full bg-surface-container/60 border border-border-glass rounded-xl px-3 py-2.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary cursor-pointer appearance-none">
+          <option *ngFor="let opt of paceOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-2">
+      <button type="button" (click)="isFilterOpen.set(false)" class="px-5 py-2.5 rounded-xl text-xs font-bold text-on-surface-variant bg-surface-container/60 border border-border-glass cursor-pointer hover:bg-surface-container-high transition-colors">Hủy</button>
+      <button type="button" (click)="applyFilters()" class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] border-none cursor-pointer hover:shadow-lg hover:shadow-blue-500/25 transition-all">
+        <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">check</span> Áp dụng bộ lọc</span>
       </button>
     </div>
   </div>
@@ -104,7 +232,7 @@
   <section class="space-y-6">
     <!-- Loading State -->
     <div *ngIf="loading()" class="py-16 flex flex-col items-center justify-center text-center">
-      <div class="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin mb-3"></div>
+      <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
       <p class="text-xs text-on-surface-variant font-medium m-0">Đang tải danh sách lịch trình cộng đồng...</p>
     </div>
 

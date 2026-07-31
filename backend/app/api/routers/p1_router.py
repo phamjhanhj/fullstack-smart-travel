@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +15,7 @@ from app.models.p1_features import SavedTripCollection, SavedTripCollectionItem,
 from app.models.public_trip import PublicTripPublication
 from app.models.trip import Trip
 from app.models.user import User
-from app.schemas.p1_features import CollectionCreate, EmergencyOption, EmergencyPreviewRequest, JournalCreate, JournalResponse, NotificationResponse
+from app.schemas.p1_features import CollectionCreate, EmergencyOption, EmergencyPreviewRequest, JournalCreate, JournalResponse, JournalVisibilityUpdate, NotificationResponse
 
 notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"])
 journal_router = APIRouter(prefix="/trips/{trip_id}/journal", tags=["Trip Journal"])
@@ -53,8 +53,15 @@ async def read_notification(notification_id: uuid.UUID, current_user: User = Dep
 
 
 @journal_router.get("")
-async def list_journal(trip: Trip = Depends(get_trip_read_access), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(TripJournalEntry).where(TripJournalEntry.trip_id == trip.id).order_by(TripJournalEntry.entry_date.desc(), TripJournalEntry.created_at.desc()))
+async def list_journal(trip: Trip = Depends(get_trip_read_access), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(TripJournalEntry)
+        .where(
+            TripJournalEntry.trip_id == trip.id,
+            or_(TripJournalEntry.user_id == current_user.id, TripJournalEntry.is_shared.is_(True)),
+        )
+        .order_by(TripJournalEntry.entry_date.desc(), TripJournalEntry.created_at.desc())
+    )
     return envelope(data=[JournalResponse.model_validate(item) for item in result.scalars().all()])
 
 
@@ -65,6 +72,16 @@ async def create_journal(payload: JournalCreate, trip: Trip = Depends(get_trip_e
     return envelope_created(data=JournalResponse.model_validate(item), message="Đã lưu nhật ký chuyến đi")
 
 
+
+@journal_router.patch("/{entry_id}/visibility")
+async def update_journal_visibility(entry_id: uuid.UUID, payload: JournalVisibilityUpdate, trip: Trip = Depends(get_trip_edit_access), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    item = await db.scalar(select(TripJournalEntry).where(TripJournalEntry.id == entry_id, TripJournalEntry.trip_id == trip.id, TripJournalEntry.user_id == current_user.id))
+    if not item:
+        raise NotFoundError("Khong tim thay muc nhat ky")
+    item.is_shared = payload.is_shared
+    await db.commit()
+    await db.refresh(item)
+    return envelope(data=JournalResponse.model_validate(item), message="Da cap nhat quyen rieng tu nhat ky")
 @journal_router.delete("/{entry_id}")
 async def delete_journal(entry_id: uuid.UUID, trip: Trip = Depends(get_trip_edit_access), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     item = await db.scalar(select(TripJournalEntry).where(TripJournalEntry.id == entry_id, TripJournalEntry.trip_id == trip.id, TripJournalEntry.user_id == current_user.id))
@@ -95,6 +112,44 @@ async def add_collection_item(collection_id: uuid.UUID, publication_id: uuid.UUI
     try: await db.commit()
     except IntegrityError: await db.rollback()
     return envelope_created(data={"added": True})
+
+
+@collections_router.get("/{collection_id}")
+async def get_collection_detail(collection_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy.orm import selectinload
+    from app.services import public_trip_service
+
+    collection = await db.scalar(select(SavedTripCollection).where(SavedTripCollection.id == collection_id, SavedTripCollection.user_id == current_user.id))
+    if not collection:
+        raise NotFoundError("Không tìm thấy bộ sưu tập")
+
+    rows = await db.execute(
+        select(PublicTripPublication)
+        .join(SavedTripCollectionItem, SavedTripCollectionItem.publication_id == PublicTripPublication.id)
+        .where(SavedTripCollectionItem.collection_id == collection_id)
+        .options(selectinload(PublicTripPublication.author))
+        .order_by(SavedTripCollectionItem.created_at.desc())
+    )
+    publications = list(rows.scalars().all())
+    items = [public_trip_service.publication_payload(pub, is_saved=True, public_view=True) for pub in publications]
+    return envelope(data={
+        "id": str(collection.id),
+        "name": collection.name,
+        "description": collection.description,
+        "created_at": collection.created_at,
+        "item_count": len(items),
+        "items": items
+    })
+
+
+@collections_router.delete("/{collection_id}")
+async def delete_collection(collection_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    collection = await db.scalar(select(SavedTripCollection).where(SavedTripCollection.id == collection_id, SavedTripCollection.user_id == current_user.id))
+    if not collection:
+        raise NotFoundError("Không tìm thấy bộ sưu tập")
+    await db.delete(collection)
+    await db.commit()
+    return envelope(data={"deleted": True})
 
 
 @emergency_router.post("/preview")

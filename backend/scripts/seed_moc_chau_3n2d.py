@@ -874,7 +874,7 @@ async def seed_moc_chau() -> None:
                 "Hang Dơi",
                 "Tây Bắc",
             ],
-            "save_count": 194,
+            "save_count": 0,
             "view_count": 2640,
             "published_at": datetime.now(timezone.utc),
         }

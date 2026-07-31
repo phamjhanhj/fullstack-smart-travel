@@ -19,7 +19,6 @@ import { catchError, map } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 import { CustomDatePickerComponent } from '../shared/custom-date-picker/custom-date-picker';
-
 import { PwaService } from '../../services/pwa.service';
 
 @Component({
@@ -48,7 +47,6 @@ export class DashboardComponent implements OnInit {
 
   // PWA Signals
   readonly isOnline = this.pwaService.isOnline;
-  readonly isPwaInstallable = this.pwaService.isInstallable;
 
   // Dynamic Destination Images Cache
   readonly destinationImagesMap = signal<Map<string, string[]>>(new Map());
@@ -301,6 +299,11 @@ export class DashboardComponent implements OnInit {
     this.route.queryParams.subscribe((params) => {
       const tab = params['tab'];
       if (tab === 'my-trips' || tab === 'explore' || tab === 'map') {
+        if (this.activeTab() !== tab) {
+          this.closeModal();
+          this.closeDeleteModal();
+          this.closeUnpublishModal();
+        }
         this.setActiveTab(tab);
       }
     });
@@ -658,7 +661,7 @@ export class DashboardComponent implements OnInit {
     let raw = value.replace(/\D/g, '');
     if (raw) {
       const num = Number(raw);
-      const formatted = num.toLocaleString('vi-VN');
+      const formatted = num.toLocaleString('en-US');
       input.value = formatted;
       this.createForm.get('budget')?.setValue(formatted, { emitEvent: false });
     } else {
@@ -671,7 +674,7 @@ export class DashboardComponent implements OnInit {
     if (val === null || val === undefined || val === '') return '';
     const clean = val.toString().replace(/\D/g, '');
     if (!clean) return '';
-    return Number(clean).toLocaleString('vi-VN');
+    return Number(clean).toLocaleString('en-US');
   }
 
   openDatePicker(input: HTMLInputElement): void {
@@ -775,11 +778,7 @@ export class DashboardComponent implements OnInit {
   // Format currency for budgets helper
   formatCurrency(value: number | null): string {
     if (value === null || value === undefined) return 'N/A';
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      maximumFractionDigits: 0,
-    }).format(value);
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} VND`;
   }
 
   goToTrip(tripId: string): void {
@@ -877,6 +876,11 @@ export class DashboardComponent implements OnInit {
   }
 
   setActiveTab(tab: string): void {
+    if (this.activeTab() !== tab) {
+      this.closeModal();
+      this.closeDeleteModal();
+      this.closeUnpublishModal();
+    }
     this.activeTab.set(tab);
     if (tab === 'map') {
       setTimeout(() => {
@@ -1091,9 +1095,5 @@ export class DashboardComponent implements OnInit {
         this.publicationMessage.set(error?.error?.message || 'Không thể gỡ lịch trình khỏi Cộng đồng.');
       },
     });
-  }
-
-  installPwaApp(): void {
-    this.pwaService.promptInstall();
   }
 }

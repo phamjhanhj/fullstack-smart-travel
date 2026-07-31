@@ -2,6 +2,11 @@ import { Component, Input, forwardRef, ElementRef, ViewChild, OnChanges, OnInit,
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
+export interface SelectOption {
+  label: string;
+  value: any;
+}
+
 @Component({
   selector: 'app-custom-select',
   standalone: true,
@@ -17,13 +22,18 @@ import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/f
   ]
 })
 export class CustomSelectComponent implements ControlValueAccessor, OnChanges, OnInit, OnDestroy {
-  @Input() items: string[] = [];
+  @Input() items: (string | SelectOption)[] = [];
   @Input() placeholder: string = 'Chọn...';
   @Input() disabled: boolean = false;
   @Input() isInvalid: boolean = false;
+  @Input() searchable: boolean = true;
 
   @HostBinding('class.is-open') get hostIsOpen(): boolean {
     return this.isOpen;
+  }
+
+  @HostBinding('class.drop-up') get hostIsDropUp(): boolean {
+    return this.dropUp;
   }
 
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
@@ -31,10 +41,12 @@ export class CustomSelectComponent implements ControlValueAccessor, OnChanges, O
 
   private readonly elementRef = inject(ElementRef);
 
-  selectedValue: string = '';
+  selectedValue: any = '';
   isOpen: boolean = false;
+  dropUp: boolean = false;
   searchText: string = '';
-  filteredItems: string[] = [];
+  normalizedItems: SelectOption[] = [];
+  filteredItems: SelectOption[] = [];
 
   onChange = (value: any) => {};
   onTouched = () => {};
@@ -55,11 +67,30 @@ export class CustomSelectComponent implements ControlValueAccessor, OnChanges, O
   };
 
   ngOnChanges(): void {
-    this.filteredItems = [...this.items];
+    this.normalizeItems();
+    this.filterItems();
+  }
+
+  private normalizeItems(): void {
+    this.normalizedItems = (this.items || []).map(item => {
+      if (typeof item === 'object' && item !== null && 'label' in item && 'value' in item) {
+        return item as SelectOption;
+      }
+      return { label: String(item), value: item };
+    });
+  }
+
+  get selectedLabel(): string {
+    const found = this.normalizedItems.find(opt => opt.value === this.selectedValue);
+    if (found) return found.label;
+    if (this.selectedValue !== null && this.selectedValue !== undefined && this.selectedValue !== '') {
+      return String(this.selectedValue);
+    }
+    return '';
   }
 
   writeValue(value: any): void {
-    this.selectedValue = value || '';
+    this.selectedValue = value ?? '';
   }
 
   registerOnChange(fn: any): void {
@@ -78,30 +109,58 @@ export class CustomSelectComponent implements ControlValueAccessor, OnChanges, O
     if (this.disabled) return;
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
+      this.checkDirection();
       this.searchText = '';
-      this.filteredItems = [...this.items];
-      setTimeout(() => {
-        if (this.searchInput) {
-          this.searchInput.nativeElement.focus();
-        }
-      }, 50);
+      this.filterItems();
+      if (this.searchable && this.normalizedItems.length > 4) {
+        setTimeout(() => {
+          if (this.searchInput) {
+            this.searchInput.nativeElement.focus();
+          }
+        }, 50);
+      }
     }
+  }
+
+  private checkDirection(): void {
+    const el = (this.container?.nativeElement || this.elementRef?.nativeElement) as HTMLElement;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+
+    // Check modal parent container space
+    const modalCard = el.closest('.modal-card, .modal-dialog, [role="dialog"]') as HTMLElement | null;
+    if (modalCard) {
+      const modalRect = modalCard.getBoundingClientRect();
+      const spaceInModalBelow = modalRect.bottom - rect.bottom;
+      const spaceInModalAbove = rect.top - modalRect.top;
+
+      if (spaceInModalBelow < 210 && spaceInModalAbove > spaceInModalBelow) {
+        this.dropUp = true;
+        return;
+      }
+    }
+
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    const spaceBelow = windowHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    this.dropUp = spaceBelow < 230 && spaceAbove > spaceBelow;
   }
 
   filterItems(): void {
     const search = this.searchText.toLowerCase().trim();
     if (!search) {
-      this.filteredItems = [...this.items];
+      this.filteredItems = [...this.normalizedItems];
     } else {
-      this.filteredItems = this.items.filter(item =>
-        item.toLowerCase().includes(search)
+      this.filteredItems = this.normalizedItems.filter(item =>
+        item.label.toLowerCase().includes(search)
       );
     }
   }
 
-  selectItem(item: string): void {
-    this.selectedValue = item;
-    this.onChange(item);
+  selectItem(option: SelectOption): void {
+    this.selectedValue = option.value;
+    this.onChange(option.value);
     this.onTouched();
     this.isOpen = false;
   }
@@ -109,8 +168,8 @@ export class CustomSelectComponent implements ControlValueAccessor, OnChanges, O
   clearSearch(event: Event): void {
     event.stopPropagation();
     this.searchText = '';
-    this.filteredItems = [...this.items];
-    if (this.searchInput) {
+    this.filterItems();
+    if (this.searchInput && this.searchable && this.normalizedItems.length > 4) {
       this.searchInput.nativeElement.focus();
     }
   }

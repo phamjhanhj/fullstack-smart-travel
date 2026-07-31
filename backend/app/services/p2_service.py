@@ -23,12 +23,69 @@ async def has_verified_trip(db: AsyncSession, user_id: uuid.UUID, publication: P
     imported = await db.scalar(select(PublicTripImport.id).join(Trip, Trip.id == PublicTripImport.target_trip_id).where(PublicTripImport.user_id == user_id, PublicTripImport.publication_id == publication.id, Trip.status == "completed").limit(1))
     return bool(imported)
 
+async def sync_publication_rating(db: AsyncSession, publication_id: uuid.UUID) -> float | None:
+    pub = await db.get(PublicTripPublication, publication_id)
+    if not pub:
+        return None
+
+    author_rating_item = await db.scalar(
+        select(PublicTripRating).where(
+            PublicTripRating.publication_id == publication_id,
+            PublicTripRating.user_id == pub.author_user_id
+        )
+    )
+    if not author_rating_item:
+        initial_val = pub.overall_rating or pub.itinerary_rating or 5
+        author_rating = int(round(float(initial_val)))
+        db.add(PublicTripRating(
+            publication_id=publication_id,
+            user_id=pub.author_user_id,
+            rating=author_rating,
+            is_verified_trip=True
+        ))
+        await db.flush()
+
+    avg_val = await db.scalar(
+        select(func.avg(PublicTripRating.rating)).where(PublicTripRating.publication_id == publication_id)
+    )
+
+    if avg_val is not None:
+        new_overall = round(float(avg_val), 1)
+        pub.overall_rating = new_overall
+        await db.commit()
+        return new_overall
+    return None
+
 async def feedback(db: AsyncSession, publication: PublicTripPublication, user_id: uuid.UUID | None) -> dict:
-    rows = await db.execute(select(PublicTripComment, User).join(User, User.id == PublicTripComment.user_id).where(PublicTripComment.publication_id == publication.id).order_by(PublicTripComment.created_at.desc()).limit(100))
-    comments = [{"id": c.id, "content": c.content, "is_verified_trip": c.is_verified_trip, "created_at": c.created_at, "user": {"id": str(u.id), "username": u.username, "full_name": u.full_name, "avatar_url": u.avatar_url}} for c,u in rows.all()]
+    await sync_publication_rating(db, publication.id)
+
+    rows = await db.execute(
+        select(PublicTripComment, User, PublicTripRating.rating)
+        .join(User, User.id == PublicTripComment.user_id)
+        .outerjoin(PublicTripRating, (PublicTripRating.publication_id == publication.id) & (PublicTripRating.user_id == PublicTripComment.user_id))
+        .where(PublicTripComment.publication_id == publication.id)
+        .order_by(PublicTripComment.created_at.desc())
+        .limit(100)
+    )
+    comments = [
+        {
+            "id": c.id,
+            "content": c.content,
+            "is_verified_trip": c.is_verified_trip,
+            "rating": rating,
+            "created_at": c.created_at,
+            "user": {
+                "id": str(u.id),
+                "username": u.username,
+                "full_name": u.full_name,
+                "avatar_url": u.avatar_url
+            }
+        }
+        for c, u, rating in rows.all()
+    ]
     avg, count = (await db.execute(select(func.avg(PublicTripRating.rating), func.count(PublicTripRating.id)).where(PublicTripRating.publication_id == publication.id))).one()
     mine = await db.scalar(select(PublicTripRating.rating).where(PublicTripRating.publication_id == publication.id, PublicTripRating.user_id == user_id)) if user_id else None
-    return {"comments": comments, "rating_average": round(float(avg),1) if avg is not None else None, "rating_count": count, "my_rating": mine}
+    return {"comments": comments, "rating_average": round(float(avg), 1) if avg is not None else None, "rating_count": count, "my_rating": mine}
 
 async def follow_author(db: AsyncSession, follower_id: uuid.UUID, author_id: uuid.UUID) -> None:
     if follower_id == author_id: raise AppError("Bạn không thể theo dõi chính mình")

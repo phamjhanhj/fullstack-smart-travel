@@ -691,12 +691,6 @@ export class TripService {
     );
   }
 
-  optimizeDayRoute(tripId: string, dayId: string): Observable<ResponseEnvelope<DayPlanResponse>> {
-    return this.http.post<ResponseEnvelope<DayPlanResponse>>(
-      `${this.baseUrl}/trips/${tripId}/days/${dayId}/optimize-route`,
-      {}
-    );
-  }
 
   // AI Chat & suggestions
   getChatHistory(tripId: string): Observable<ResponseEnvelope<ChatHistoryItem[]>> {

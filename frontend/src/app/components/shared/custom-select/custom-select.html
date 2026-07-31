@@ -1,4 +1,4 @@
-<div class="custom-select-container" #container>
+<div class="custom-select-container" #container [class.drop-up]="dropUp">
   <!-- Select Box Trigger -->
   <div
     class="select-trigger"
@@ -7,18 +7,18 @@
     [class.invalid]="isInvalid"
     (click)="toggleDropdown()"
   >
-    <div class="select-value" [class.placeholder]="!selectedValue">
-      {{ selectedValue || placeholder }}
+    <div class="select-value" [class.placeholder]="!selectedLabel">
+      {{ selectedLabel || placeholder }}
     </div>
     <span class="material-symbols-outlined chevron-icon">
-      {{ isOpen ? 'expand_less' : 'expand_more' }}
+      {{ isOpen ? (dropUp ? 'expand_more' : 'expand_less') : 'expand_more' }}
     </span>
   </div>
 
   <!-- Dropdown Menu -->
-  <div class="dropdown-menu animate-fade-in" *ngIf="isOpen">
+  <div class="dropdown-menu animate-fade-in" [class.drop-up]="dropUp" *ngIf="isOpen">
     <!-- Search Box -->
-    <div class="search-box">
+    <div class="search-box" *ngIf="searchable && normalizedItems.length > 4">
       <span class="material-symbols-outlined search-icon">search</span>
       <input
         type="text"
@@ -39,15 +39,15 @@
     </div>
 
     <!-- Options List -->
-    <div class="options-list">
+    <div class="options-list" (wheel)="$event.stopPropagation()">
       <div
         *ngFor="let item of filteredItems"
         class="option-item"
-        [class.selected]="item === selectedValue"
+        [class.selected]="item.value === selectedValue"
         (click)="selectItem(item)"
       >
-        <span>{{ item }}</span>
-        <span class="material-symbols-outlined check-icon" *ngIf="item === selectedValue">
+        <span>{{ item.label }}</span>
+        <span class="material-symbols-outlined check-icon" *ngIf="item.value === selectedValue">
           check
         </span>
       </div>
