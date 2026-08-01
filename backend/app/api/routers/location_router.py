@@ -40,8 +40,8 @@ async def supported_destinations(
 
 @router.get("/explore", dependencies=[Depends(rate_limit("location_explore", settings.RATE_LIMIT_SEARCH_PER_MINUTE))])
 async def explore_locations(
-    destination: str = Query(min_length=1),
-    category: str | None = Query(default=None),
+    destination: str = Query(min_length=1, max_length=200),
+    category: str | None = Query(default=None, max_length=50),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=36, ge=1, le=60),
     current_user: User = Depends(get_current_user),
@@ -59,9 +59,9 @@ async def explore_locations(
 
 @router.get("/search", dependencies=[Depends(rate_limit("location_search", settings.RATE_LIMIT_SEARCH_PER_MINUTE))])
 async def search_locations(
-    q: str = Query(min_length=1),
-    destination: str | None = Query(default=None),
-    category: str | None = Query(default=None),
+    q: str = Query(min_length=1, max_length=200),
+    destination: str | None = Query(default=None, max_length=200),
+    category: str | None = Query(default=None, max_length=50),
     include_external: bool = Query(default=True),
     limit: int = Query(default=30, ge=1, le=60),
     current_user: User = Depends(get_current_user),

@@ -1,11 +1,9 @@
-declare const L: any;
-
-import * as XLSX from 'xlsx-js-style';
+import * as L from 'leaflet';
+import * as XLSX from '../../utils/xlsx-export-adapter';
 import { Component, HostListener, inject, OnDestroy, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../../services/auth.service';
 import { AiStreamService } from '../../services/ai-stream.service';
 import {
@@ -52,6 +50,8 @@ import {
   PublishTripRequest,
 } from '../../services/public-trip.service';
 import { EmergencyOption, JournalEntry, P1Service } from '../../services/p1.service';
+import { MAX_BUDGET_VND } from '../../config/trip-policy';
+import { apiErrorMessage, apiValidationIssues } from '../../utils/form-errors';
 
 export interface RouteSegment {
   fromName: string;
@@ -71,7 +71,6 @@ export interface RouteSegment {
     ReactiveFormsModule,
     FormsModule,
     RouterModule,
-    DragDropModule,
     CustomSelectComponent,
     CustomDatePickerComponent
   ],
@@ -287,6 +286,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly isPublishWizardOpen = signal(false);
   readonly isPublishingPublicTrip = signal(false);
   readonly publishError = signal<string | null>(null);
+  readonly publicationFieldErrors = signal<Record<string, string>>({});
   readonly publishedPublicSlug = signal<string | null>(null);
   readonly existingPublicSlug = signal<string | null>(null);
   publicationReviews: Record<string, PublicActivityReview> = {};
@@ -995,14 +995,54 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  private parseTimeToMinutes(timeStr?: string | null): number | null {
+    if (!timeStr || typeof timeStr !== 'string') return null;
+    const trimmed = timeStr.trim();
+    if (!trimmed) return null;
+    const parts = trimmed.split(':');
+    if (parts.length < 2) return null;
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    if (isNaN(hours) || isNaN(minutes)) return null;
+    return hours * 60 + minutes;
+  }
+
+  public sortActivitiesByStartTime(activities: ActivityResponse[]): ActivityResponse[] {
+    if (!activities) return [];
+    return [...activities].sort((a, b) => {
+      const minA = this.parseTimeToMinutes(a.start_time);
+      const minB = this.parseTimeToMinutes(b.start_time);
+
+      if (minA !== null && minB !== null) {
+        if (minA !== minB) return minA - minB;
+        const endA = this.parseTimeToMinutes(a.end_time);
+        const endB = this.parseTimeToMinutes(b.end_time);
+        if (endA !== null && endB !== null && endA !== endB) {
+          return endA - endB;
+        }
+        return (a.order_index ?? 0) - (b.order_index ?? 0);
+      }
+
+      if (minA !== null && minB === null) return -1;
+      if (minA === null && minB !== null) return 1;
+
+      return (a.order_index ?? 0) - (b.order_index ?? 0);
+    });
+  }
+
   fetchItinerary(): void {
     this.isLoadingDays.set(true);
     this.tripService.listDays(this.tripId).subscribe({
       next: (res) => {
         this.isLoadingDays.set(false);
         if (res && res.data) {
-          // Sort days by day_number
-          const sortedDays = res.data.sort((a, b) => a.day_number - b.day_number);
+          // Sort days by day_number and sort activities of each day by start_time ascending
+          const sortedDays = res.data
+            .map((day) => ({
+              ...day,
+              activities: this.sortActivitiesByStartTime(day.activities || []),
+            }))
+            .sort((a, b) => a.day_number - b.day_number);
           this.days.set(sortedDays);
           this.refreshItineraryQuality();
           if (this.activeSubTab() === 'route') {
@@ -1037,10 +1077,14 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.tripService.updateActivity(activity.id, { is_locked: !activity.is_locked }).subscribe({
       next: (res) => {
         this.updatingLockId.set(null);
-        this.days.update(days => days.map(day => ({
-          ...day,
-          activities: day.activities.map(item => item.id === activity.id ? res.data : item),
-        })));
+        this.days.update((days) =>
+          days.map((day) => ({
+            ...day,
+            activities: this.sortActivitiesByStartTime(
+              day.activities.map((item) => (item.id === activity.id ? res.data : item))
+            ),
+          }))
+        );
         this.refreshItineraryQuality();
       },
       error: (err) => {
@@ -1170,6 +1214,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       }
     }
     this.publishError.set(null);
+    this.publicationFieldErrors.set({});
     this.publishedPublicSlug.set(null);
     this.isPublishWizardOpen.set(true);
     if (this.existingPublicSlug()) {
@@ -1247,10 +1292,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   publishCompletedTrip(): void {
     if (!this.canPublishCompletedTrip() || this.isPublishingPublicTrip()) return;
-    if (!this.publicationDraft.author_confirmed) {
-      this.publishError.set('Bạn cần xác nhận đây là lịch trình thực tế chính thức.');
-      return;
-    }
+    if (!this.validatePublicationDraft()) return;
+
     const splitList = (value: string) =>
       value.split(/[,;\n]+/).map(item => item.trim()).filter(Boolean);
     const rawCost = this.publicationDraft.actual_total_cost.replace(/\D/g, '');
@@ -1264,8 +1307,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       place_rating: Number(this.publicationDraft.place_rating),
       best_places: splitList(this.publicationDraft.best_places),
       best_foods: splitList(this.publicationDraft.best_foods),
-      general_tips: this.publicationDraft.general_tips || null,
-      tags: [this.trip()?.destination || '', 'lịch trình thực tế'].filter(Boolean),
+      general_tips: this.publicationDraft.general_tips.trim() || null,
+      tags: ['lịch trình thực tế'],
       show_travel_month: true,
       show_author_name: this.publicationDraft.show_author_name,
       show_cost: this.publicationDraft.show_cost,
@@ -1285,9 +1328,92 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       },
       error: error => {
         this.isPublishingPublicTrip.set(false);
-        this.publishError.set(error?.error?.message || 'Không thể xuất bản lịch trình.');
+        const fieldErrors: Record<string, string> = {};
+        for (const issue of apiValidationIssues(error)) {
+          if (issue.field) fieldErrors[issue.field] = issue.message;
+        }
+        this.publicationFieldErrors.set(fieldErrors);
+        this.publishError.set(apiErrorMessage(error, 'Không thể xuất bản lịch trình.'));
       },
     });
+  }
+
+  publicationFieldError(field: string): string {
+    return this.publicationFieldErrors()[field] || '';
+  }
+
+  clearPublicationFieldError(field: string): void {
+    if (!this.publicationFieldErrors()[field] && !this.publishError()) return;
+    this.publicationFieldErrors.update((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+    this.publishError.set(null);
+  }
+
+  private validatePublicationDraft(): boolean {
+    const errors: Record<string, string> = {};
+    const title = this.publicationDraft.title.trim();
+    const summary = this.publicationDraft.summary.trim();
+    const rawCostInput = this.publicationDraft.actual_total_cost.trim();
+    const rawCost = rawCostInput.replace(/\D/g, '');
+    const bestPlaces = this.splitPublicationList(this.publicationDraft.best_places);
+    const bestFoods = this.splitPublicationList(this.publicationDraft.best_foods);
+
+    if (title.length < 3) errors['title'] = 'Tiêu đề phải có ít nhất 3 ký tự.';
+    else if (title.length > 200) errors['title'] = 'Tiêu đề không được vượt quá 200 ký tự.';
+    if (summary.length < 10) errors['summary'] = 'Tóm tắt phải có ít nhất 10 ký tự.';
+    else if (summary.length > 2000) errors['summary'] = 'Tóm tắt không được vượt quá 2.000 ký tự.';
+
+    if (rawCostInput && !/^[\d.,\s]+$/.test(rawCostInput)) {
+      errors['actual_total_cost'] = 'Chi phí chỉ được chứa chữ số và dấu phân cách.';
+    } else if (rawCost && (!Number.isSafeInteger(Number(rawCost)) || Number(rawCost) > MAX_BUDGET_VND)) {
+      errors['actual_total_cost'] = 'Chi phí không được lớn hơn 2.000.000.000 VND.';
+    }
+
+    this.validatePublicationList(bestPlaces, 'best_places', 'Điểm đáng đi nhất', errors);
+    this.validatePublicationList(bestFoods, 'best_foods', 'Đặc sản nên thử', errors);
+
+    const reviews = Object.values(this.publicationReviews);
+    if (reviews.length > 300) {
+      errors['activity_reviews'] = 'Chỉ có thể công khai tối đa 300 đánh giá hoạt động.';
+    }
+    for (const review of reviews) {
+      const note = (review.next_traveler_note || '').trim();
+      if (note.length > 1000) {
+        errors[`review:${review.activity_id}`] = 'Ghi chú không được vượt quá 1.000 ký tự.';
+      }
+      review.next_traveler_note = note || null;
+    }
+
+    if (!this.publicationDraft.author_confirmed) {
+      errors['author_confirmed'] = 'Bạn cần xác nhận đây là lịch trình thực tế chính thức.';
+    }
+
+    this.publicationDraft.title = title;
+    this.publicationDraft.summary = summary;
+    this.publicationFieldErrors.set(errors);
+    const firstError = Object.values(errors)[0] || null;
+    this.publishError.set(firstError);
+    return firstError === null;
+  }
+
+  private splitPublicationList(value: string): string[] {
+    return value.split(/[,;\n]+/).map(item => item.trim()).filter(Boolean);
+  }
+
+  private validatePublicationList(
+    items: string[],
+    field: string,
+    label: string,
+    errors: Record<string, string>,
+  ): void {
+    if (items.length > 20) {
+      errors[field] = `${label} chỉ được có tối đa 20 mục.`;
+    } else if (items.some(item => item.length > 200)) {
+      errors[field] = `Mỗi mục trong ${label.toLowerCase()} không được vượt quá 200 ký tự.`;
+    }
   }
 
   viewPublishedTrip(): void {
@@ -1615,39 +1741,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.tripService.updateSuggestionStatus(suggestionId, 'rejected').subscribe({
       next: () => {
         this.activeSuggestions.update((list) => list.filter((s) => s.id !== suggestionId));
-      },
-    });
-  }
-
-  onActivityDrop(event: CdkDragDrop<ActivityResponse[]>, dayPlanId: string): void {
-    if (!this.canEditTrip()) return;
-    if (event.previousIndex === event.currentIndex) return;
-
-    const day = this.days().find((d) => d.id === dayPlanId);
-    if (!day) return;
-
-    const activities = [...day.activities];
-    moveItemInArray(activities, event.previousIndex, event.currentIndex);
-
-    // Optimistic state update
-    this.days.update((allDays) =>
-      allDays.map((d) => (d.id === dayPlanId ? { ...d, activities } : d))
-    );
-
-    // Build items payload for reordering
-    const payload = activities.map((act, idx) => ({
-      id: act.id,
-      order_index: idx,
-    }));
-
-    this.tripService.reorderActivities(dayPlanId, payload).subscribe({
-      next: () => {
-        // Success
-      },
-      error: (err) => {
-        console.error('Reorder failed, fetching original itinerary:', err);
-        this.fetchItinerary();
-        alert(err?.error?.message || 'Có lỗi xảy ra khi cập nhật thứ tự hoạt động.');
       },
     });
   }
@@ -2833,7 +2926,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       });
 
       const marker = L.marker([lat, lng], { icon: customIcon }).addTo(this.routeMap);
-      marker.bindPopup(`<div style="font-weight:bold; font-size:14px; color:#1e293b;">${act.title}</div><div style="font-size:12px; color:#4b5563;">${act.location!.name}</div>`);
+      marker.bindPopup(`<div style="font-weight:bold; font-size:14px; color:#1e293b;">${this.escapeLeafletText(act.title)}</div><div style="font-size:12px; color:#4b5563;">${this.escapeLeafletText(act.location!.name)}</div>`);
       this.routeMarkers.push(marker);
 
       this.routeMap.setView([lat, lng], 14);
@@ -2913,8 +3006,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           
           const popupContent = `
             <div style="padding: 4px;">
-              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: var(--color-on-surface, #e2e8f1);">#${idx + 1} - ${act.title}</div>
-              <div style="font-size: 12px; color: var(--color-on-surface-variant, #94a3b8);">${act.location?.name || ''}</div>
+              <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: var(--color-on-surface, #e2e8f1);">#${idx + 1} - ${this.escapeLeafletText(act.title)}</div>
+              <div style="font-size: 12px; color: var(--color-on-surface-variant, #94a3b8);">${this.escapeLeafletText(act.location?.name || '')}</div>
               ${act.start_time ? `<div style="font-size: 11px; margin-top: 4px; color: #4f46e5;">🕒 ${act.start_time}</div>` : ''}
             </div>
           `;
@@ -2931,6 +3024,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.isLoadingRoute.set(false);
       }
     });
+  }
+
+  private escapeLeafletText(value: string): string {
+    const replacements: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return value.replace(/[&<>"']/g, (character) => replacements[character]);
   }
 
   zoomToSegment(coords: [number, number][]): void {

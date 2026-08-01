@@ -14,19 +14,21 @@ export class AiStreamService {
     onDone: (messageId: string, suggestionId: string | null) => void,
     onError: (err: any) => void
   ): Promise<void> {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     try {
       const response = await fetch(`${this.baseUrl}/trips/${tripId}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: 'include',
         body: JSON.stringify({ message, stream: true })
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorBody = await response.json().catch(() => null);
+        throw { status: response.status, error: errorBody };
       }
 
       if (!response.body) {

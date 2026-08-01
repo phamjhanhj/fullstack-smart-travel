@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_trip_owner_access
@@ -121,7 +121,7 @@ async def revoke_participant(
 
 @trip_invites_router.post("/{token}/accept")
 async def accept_invite(
-    token: str,
+    token: str = Path(min_length=32, max_length=256),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

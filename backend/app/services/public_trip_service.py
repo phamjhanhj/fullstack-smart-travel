@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import AppError, ForbiddenError, NotFoundError
+from app.core.trip_limits import MAX_TRIP_DURATION_DAYS
 from app.models.activity import Activity
 from app.models.budget import BudgetItem
 from app.models.location import Location
@@ -31,7 +32,7 @@ from app.services import trip_history_service, trip_share_service
 
 _SENSITIVE_PATTERNS = (
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+", re.I), "EMAIL_DETECTED"),
-    (re.compile(r"(?<!\d)(?:\+?84|0)\d{8,10}(?!\d)"), "PHONE_DETECTED"),
+    (re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.-]?\d){8,10}(?!\d)"), "PHONE_DETECTED"),
     (re.compile(r"\b(?:booking|reservation|ma dat|mã đặt|pnr)\s*[:#-]?\s*[a-z0-9-]{5,}\b", re.I), "BOOKING_CODE_DETECTED"),
 )
 
@@ -61,6 +62,27 @@ def _privacy_issues(payload: UpsertPublicTripRequest) -> list[dict[str, str]]:
         for pattern, code in _SENSITIVE_PATTERNS:
             if pattern.search(text):
                 issues.append({"code": code, "message": "Nội dung có thể chứa thông tin riêng tư."})
+    return issues
+
+
+def _snapshot_privacy_issues(snapshot: dict[str, Any]) -> list[dict[str, str]]:
+    texts: list[str] = []
+    for day in snapshot.get("days", []):
+        if not isinstance(day, dict):
+            continue
+        for activity in day.get("activities", []):
+            if not isinstance(activity, dict):
+                continue
+            texts.extend(
+                str(activity.get(field) or "")
+                for field in ("title", "description", "next_traveler_note", "address")
+            )
+
+    issues: list[dict[str, str]] = []
+    for text in texts:
+        for pattern, code in _SENSITIVE_PATTERNS:
+            if pattern.search(text):
+                issues.append({"code": code, "message": "Nội dung lịch trình có thể chứa thông tin riêng tư."})
     return issues
 
 
@@ -278,6 +300,13 @@ async def upsert_publication(
     )
     publication = existing_result.scalar_one_or_none()
     snapshot = await build_snapshot(db, trip, payload)
+    snapshot_privacy_issues = _snapshot_privacy_issues(snapshot)
+    if snapshot_privacy_issues:
+        raise AppError(
+            "Lịch trình có thể chứa email, số điện thoại hoặc mã đặt chỗ. Hãy xóa trước khi công khai.",
+            status_code=422,
+            data={"code": "PUBLICATION_PRIVACY_RISK", "issues": snapshot_privacy_issues},
+        )
     now = datetime.now(timezone.utc)
     ratings = [v for v in (payload.itinerary_rating, payload.cost_rating, payload.place_rating) if v]
     if publish and not ratings:
@@ -722,6 +751,16 @@ async def import_publication(
     if payload.import_mode == "full_trip":
         assert payload.start_date is not None
         duration = publication.duration_days
+        if duration not in range(1, MAX_TRIP_DURATION_DAYS + 1):
+            raise AppError(
+                f"Chuyến đi tối đa {MAX_TRIP_DURATION_DAYS} ngày. Hãy chọn lịch trình ngắn hơn.",
+                status_code=422,
+                data={
+                    "code": "TRIP_DURATION_TOO_LONG",
+                    "actual": duration,
+                    "maximum": MAX_TRIP_DURATION_DAYS,
+                },
+            )
         trip = Trip(
             user_id=user.id,
             title=payload.title or f"{publication.title} - bản của tôi",

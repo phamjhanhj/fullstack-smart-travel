@@ -1,7 +1,7 @@
 """Router - Module 2: Users (2 endpoints)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +78,7 @@ async def search_public_users(
 
 
 @router.get("/public/{username}", dependencies=[Depends(rate_limit("public_profile", 60))])
-async def get_public_profile(username: str, db: AsyncSession = Depends(get_db)):
+async def get_public_profile(username: str = Path(min_length=1, max_length=39), db: AsyncSession = Depends(get_db)):
     user = await db.scalar(select(User).where(User.username == username, User.is_public_profile.is_(True)))
     if user is None:
         raise NotFoundError("Trang cá nhân này đang ở chế độ riêng tư hoặc không tồn tại")
@@ -91,6 +91,7 @@ async def get_public_profile(username: str, db: AsyncSession = Depends(get_db)):
             PublicTripPublication.moderation_status == "approved",
         )
         .order_by(PublicTripPublication.published_at.desc())
+        .limit(50)
     )).scalars().all())
     trips = [{
         "id": str(item.id), "slug": item.slug, "title": item.title,

@@ -5,6 +5,8 @@ import uuid
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from app.core.trip_limits import MAX_BUDGET_VND, MAX_TRAVELERS, MAX_TRIP_DURATION_DAYS
+from app.schemas.validators import ShortListText, TagText, TrimmedText
 
 AuthorVerdict = Literal["must_go", "recommended", "preference_based", "skip"]
 ActualStatus = Literal["visited", "changed", "skipped", "planned_only"]
@@ -17,29 +19,29 @@ class PublicActivityReviewRequest(BaseModel):
     actual_status: ActualStatus = "visited"
     author_verdict: AuthorVerdict = "recommended"
     rating: int | None = Field(default=None, ge=1, le=5)
-    next_traveler_note: str | None = Field(default=None, max_length=1000)
-    best_time: str | None = Field(default=None, max_length=100)
+    next_traveler_note: TrimmedText | None = Field(default=None, max_length=1000)
+    best_time: TrimmedText | None = Field(default=None, max_length=100)
     actual_wait_minutes: int | None = Field(default=None, ge=0, le=1440)
     booking_required: bool | None = None
-    actual_cost: int | None = Field(default=None, ge=0)
+    actual_cost: int | None = Field(default=None, ge=0, le=MAX_BUDGET_VND)
 
 
 class UpsertPublicTripRequest(BaseModel):
-    title: str = Field(min_length=3, max_length=200)
-    summary: str = Field(min_length=10, max_length=2000)
+    title: TrimmedText = Field(min_length=3, max_length=200)
+    summary: TrimmedText = Field(min_length=10, max_length=2000)
     visibility: PublicationVisibility = "public"
-    traveler_type: str | None = Field(default=None, max_length=40)
-    pace: str | None = Field(default=None, max_length=30)
-    budget_style: str | None = Field(default=None, max_length=30)
-    actual_total_cost: int | None = Field(default=None, ge=0)
+    traveler_type: TrimmedText | None = Field(default=None, max_length=40)
+    pace: TrimmedText | None = Field(default=None, max_length=30)
+    budget_style: TrimmedText | None = Field(default=None, max_length=30)
+    actual_total_cost: int | None = Field(default=None, ge=0, le=MAX_BUDGET_VND)
     itinerary_rating: int | None = Field(default=None, ge=1, le=5)
     cost_rating: int | None = Field(default=None, ge=1, le=5)
     place_rating: int | None = Field(default=None, ge=1, le=5)
-    best_places: list[str] = Field(default_factory=list, max_length=20)
-    best_foods: list[str] = Field(default_factory=list, max_length=20)
-    would_change: str | None = Field(default=None, max_length=2000)
-    general_tips: str | None = Field(default=None, max_length=3000)
-    tags: list[str] = Field(default_factory=list, max_length=20)
+    best_places: list[ShortListText] = Field(default_factory=list, max_length=20)
+    best_foods: list[ShortListText] = Field(default_factory=list, max_length=20)
+    would_change: TrimmedText | None = Field(default=None, max_length=2000)
+    general_tips: TrimmedText | None = Field(default=None, max_length=3000)
+    tags: list[TagText] = Field(default_factory=list, max_length=20)
     show_travel_month: bool = True
     show_author_name: bool = True
     show_cost: bool = True
@@ -141,12 +143,12 @@ class PublicTripImportRequest(BaseModel):
     import_mode: ImportMode
     target_trip_id: uuid.UUID | None = None
     target_day_plan_id: uuid.UUID | None = None
-    source_day_number: int | None = Field(default=None, ge=1)
-    source_activity_ids: list[str] = Field(default_factory=list, max_length=50)
+    source_day_number: int | None = Field(default=None, ge=1, le=MAX_TRIP_DURATION_DAYS)
+    source_activity_ids: list[ShortListText] = Field(default_factory=list, max_length=50)
     start_date: dt.date | None = None
-    title: str | None = Field(default=None, max_length=200)
-    budget: int | None = Field(default=None, ge=0)
-    num_travelers: int = Field(default=1, ge=1)
+    title: TrimmedText | None = Field(default=None, min_length=1, max_length=200)
+    budget: int | None = Field(default=None, ge=1, le=MAX_BUDGET_VND)
+    num_travelers: int = Field(default=1, ge=1, le=MAX_TRAVELERS)
     conflict_strategy: Literal["append", "replace_optional", "smart_merge"] = "smart_merge"
 
     @model_validator(mode="after")

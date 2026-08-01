@@ -14,7 +14,7 @@
   </div>
 
   <!-- Calendar Dropdown -->
-  <div class="calendar-dropdown animate-fade-in" *ngIf="isOpen">
+  <div class="calendar-dropdown animate-fade-in" [class.align-right]="shouldAlignRight" *ngIf="isOpen">
     <!-- Calendar Header -->
     <div class="calendar-header">
       <button type="button" class="nav-btn" (click)="prevMonth($event)">
@@ -39,8 +39,8 @@
         [class.other-month]="day.getMonth() !== viewDate.getMonth()"
         [class.today]="isToday(day)"
         [class.selected]="isSelected(day)"
-        [class.disabled]="isPastDate(day)"
-        (click)="!isPastDate(day) && selectDay(day, $event)"
+        [class.disabled]="isDateDisabled(day)"
+        (click)="!isDateDisabled(day) && selectDay(day, $event)"
       >
         {{ day.getDate() }}
       </div>

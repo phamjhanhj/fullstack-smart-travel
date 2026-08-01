@@ -4,8 +4,9 @@ import uuid
 from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, Field
+from app.schemas.validators import TrimmedText
 
-class CommentCreate(BaseModel): content: str = Field(min_length=2, max_length=2000)
+class CommentCreate(BaseModel): content: TrimmedText = Field(min_length=2, max_length=2000)
 class RatingCreate(BaseModel): rating: int = Field(ge=1, le=5)
 class CommentResponse(BaseModel):
     id: uuid.UUID; content: str; is_verified_trip: bool; created_at: datetime
@@ -17,14 +18,14 @@ class RecommendationItem(BaseModel):
 
 class ReportCreate(BaseModel):
     reason: Literal["spam", "misleading", "unsafe", "harassment", "copyright", "other"]
-    details: str | None = Field(default=None, max_length=1000)
+    details: TrimmedText | None = Field(default=None, max_length=1000)
 
 
 class BookingInquiryCreate(BaseModel):
-    contact_name: str = Field(min_length=2, max_length=100)
+    contact_name: TrimmedText = Field(min_length=2, max_length=100)
     contact_phone: str = Field(min_length=7, max_length=30)
     travelers: int = Field(default=1, ge=1, le=100)
-    message: str | None = Field(default=None, max_length=1500)
+    message: TrimmedText | None = Field(default=None, max_length=1500)
 
     @classmethod
     def _normalize_phone(cls, value: str) -> str:

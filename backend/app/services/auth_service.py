@@ -6,7 +6,6 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
-from jose import JWTError
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,11 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.exceptions import AppError, UnauthorizedError
 from app.core.security import (
+    DUMMY_PASSWORD_HASH,
+    JWTError,
     create_access_token,
     create_refresh_token,
     decode_token,
     hash_password,
     verify_password,
+    verify_and_update_password,
 )
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
@@ -66,11 +68,21 @@ async def authenticate_user(db: AsyncSession, login: str, password: str) -> User
     )
     user = result.scalar_one_or_none()
 
-    if user is None or not verify_password(password, user.password_hash):
+    if user is None:
+        verify_password(password, DUMMY_PASSWORD_HASH)
+        raise UnauthorizedError("Ten dang nhap, email hoac mat khau khong dung")
+
+    password_valid, upgraded_hash = verify_and_update_password(password, user.password_hash)
+    if not password_valid:
         raise UnauthorizedError("Ten dang nhap, email hoac mat khau khong dung")
 
     if user.email and user.email_verified_at is None:
         raise AppError("Email chua duoc xac minh", status_code=403)
+
+    if upgraded_hash:
+        user.password_hash = upgraded_hash
+        await db.commit()
+        await db.refresh(user)
 
     return user
 
@@ -116,11 +128,13 @@ async def resend_verification(db: AsyncSession, login: str) -> None:
 async def verify_email(db: AsyncSession, token: str) -> User:
     now = datetime.now(timezone.utc)
     result = await db.execute(
-        select(AccountToken).where(
+        select(AccountToken)
+        .where(
             AccountToken.token_hash == _hash_token(token),
             AccountToken.token_type == "email_verification",
             AccountToken.used_at.is_(None),
         )
+        .with_for_update()
     )
     stored = result.scalar_one_or_none()
     expires_at = stored.expires_at if stored else None
@@ -183,11 +197,13 @@ async def refresh_access_token(db: AsyncSession, refresh_token: str) -> tuple[st
 
     token_hash = _hash_token(refresh_token)
     token_result = await db.execute(
-        select(RefreshToken).where(
+        select(RefreshToken)
+        .where(
             RefreshToken.user_id == user_id,
             RefreshToken.token_hash == token_hash,
             RefreshToken.revoked_at.is_(None),
         )
+        .with_for_update()
     )
     stored_token = token_result.scalar_one_or_none()
     now = datetime.now(timezone.utc)

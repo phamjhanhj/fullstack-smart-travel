@@ -8,6 +8,8 @@ export interface UserPreferences {
   travel_style?: 'budget' | 'mid-range' | 'luxury' | null;
   interests?: string[];
   budget_range?: 'low' | 'medium' | 'high' | null;
+  phone?: string | null;
+  bio?: string | null;
 }
 
 export interface UserProfileResponse {

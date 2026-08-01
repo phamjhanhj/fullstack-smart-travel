@@ -179,16 +179,18 @@
             <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="glass-card p-6 sm:p-8 rounded-3xl border border-glass space-y-6">
               <div class="grid md:grid-cols-2 gap-6">
                 <div class="flex flex-col gap-2">
-                  <label class="text-xs font-semibold text-on-surface-variant px-1">Họ tên của bạn *</label>
+                  <label class="text-xs font-semibold text-on-surface-variant px-1">Họ tên của bạn <span class="text-rose-500" aria-hidden="true">*</span></label>
                   <input 
                     type="text"
                     formControlName="full_name"
+                    maxlength="100"
                     class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                    [class.border-rose-500]="profileFieldInvalid('full_name')"
                     placeholder="Nhập họ và tên đầy đủ"
                   />
                   <div class="text-xs text-rose-400 flex items-center gap-1" *ngIf="profileForm.get('full_name')?.invalid && profileForm.get('full_name')?.touched">
                     <span class="material-symbols-outlined text-[14px]">error</span>
-                    <span>Họ tên từ 2 đến 100 ký tự.</span>
+                    <span>{{ profileFieldError('full_name', 'Họ tên') }}</span>
                   </div>
                 </div>
 
@@ -223,9 +225,12 @@
                   <input 
                     type="tel"
                     formControlName="phone"
+                    maxlength="30"
                     class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                    [class.border-rose-500]="profileFieldInvalid('phone')"
                     placeholder="Số điện thoại (không bắt buộc)"
                   />
+                  <span *ngIf="profileFieldInvalid('phone')" class="text-xs text-rose-400">{{ profileFieldError('phone', 'Số điện thoại') }}</span>
                 </div>
               </div>
 
@@ -234,9 +239,12 @@
                 <textarea 
                   formControlName="bio"
                   rows="4"
+                  maxlength="1000"
                   class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm resize-none"
+                  [class.border-rose-500]="profileFieldInvalid('bio')"
                   placeholder="Hãy viết gì đó về niềm đam mê xê dịch của bạn..."
                 ></textarea>
+                <span *ngIf="profileFieldInvalid('bio')" class="text-xs text-rose-400">{{ profileFieldError('bio', 'Tiểu sử') }}</span>
               </div>
 
               <section class="rounded-2xl border border-primary/25 bg-primary/5 p-5 space-y-4">
@@ -254,9 +262,21 @@
                   <label class="md:col-span-2 flex items-center gap-2 cursor-pointer text-sm font-semibold">
                     <input type="checkbox" formControlName="accepts_tour_bookings" class="w-4 h-4 accent-primary" /> Nhận liên hệ đặt tour
                   </label>
-                  <textarea formControlName="public_bio" rows="3" class="md:col-span-2 w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm" placeholder="Giới thiệu công khai về bạn..."></textarea>
-                  <input formControlName="public_phone" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm" placeholder="Số điện thoại liên hệ" />
-                  <input formControlName="public_zalo_url" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm" placeholder="Liên kết Zalo" />
+                  <label class="md:col-span-2 flex flex-col gap-1.5 text-xs font-semibold text-on-surface-variant">
+                    Giới thiệu công khai
+                    <textarea formControlName="public_bio" rows="3" maxlength="1000" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm" [class.border-rose-500]="profileFieldInvalid('public_bio')" placeholder="Giới thiệu công khai về bạn..."></textarea>
+                    <span *ngIf="profileFieldInvalid('public_bio')" class="text-rose-400">{{ profileFieldError('public_bio', 'Giới thiệu công khai') }}</span>
+                  </label>
+                  <label class="flex flex-col gap-1.5 text-xs font-semibold text-on-surface-variant">
+                    Số điện thoại liên hệ
+                    <input formControlName="public_phone" maxlength="30" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm" [class.border-rose-500]="profileFieldInvalid('public_phone')" placeholder="Ví dụ: 0912 345 678" />
+                    <span *ngIf="profileFieldInvalid('public_phone')" class="text-rose-400">{{ profileFieldError('public_phone', 'Số điện thoại') }}</span>
+                  </label>
+                  <label class="flex flex-col gap-1.5 text-xs font-semibold text-on-surface-variant">
+                    Liên kết Zalo
+                    <input formControlName="public_zalo_url" maxlength="500" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm" [class.border-rose-500]="profileFieldInvalid('public_zalo_url')" placeholder="https://zalo.me/..." />
+                    <span *ngIf="profileFieldInvalid('public_zalo_url')" class="text-rose-400">{{ profileFieldError('public_zalo_url', 'Liên kết Zalo') }}</span>
+                  </label>
                   <a *ngIf="profile()?.username" [routerLink]="['/community/users', profile()?.username]" target="_blank" class="md:col-span-2 text-primary text-sm font-bold">Xem thử trang cá nhân công khai →</a>
                 </div>
               </section>
@@ -271,7 +291,7 @@
                 </button>
                 <button 
                   type="submit"
-                  [disabled]="profileForm.invalid || isSaving()"
+                  [disabled]="isSaving()"
                   class="bg-gradient-to-r from-primary to-secondary text-on-primary-container px-8 py-3 rounded-full font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
                   <span *ngIf="isSaving()" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -504,21 +524,24 @@
 
               <div class="space-y-4">
                 <div class="flex flex-col gap-1.5">
-                  <label class="text-xs font-semibold text-on-surface-variant">Mật khẩu hiện tại</label>
-                  <input type="password" formControlName="current_password" placeholder="Nhập mật khẩu hiện tại" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  <label class="text-xs font-semibold text-on-surface-variant">Mật khẩu hiện tại <span class="text-rose-500" aria-hidden="true">*</span></label>
+                  <input type="password" formControlName="current_password" maxlength="128" placeholder="Nhập mật khẩu hiện tại" [class.border-rose-500]="passwordFieldInvalid('current_password')" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  <span *ngIf="passwordFieldInvalid('current_password')" class="text-xs text-rose-400">{{ passwordFieldError('current_password', 'Mật khẩu hiện tại') }}</span>
                 </div>
                 <div class="flex flex-col gap-1.5">
-                  <label class="text-xs font-semibold text-on-surface-variant">Mật khẩu mới</label>
-                  <input type="password" formControlName="new_password" placeholder="Nhập mật khẩu mới" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  <label class="text-xs font-semibold text-on-surface-variant">Mật khẩu mới <span class="text-rose-500" aria-hidden="true">*</span></label>
+                  <input type="password" formControlName="new_password" maxlength="128" placeholder="Nhập mật khẩu mới" [class.border-rose-500]="passwordFieldInvalid('new_password')" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  <span *ngIf="passwordFieldInvalid('new_password')" class="text-xs text-rose-400">{{ passwordFieldError('new_password', 'Mật khẩu mới') }}</span>
                 </div>
                 <div class="flex flex-col gap-1.5">
-                  <label class="text-xs font-semibold text-on-surface-variant">Xác nhận mật khẩu</label>
-                  <input type="password" formControlName="confirm_password" placeholder="Nhập lại mật khẩu mới" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  <label class="text-xs font-semibold text-on-surface-variant">Xác nhận mật khẩu <span class="text-rose-500" aria-hidden="true">*</span></label>
+                  <input type="password" formControlName="confirm_password" maxlength="128" placeholder="Nhập lại mật khẩu mới" [class.border-rose-500]="passwordFieldInvalid('confirm_password')" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  <span *ngIf="passwordFieldInvalid('confirm_password')" class="text-xs text-rose-400">{{ passwordFieldError('confirm_password', 'Xác nhận mật khẩu') }}</span>
                 </div>
 
                 <button 
                   type="submit" 
-                  [disabled]="passwordForm.invalid || isPasswordChanging()" 
+                  [disabled]="isPasswordChanging()"
                   class="w-full bg-white text-background py-3 rounded-xl font-bold text-xs hover:bg-on-surface transition-all cursor-pointer disabled:opacity-50 mt-2"
                 >
                   {{ isPasswordChanging() ? 'Đang cập nhật...' : 'Cập nhật mật khẩu' }}

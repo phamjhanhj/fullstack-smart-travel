@@ -24,6 +24,7 @@
         type="text"
         [(ngModel)]="searchText"
         (input)="filterItems()"
+        maxlength="200"
         placeholder="Tìm kiếm..."
         class="search-input"
         #searchInput

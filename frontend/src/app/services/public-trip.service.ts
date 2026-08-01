@@ -77,6 +77,7 @@ export interface PublicSnapshotActivity {
 export interface PublicSnapshotDay {
   day_number: number;
   title: string;
+  date?: string | null;
   actual_day_cost: number;
   activities: PublicSnapshotActivity[];
 }

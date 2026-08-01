@@ -341,6 +341,27 @@ export interface GenerateDaysResponse {
   summary: ItineraryGenerationSummary;
 }
 
+export interface ItineraryPreflightIssue {
+  code: string;
+  field: string | null;
+  message: string;
+  actual: number | null;
+  minimum: number | null;
+  maximum: number | null;
+  actions: string[];
+}
+
+export interface ItineraryPreflightResponse {
+  can_generate: boolean;
+  duration_days: number;
+  budget: number | null;
+  minimum_budget: number | null;
+  minimum_total_cost: number;
+  cost_breakdown: Record<string, number>;
+  blocking_issues: ItineraryPreflightIssue[];
+  warnings: ItineraryPreflightIssue[];
+}
+
 // Module 7: AI Chat & Suggestions Interfaces
 export type ChatRole = 'user' | 'assistant';
 export type SuggestionStatus = 'pending' | 'accepted' | 'rejected';
@@ -638,6 +659,16 @@ export class TripService {
   checkItineraryQuality(tripId: string): Observable<ResponseEnvelope<ItineraryQualityResponse>> {
     return this.http.get<ResponseEnvelope<ItineraryQualityResponse>>(
       `${this.baseUrl}/trips/${tripId}/days/quality`
+    );
+  }
+
+  preflightGenerateDays(
+    tripId: string,
+    payload: GenerateDaysRequest,
+  ): Observable<ResponseEnvelope<ItineraryPreflightResponse>> {
+    return this.http.post<ResponseEnvelope<ItineraryPreflightResponse>>(
+      `${this.baseUrl}/trips/${tripId}/days/preflight`,
+      payload,
     );
   }
 

@@ -159,8 +159,8 @@ async def get_trip_summary(
 async def get_trip_history(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=30, ge=1, le=100),
-    entity_type: str | None = Query(default=None),
-    action: str | None = Query(default=None),
+    entity_type: str | None = Query(default=None, max_length=50),
+    action: str | None = Query(default=None, max_length=50),
     trip: Trip = Depends(get_trip_read_access),
     db: AsyncSession = Depends(get_db),
 ):

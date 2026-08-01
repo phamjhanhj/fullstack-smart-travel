@@ -9,10 +9,10 @@ services:
       # Full PostgreSQL connection information for local Docker deployment.
       POSTGRES_DB: smart_travel
       POSTGRES_USER: smart_travel
-      POSTGRES_PASSWORD: smart_travel_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smart_travel_local_only}
       PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,21 +32,25 @@ services:
       dockerfile: Dockerfile
       target: backend
     environment:
-      ENVIRONMENT: development
+      ENVIRONMENT: ${ENVIRONMENT:-development}
       # Database host is the Compose service name "db", not localhost.
-      DATABASE_URL: postgresql+asyncpg://smart_travel:smart_travel_password@db:5432/smart_travel
+      DATABASE_URL: postgresql+asyncpg://smart_travel:${POSTGRES_PASSWORD:-smart_travel_local_only}@db:5432/smart_travel
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-docker-dev-secret-change-before-production}
       JWT_ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_SECONDS: 3600
+      ACCESS_TOKEN_EXPIRE_SECONDS: 900
       REFRESH_TOKEN_EXPIRE_SECONDS: 604800
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
       GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
       FOURSQUARE_API_KEY: ${FOURSQUARE_API_KEY:-}
       ROUTING_PROVIDER: ${ROUTING_PROVIDER:-haversine}
       OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
-      ALLOWED_ORIGINS: http://localhost:4200
-      FRONTEND_BASE_URL: http://localhost:4200
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:4200}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,testserver}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-true}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-172.16.0.0/12}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:4200}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
@@ -54,8 +58,8 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Smart Travel PKA}
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy

@@ -1,11 +1,11 @@
 """Router - Module 1: Auth (4 endpoints)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
-from app.core.exceptions import AppError
+from app.core.exceptions import AppError, UnauthorizedError
 from app.core.rate_limit import rate_limit
 from app.core.response import envelope, envelope_created
 from app.db.session import get_db
@@ -26,6 +26,35 @@ from app.services import auth_service
 from app.core.config import settings
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+REFRESH_COOKIE_PATH = "/api/auth"
+
+
+def _set_refresh_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=settings.REFRESH_COOKIE_NAME,
+        value=token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
+        path=REFRESH_COOKIE_PATH,
+        secure=settings.REFRESH_COOKIE_SECURE,
+        httponly=True,
+        samesite="strict",
+    )
+
+
+def _clear_refresh_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=settings.REFRESH_COOKIE_NAME,
+        path=REFRESH_COOKIE_PATH,
+        secure=settings.REFRESH_COOKIE_SECURE,
+        httponly=True,
+        samesite="strict",
+    )
+
+
+def _refresh_token(request: Request, payload: RefreshRequest | None) -> str | None:
+    if payload and payload.refresh_token:
+        return payload.refresh_token
+    return request.cookies.get(settings.REFRESH_COOKIE_NAME)
 
 
 @router.post("/register", status_code=201, dependencies=[Depends(rate_limit("auth_register", settings.RATE_LIMIT_AUTH_PER_MINUTE))])
@@ -42,7 +71,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     )
 
 
-@router.post("/verify-email")
+@router.post("/verify-email", dependencies=[Depends(rate_limit("auth_verify_email", settings.RATE_LIMIT_AUTH_PER_MINUTE))])
 async def verify_email(payload: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
     await auth_service.verify_email(db, payload.token)
     return envelope(data=None, message="Xac minh email thanh cong")
@@ -61,28 +90,45 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     data = LoginResponse(
         access_token=access_token,
-        refresh_token=refresh_token,
         expires_in=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
         user=LoginUserInfo.model_validate(user),
     )
-    return envelope(data=data, message="Dang nhap thanh cong")
+    response = envelope(data=data, message="Dang nhap thanh cong")
+    _set_refresh_cookie(response, refresh_token)
+    return response
 
 
-@router.post("/refresh")
-async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    new_access_token, new_refresh_token = await auth_service.refresh_access_token(db, payload.refresh_token)
+@router.post("/refresh", dependencies=[Depends(rate_limit("auth_refresh", 20))])
+async def refresh(
+    request: Request,
+    payload: RefreshRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    token = _refresh_token(request, payload)
+    if not token:
+        raise UnauthorizedError("Phien dang nhap khong hop le hoac da het han")
+    new_access_token, new_refresh_token = await auth_service.refresh_access_token(db, token)
     data = RefreshResponse(
         access_token=new_access_token,
-        refresh_token=new_refresh_token,
         expires_in=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
     )
-    return envelope(data=data, message="Token da duoc lam moi")
+    response = envelope(data=data, message="Token da duoc lam moi")
+    _set_refresh_cookie(response, new_refresh_token)
+    return response
 
 
-@router.post("/logout")
-async def logout(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    await auth_service.revoke_refresh_token(db, payload.refresh_token)
-    return envelope(data=None, message="Da dang xuat")
+@router.post("/logout", dependencies=[Depends(rate_limit("auth_logout", 30))])
+async def logout(
+    request: Request,
+    payload: RefreshRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    token = _refresh_token(request, payload)
+    if token:
+        await auth_service.revoke_refresh_token(db, token)
+    response = envelope(data=None, message="Da dang xuat")
+    _clear_refresh_cookie(response)
+    return response
 
 
 @router.get("/me")

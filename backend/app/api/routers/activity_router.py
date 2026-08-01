@@ -9,7 +9,9 @@ import uuid
 
 from fastapi import APIRouter, Depends
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_trip_edit_access, get_trip_read_access
+from app.core.rate_limit import rate_limit
 from app.core.response import envelope, envelope_created
 from app.db.session import get_db
 from app.models.trip import Trip
@@ -21,11 +23,13 @@ from app.schemas.day_plan import (
     DayPlanResponse,
     GenerateDaysResponse,
     GenerateDaysRequest,
+    ItineraryPreflightResponse,
     ItineraryQualityResponse,
     ReorderActivitiesRequest,
     UpdateActivityRequest,
 )
 from app.services import activity_service
+from app.services.itinerary_policy import build_itinerary_preflight
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # --- Router long trong /trips/{trip_id} ---------------------------------------
@@ -75,7 +79,20 @@ async def add_activity(
     )
 
 
-@trip_days_router.post("/generate", status_code=201)
+@trip_days_router.post("/preflight")
+async def preflight_generate_days(
+    payload: GenerateDaysRequest,
+    trip: Trip = Depends(get_trip_edit_access),
+):
+    result: ItineraryPreflightResponse = build_itinerary_preflight(trip, payload)
+    return envelope(data=result)
+
+
+@trip_days_router.post(
+    "/generate",
+    status_code=201,
+    dependencies=[Depends(rate_limit("ai_itinerary", settings.RATE_LIMIT_AI_PER_MINUTE))],
+)
 async def generate_days(
     payload: GenerateDaysRequest,
     trip: Trip = Depends(get_trip_edit_access),

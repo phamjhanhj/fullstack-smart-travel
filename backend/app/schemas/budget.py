@@ -6,6 +6,8 @@ import datetime as dt
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from app.core.trip_limits import MAX_BUDGET_VND
+from app.schemas.validators import ParticipantText, TrimmedText
 
 BudgetCategory = Literal["food", "transport", "hotel", "activity", "other"]
 
@@ -36,23 +38,23 @@ class BudgetItemResponse(BaseModel):
 
 class CreateBudgetItemRequest(BaseModel):
     category: BudgetCategory
-    label: str = Field(min_length=1, max_length=200)
-    planned_amount: int = Field(default=0, ge=0)
-    actual_amount: int = Field(default=0, ge=0)
+    label: TrimmedText = Field(min_length=1, max_length=200)
+    planned_amount: int = Field(default=0, ge=0, le=MAX_BUDGET_VND)
+    actual_amount: int = Field(default=0, ge=0, le=MAX_BUDGET_VND)
     date: dt.date | None = None
-    paid_by: str | None = None
-    participants: list[str] | None = None
+    paid_by: TrimmedText | None = Field(default=None, max_length=100)
+    participants: list[ParticipantText] | None = Field(default=None, max_length=100)
 
 
 class UpdateBudgetItemRequest(BaseModel):
     """PUT /budget/items/{id} - toan bo field optional."""
     category: BudgetCategory | None = None
-    label: str | None = None
-    planned_amount: int | None = Field(default=None, ge=0)
-    actual_amount: int | None = Field(default=None, ge=0)
+    label: TrimmedText | None = Field(default=None, min_length=1, max_length=200)
+    planned_amount: int | None = Field(default=None, ge=0, le=MAX_BUDGET_VND)
+    actual_amount: int | None = Field(default=None, ge=0, le=MAX_BUDGET_VND)
     date: dt.date | None = None
-    paid_by: str | None = None
-    participants: list[str] | None = None
+    paid_by: TrimmedText | None = Field(default=None, max_length=100)
+    participants: list[ParticipantText] | None = Field(default=None, max_length=100)
 
 
 class CategoryBudgetSummary(BaseModel):

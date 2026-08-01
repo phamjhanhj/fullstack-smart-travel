@@ -10,6 +10,7 @@ from app.models.public_trip import PublicTripPublication
 from app.schemas.public_trip import PublicTripImportRequest, UpsertPublicTripRequest
 from app.services.public_trip_service import (
     _privacy_issues,
+    _snapshot_privacy_issues,
     _selected_snapshot_activities,
     _slugify,
 )
@@ -58,6 +59,31 @@ def test_privacy_scan_blocks_contact_information() -> None:
     issues = _privacy_issues(payload)
 
     assert any(issue["code"] == "PHONE_DETECTED" for issue in issues)
+
+
+def test_privacy_scan_checks_activity_data_in_final_snapshot() -> None:
+    issues = _snapshot_privacy_issues(
+        {
+            "days": [
+                {
+                    "activities": [
+                        {
+                            "title": "Hotel",
+                            "description": "Booking: ABCDE-12345",
+                            "address": "Da Nang",
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+
+    assert any(issue["code"] == "BOOKING_CODE_DETECTED" for issue in issues)
+
+    formatted_phone_issues = _snapshot_privacy_issues(
+        {"days": [{"activities": [{"description": "Liên hệ 0912 345 678"}]}]}
+    )
+    assert any(issue["code"] == "PHONE_DETECTED" for issue in formatted_phone_issues)
 
 
 def test_select_single_public_activity_for_partial_import() -> None:

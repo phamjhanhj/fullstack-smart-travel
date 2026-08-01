@@ -6,6 +6,8 @@ import datetime as dt
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.core.trip_limits import MAX_BUDGET_VND, MAX_TRIP_DURATION_DAYS
+from app.schemas.validators import InterestWeight, ShortListText, TagText, TrimmedText, validated_http_url
 
 ActivityType = Literal["meal", "attraction", "hotel", "transport", "other"]
 GeneratePace = Literal["relaxed", "balanced", "packed"]
@@ -16,9 +18,9 @@ GenerateTransportMode = Literal["walking", "motorbike", "car", "taxi", "public_t
 
 class MustVisitRequest(BaseModel):
     location_id: uuid.UUID | None = None
-    name: str = Field(min_length=2, max_length=200)
+    name: TrimmedText = Field(min_length=2, max_length=200)
     priority: Literal["required", "preferred"] = "required"
-    preferred_day: int | None = Field(default=None, ge=1, le=31)
+    preferred_day: int | None = Field(default=None, ge=1, le=MAX_TRIP_DURATION_DAYS)
     preferred_time: Literal["morning", "afternoon", "evening", "any"] = "any"
     minimum_duration_minutes: int | None = Field(default=None, ge=15, le=480)
 
@@ -68,16 +70,14 @@ class ActivityResponse(BaseModel):
     end_time: str | None = None
     estimated_cost: int | None = None
     order_index: int
-    booking_url: str | None = None
+    booking_url: str | None = Field(default=None, max_length=2048)
     notes: str | None = None
     is_locked: bool = False
 
     @field_validator("booking_url")
     @classmethod
     def validate_booking_url(cls, value: str | None) -> str | None:
-        if value is None or value.startswith(("http://", "https://")):
-            return value
-        raise ValueError("booking_url must be an http or https URL")
+        return validated_http_url(value, "booking_url must be an http or https URL")
     location_id: uuid.UUID | None = None
     location: LocationBrief | None = None
     updated_at: dt.datetime | None = None
@@ -94,24 +94,22 @@ class DayPlanResponse(BaseModel):
 
 
 class CreateActivityRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
-    description: str | None = None
+    title: TrimmedText = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=3000)
     type: ActivityType = "other"
     location_id: uuid.UUID | None = None
     start_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     end_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
-    estimated_cost: int | None = Field(default=None, ge=0)
-    order_index: int = 0
-    booking_url: str | None = None
-    notes: str | None = None
+    estimated_cost: int | None = Field(default=None, ge=0, le=MAX_BUDGET_VND)
+    order_index: int = Field(default=0, ge=0, le=10_000)
+    booking_url: str | None = Field(default=None, max_length=2048)
+    notes: str | None = Field(default=None, max_length=1000)
     is_locked: bool = False
 
     @field_validator("booking_url")
     @classmethod
     def validate_booking_url(cls, value: str | None) -> str | None:
-        if value is None or value.startswith(("http://", "https://")):
-            return value
-        raise ValueError("booking_url must be an http or https URL")
+        return validated_http_url(value, "booking_url must be an http or https URL")
 
     @model_validator(mode="after")
     def validate_time_range(self) -> "CreateActivityRequest":
@@ -122,23 +120,21 @@ class CreateActivityRequest(BaseModel):
 
 class UpdateActivityRequest(BaseModel):
     """PUT /activities/{id} - toan bo field optional."""
-    title: str | None = Field(default=None, min_length=1, max_length=200)
-    description: str | None = None
+    title: TrimmedText | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=3000)
     type: ActivityType | None = None
     location_id: uuid.UUID | None = None
     start_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     end_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
-    estimated_cost: int | None = Field(default=None, ge=0)
-    booking_url: str | None = None
-    notes: str | None = None
+    estimated_cost: int | None = Field(default=None, ge=0, le=MAX_BUDGET_VND)
+    booking_url: str | None = Field(default=None, max_length=2048)
+    notes: str | None = Field(default=None, max_length=1000)
     is_locked: bool | None = None
 
     @field_validator("booking_url")
     @classmethod
     def validate_booking_url(cls, value: str | None) -> str | None:
-        if value is None or value.startswith(("http://", "https://")):
-            return value
-        raise ValueError("booking_url must be an http or https URL")
+        return validated_http_url(value, "booking_url must be an http or https URL")
 
     @model_validator(mode="after")
     def validate_time_range_when_both_are_present(self) -> "UpdateActivityRequest":
@@ -149,12 +145,12 @@ class UpdateActivityRequest(BaseModel):
 
 class ReorderItem(BaseModel):
     id: uuid.UUID
-    order_index: int = Field(ge=0)
+    order_index: int = Field(ge=0, le=10_000)
 
 
 class ReorderActivitiesRequest(BaseModel):
     day_plan_id: uuid.UUID
-    items: list[ReorderItem] = Field(min_length=1)
+    items: list[ReorderItem] = Field(min_length=1, max_length=300)
 
 
 class ItineraryIssue(BaseModel):
@@ -174,17 +170,17 @@ class ItineraryQualityResponse(BaseModel):
 
 class GenerateDaysRequest(BaseModel):
     overwrite: bool = False
-    must_visit: list[str] = Field(default_factory=list, max_length=20)
+    must_visit: list[ShortListText] = Field(default_factory=list, max_length=20)
     must_visit_items: list[MustVisitRequest] = Field(default_factory=list, max_length=20)
-    avoid_places: list[str] = Field(default_factory=list, max_length=20)
-    interest_weights: dict[str, int] = Field(default_factory=dict)
+    avoid_places: list[ShortListText] = Field(default_factory=list, max_length=20)
+    interest_weights: dict[TagText, InterestWeight] = Field(default_factory=dict, max_length=20)
     pace: GeneratePace = "balanced"
     budget_mode: GenerateBudgetMode = "flexible_15"
     prioritize_user_places: GenerateUserPlacePriority = "balanced"
     transport_mode: GenerateTransportMode = "mixed"
     departure_location: str | None = Field(default=None, max_length=120)
     departure_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
-    estimated_travel_hours: float | None = Field(default=None, ge=0)
+    estimated_travel_hours: float | None = Field(default=None, ge=0, le=72)
     arrival_transport: str | None = Field(default=None, max_length=80)
     daily_start_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     daily_end_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -205,8 +201,36 @@ class GenerateDaysRequest(BaseModel):
             clean_key = str(key).strip().lower()
             if not clean_key:
                 continue
-            cleaned[clean_key] = max(0, min(int(weight), 10))
+            cleaned[clean_key] = int(weight)
         return cleaned
+
+
+class ItineraryPreflightIssue(BaseModel):
+    code: str
+    field: str | None = None
+    message: str
+    actual: int | None = None
+    minimum: int | None = None
+    maximum: int | None = None
+    actions: list[str] = Field(default_factory=list)
+
+
+class ItineraryMinimumCostBreakdown(BaseModel):
+    transport: int = 0
+    lodging: int = 0
+    meals: int = 0
+    required_places: int = 0
+
+
+class ItineraryPreflightResponse(BaseModel):
+    can_generate: bool
+    duration_days: int
+    budget: int | None = None
+    minimum_budget: int | None = None
+    minimum_total_cost: int = 0
+    cost_breakdown: ItineraryMinimumCostBreakdown
+    blocking_issues: list[ItineraryPreflightIssue] = Field(default_factory=list)
+    warnings: list[ItineraryPreflightIssue] = Field(default_factory=list)
 
 
 class DayPlanBrief(BaseModel):

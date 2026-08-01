@@ -33,6 +33,7 @@ from app.schemas.day_plan import (
     UserRequestCoverageItem,
 )
 from app.services.destination_profile_service import build_destination_profile
+from app.services.itinerary_policy import validate_itinerary_preflight
 from app.services.trip_intent_service import (
     extract_place_requests_from_preferences,
     resolve_trip_intent,
@@ -117,7 +118,7 @@ async def create_activity(
     actor: User,
 ) -> Activity:
     """POST /trips/{id}/days/{day_id}/activities."""
-    await get_day_or_404(db, trip_id, day_id)  # dam bao day thuoc dung trip
+    day_plan = await get_day_or_404(db, trip_id, day_id)  # dam bao day thuoc dung trip
 
     activity = Activity(day_plan_id=day_id, **payload.model_dump())
     db.add(activity)
@@ -129,8 +130,8 @@ async def create_activity(
         entity_type="activity",
         entity_id=activity.id,
         action="created",
-        summary=f"Da them hoat dong \"{activity.title}\"",
-        metadata={"day_id": day_id, "title": activity.title},
+        summary=f"Đã thêm hoạt động \"{activity.title}\" (Ngày {day_plan.day_number})",
+        metadata={"day_id": str(day_id), "day_number": day_plan.day_number, "activity_id": str(activity.id), "title": activity.title},
     )
     await db.commit()
     return await _get_activity_for_response(db, activity.id)
@@ -206,6 +207,7 @@ async def update_activity(
         trip_history_service.ACTIVITY_FIELD_LABELS,
     )
     if changes:
+        day_num = activity.day_plan.day_number if activity.day_plan else None
         await trip_history_service.record_history_event(
             db,
             trip_id=activity.day_plan.trip_id,
@@ -213,15 +215,16 @@ async def update_activity(
             entity_type="activity",
             entity_id=activity.id,
             action="updated",
-            summary=f"Da cap nhat hoat dong \"{activity.title}\"",
+            summary=f"Đã cập nhật hoạt động \"{activity.title}\"" + (f" (Ngày {day_num})" if day_num else ""),
             changes=changes,
-            metadata={"day_id": activity.day_plan_id},
+            metadata={"day_id": str(activity.day_plan_id), "day_number": day_num, "activity_id": str(activity.id), "title": activity.title},
         )
     await db.commit()
     return await _get_activity_for_response(db, activity.id)
 
 
 async def delete_activity(db: AsyncSession, activity: Activity, actor: User) -> None:
+    day_num = activity.day_plan.day_number if activity.day_plan else None
     await trip_history_service.record_history_event(
         db,
         trip_id=activity.day_plan.trip_id,
@@ -229,8 +232,8 @@ async def delete_activity(db: AsyncSession, activity: Activity, actor: User) -> 
         entity_type="activity",
         entity_id=activity.id,
         action="deleted",
-        summary=f"Da xoa hoat dong \"{activity.title}\"",
-        metadata={"day_id": activity.day_plan_id, "title": activity.title},
+        summary=f"Đã xóa hoạt động \"{activity.title}\"" + (f" (Ngày {day_num})" if day_num else ""),
+        metadata={"day_id": str(activity.day_plan_id), "day_number": day_num, "title": activity.title},
     )
     await db.delete(activity)
     await db.commit()
@@ -406,6 +409,8 @@ async def generate_day_plans(
     """
     if isinstance(payload, bool):
         payload = GenerateDaysRequest(overwrite=payload)
+
+    validate_itinerary_preflight(trip, payload)
 
     generation_id = str(uuid.uuid4())
     generation_started = time.perf_counter()
@@ -681,7 +686,7 @@ async def generate_day_plans(
     )
     if budget_trim_warning:
         experience_warnings.append(budget_trim_warning)
-    _fit_itinerary_to_budget(itinerary_data, trip.budget, payload.budget_mode)
+    _ensure_itinerary_within_budget(itinerary_data, trip.budget, payload.budget_mode)
 
     summary = _build_generation_summary(
         itinerary_data,
@@ -2265,6 +2270,36 @@ def _fit_itinerary_to_budget(data: dict, budget: int | None, budget_mode: str = 
             cost = _sanitize_cost(activity.get("estimated_cost")) or 0
             if cost > 0:
                 activity["estimated_cost"] = int(cost * ratio)
+
+
+def _ensure_itinerary_within_budget(
+    data: dict,
+    budget: int | None,
+    budget_mode: str = "flexible_15",
+) -> None:
+    """Enforce the final budget without falsifying required costs in strict mode."""
+    cap = _budget_cap(budget, budget_mode)
+    if not cap:
+        return
+    total = sum(
+        _sanitize_cost(activity.get("estimated_cost")) or 0
+        for day in data.get("days", [])
+        for activity in day.get("activities", [])
+    )
+    if total <= cap or total <= 0:
+        return
+    if budget_mode == "strict":
+        raise AppError(
+            "Ngân sách không đủ cho các chi phí thiết yếu của lịch trình.",
+            status_code=422,
+            data={
+                "code": "BUDGET_INFEASIBLE",
+                "budget": budget,
+                "budget_cap": cap,
+                "estimated_cost": total,
+            },
+        )
+    _fit_itinerary_to_budget(data, budget, budget_mode)
 
 
 def _trim_optional_experiences_to_budget(

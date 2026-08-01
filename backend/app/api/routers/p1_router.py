@@ -12,8 +12,9 @@ from app.core.exceptions import AppError, NotFoundError
 from app.core.response import envelope, envelope_created
 from app.db.session import get_db
 from app.models.p1_features import SavedTripCollection, SavedTripCollectionItem, TripJournalEntry, UserNotification
+from app.models.activity import Activity
 from app.models.public_trip import PublicTripPublication
-from app.models.trip import Trip
+from app.models.trip import DayPlan, Trip
 from app.models.user import User
 from app.schemas.p1_features import CollectionCreate, EmergencyOption, EmergencyPreviewRequest, JournalCreate, JournalResponse, JournalVisibilityUpdate, NotificationResponse
 
@@ -67,6 +68,16 @@ async def list_journal(trip: Trip = Depends(get_trip_read_access), current_user:
 
 @journal_router.post("", status_code=201)
 async def create_journal(payload: JournalCreate, trip: Trip = Depends(get_trip_edit_access), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if payload.entry_date < trip.start_date or payload.entry_date > trip.end_date:
+        raise AppError("Ngay nhat ky phai nam trong thoi gian cua chuyen di", status_code=422)
+    if payload.activity_id is not None:
+        activity_id = await db.scalar(
+            select(Activity.id)
+            .join(DayPlan, DayPlan.id == Activity.day_plan_id)
+            .where(Activity.id == payload.activity_id, DayPlan.trip_id == trip.id)
+        )
+        if activity_id is None:
+            raise NotFoundError("Khong tim thay hoat dong trong chuyen di nay")
     item = TripJournalEntry(trip_id=trip.id, user_id=current_user.id, **payload.model_dump())
     db.add(item); await db.commit(); await db.refresh(item)
     return envelope_created(data=JournalResponse.model_validate(item), message="Đã lưu nhật ký chuyến đi")

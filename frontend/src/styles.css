@@ -1,5 +1,7 @@
-@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'leaflet/dist/leaflet.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root,
 html.dark {
@@ -725,4 +727,3 @@ html.light .leaflet-container a.leaflet-popup-close-button {
   color: #64748b !important;
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
-

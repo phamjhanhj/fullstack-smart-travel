@@ -13,8 +13,8 @@ from app.schemas.user import UserPreferences
 
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=1, max_length=39, pattern=r"^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$")
-    email: EmailStr
-    password: str = Field(min_length=6, max_length=128)
+    email: EmailStr = Field(max_length=254)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=2, max_length=100)
 
     @field_validator("username", mode="before")
@@ -63,7 +63,7 @@ class ResendVerificationRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     login: str = Field(min_length=1, max_length=254)
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
     @field_validator("login", mode="before")
     @classmethod
@@ -83,19 +83,17 @@ class LoginUserInfo(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
     user: LoginUserInfo
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str | None = Field(default=None, min_length=32, max_length=4096)
 
 
 class RefreshResponse(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
 

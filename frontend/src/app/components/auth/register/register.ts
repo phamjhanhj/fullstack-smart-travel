@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
+import { applyApiErrors } from '../../../utils/form-errors';
 
 @Component({
   selector: 'app-register',
@@ -22,8 +23,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
   readonly registerForm = this.fb.nonNullable.group({
     full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/), Validators.maxLength(39)]],
-    email: ['', [Validators.required, Validators.email, Validators.pattern(this.strictEmailPattern)]],
-    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(128)]],
+    email: ['', [Validators.required, Validators.email, Validators.pattern(this.strictEmailPattern), Validators.maxLength(254)]],
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
   });
 
   readonly isLoading = signal<boolean>(false);
@@ -84,7 +85,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(this.getApiErrorMessage(err));
+        this.errorMessage.set(applyApiErrors(this.registerForm, err, this.getApiErrorMessage(err)));
       },
     });
   }
@@ -97,6 +98,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   getFieldError(fieldName: 'full_name' | 'username' | 'email' | 'password'): string {
     const field = this.registerForm.get(fieldName);
     if (!field || !field.errors) return '';
+    if (typeof field.errors['server'] === 'string') return field.errors['server'];
 
     if (field.errors['required']) {
       if (fieldName === 'full_name') return 'Vui lòng nhập họ và tên.';
@@ -117,9 +119,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (fieldName === 'email' && (field.errors['email'] || field.errors['pattern'])) {
       return 'Email chưa hợp lệ. Ví dụ: ten@gmail.com.';
     }
+    if (fieldName === 'email' && field.errors['maxlength']) {
+      return 'Email không được vượt quá 254 ký tự.';
+    }
 
     if (fieldName === 'password') {
-      if (field.errors['minlength']) return 'Mật khẩu phải có ít nhất 6 ký tự.';
+      if (field.errors['minlength']) return 'Mật khẩu phải có ít nhất 8 ký tự.';
       if (field.errors['maxlength']) return 'Mật khẩu không được vượt quá 128 ký tự.';
     }
 
@@ -154,7 +159,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
       const fields = details.map((item: any) => String(item?.loc?.[item.loc.length - 1] || '')).join(' ');
       if (fields.includes('username')) return 'Tên đăng nhập chưa hợp lệ.';
       if (fields.includes('email')) return 'Email chưa hợp lệ.';
-      if (fields.includes('password')) return 'Mật khẩu phải có từ 6 đến 128 ký tự.';
+      if (fields.includes('password')) return 'Mật khẩu phải có từ 8 đến 128 ký tự.';
       if (fields.includes('full_name')) return 'Họ và tên phải có từ 2 đến 100 ký tự.';
     }
 

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, map } from 'rxjs';
+import { Observable, firstValueFrom, tap, map } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { clearStoredSession } from './auth-storage';
 
@@ -21,7 +21,6 @@ export interface UserInfo {
 
 export interface LoginData {
   access_token: string;
-  refresh_token: string;
   token_type: string;
   expires_in: number;
   user: UserInfo;
@@ -37,38 +36,52 @@ export class AuthService {
   // Current logged in user details
   readonly currentUser = signal<UserInfo | null>(null);
   readonly isAuthenticated = signal<boolean>(false);
+  private readonly initialization: Promise<void>;
 
   constructor() {
-    this.checkInitialAuth();
+    // Defer the HTTP call until dependency construction has completed.
+    this.initialization = Promise.resolve().then(() => this.checkInitialAuth());
   }
 
-  private checkInitialAuth(): void {
-    const accessToken = localStorage.getItem('access_token');
-    const userJson = localStorage.getItem('user_info');
+  whenReady(): Promise<void> {
+    return this.initialization;
+  }
+
+  private async checkInitialAuth(): Promise<void> {
+    const accessToken = sessionStorage.getItem('access_token');
+    const userJson = sessionStorage.getItem('user_info');
     if (accessToken && userJson) {
       try {
         const user = JSON.parse(userJson);
         this.currentUser.set(user);
         this.isAuthenticated.set(true);
-        // Refresh user info in the background
-        this.fetchProfile().subscribe({
-          next: (profile) => {
-            this.currentUser.set(profile);
-            localStorage.setItem('user_info', JSON.stringify(profile));
-          },
-          error: (err) => {
-            if (err?.status === 401) {
-              this.clearSession();
-            } else {
-              // Don't logout on profile refresh network failure - keep session alive
-              // The token might still be valid (e.g., backend temporarily unreachable)
-              console.warn('Profile refresh failed, keeping existing session.');
-            }
-          },
-        });
-      } catch (e) {
+        try {
+          const profile = await firstValueFrom(this.fetchProfile());
+          sessionStorage.setItem('user_info', JSON.stringify(profile));
+        } catch (error: any) {
+          if (error?.status === 401) this.clearSession();
+        }
+        return;
+      } catch {
         this.clearSession();
       }
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ResponseEnvelope<{ access_token: string }>>(
+          `${this.baseUrl}/auth/refresh`,
+          {},
+          { withCredentials: true },
+        ),
+      );
+      sessionStorage.setItem('access_token', response.data.access_token);
+      const profile = await firstValueFrom(this.fetchProfile());
+      sessionStorage.setItem('user_info', JSON.stringify(profile));
+      this.currentUser.set(profile);
+      this.isAuthenticated.set(true);
+    } catch {
+      this.clearSession();
     }
   }
 
@@ -88,17 +101,17 @@ export class AuthService {
 
   login(login: string, password: string): Observable<ResponseEnvelope<LoginData>> {
     return this.http
-      .post<ResponseEnvelope<LoginData>>(`${this.baseUrl}/auth/login`, {
-        login: login.trim().toLowerCase(),
-        password,
-      })
+      .post<ResponseEnvelope<LoginData>>(
+        `${this.baseUrl}/auth/login`,
+        { login: login.trim().toLowerCase(), password },
+        { withCredentials: true },
+      )
       .pipe(
         tap((response) => {
           if (response.data) {
             const loginData = response.data;
-            localStorage.setItem('access_token', loginData.access_token);
-            localStorage.setItem('refresh_token', loginData.refresh_token);
-            localStorage.setItem('user_info', JSON.stringify(loginData.user));
+            sessionStorage.setItem('access_token', loginData.access_token);
+            sessionStorage.setItem('user_info', JSON.stringify(loginData.user));
             this.currentUser.set(loginData.user);
             this.isAuthenticated.set(true);
           }
@@ -130,14 +143,9 @@ export class AuthService {
   }
 
   logout(): void {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (refreshToken) {
-      this.http.post(`${this.baseUrl}/auth/logout`, { refresh_token: refreshToken }).subscribe({
-        error: () => {
-          // Local logout should still complete even if the server is unreachable.
-        },
-      });
-    }
+    this.http
+      .post(`${this.baseUrl}/auth/logout`, {}, { withCredentials: true })
+      .subscribe({ error: () => undefined });
     this.clearSession();
   }
 }

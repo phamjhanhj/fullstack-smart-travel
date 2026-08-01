@@ -27,13 +27,13 @@ export class PwaService {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const queue = this.getOfflineQueue();
     queue.push({ id, type, tripId, payload, createdAt: new Date().toISOString(), attempts: 0 });
-    localStorage.setItem(this.offlineQueueKey(), JSON.stringify(queue));
+    sessionStorage.setItem(this.offlineQueueKey(), JSON.stringify(queue));
     this.pendingSyncCount.set(queue.length);
     return id;
   }
 
   getOfflineQueue(): any[] {
-    try { return JSON.parse(localStorage.getItem(this.offlineQueueKey()) || '[]'); } catch { return []; }
+    try { return JSON.parse(sessionStorage.getItem(this.offlineQueueKey()) || '[]'); } catch { return []; }
   }
 
   async syncOfflineQueue(handler: (action: any) => Promise<void>): Promise<void> {
@@ -42,7 +42,7 @@ export class PwaService {
     for (const action of this.getOfflineQueue()) {
       try { await handler(action); } catch { remaining.push({ ...action, attempts: (action.attempts || 0) + 1 }); }
     }
-    localStorage.setItem(this.offlineQueueKey(), JSON.stringify(remaining));
+    sessionStorage.setItem(this.offlineQueueKey(), JSON.stringify(remaining));
     this.pendingSyncCount.set(remaining.length);
   }
 
@@ -100,13 +100,13 @@ export class PwaService {
     try {
       const cacheKey = this.privateTripCacheKey(trip.id);
       if (!cacheKey) return;
-      const cachedTripsRaw = localStorage.getItem('offline_cached_trips');
+      const cachedTripsRaw = sessionStorage.getItem('offline_cached_trips');
       const cachedTripsMap: Record<string, any> = cachedTripsRaw ? JSON.parse(cachedTripsRaw) : {};
       cachedTripsMap[cacheKey] = {
         ...trip,
         _cachedAt: new Date().toISOString(),
       };
-      localStorage.setItem('offline_cached_trips', JSON.stringify(cachedTripsMap));
+      sessionStorage.setItem('offline_cached_trips', JSON.stringify(cachedTripsMap));
     } catch (e) {
       console.warn('Could not save trip to local offline cache', e);
     }
@@ -116,7 +116,7 @@ export class PwaService {
     try {
       const cacheKey = this.privateTripCacheKey(tripId);
       if (!cacheKey) return null;
-      const cachedTripsRaw = localStorage.getItem('offline_cached_trips');
+      const cachedTripsRaw = sessionStorage.getItem('offline_cached_trips');
       if (!cachedTripsRaw) return null;
       const cachedTripsMap: Record<string, any> = JSON.parse(cachedTripsRaw);
       return cachedTripsMap[cacheKey] || null;

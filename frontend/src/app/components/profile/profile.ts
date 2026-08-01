@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService, UserInfo } from '../../services/auth.service';
 import { UserService, UserPreferences, UserProfileResponse } from '../../services/user.service';
+import { apiErrorMessage, applyApiErrors, controlErrorMessage, nonBlankValidator } from '../../utils/form-errors';
 import { P1Service, SavedCollection, SavedCollectionDetail } from '../../services/p1.service';
 import { BookingInquiry, PublicTripListItem, PublicTripService } from '../../services/public-trip.service';
 import { TripService } from '../../services/trip.service';
@@ -88,24 +89,24 @@ export class UserProfileComponent implements OnInit {
   readonly passwordErrorMsg = signal<string | null>(null);
 
   readonly profileForm = this.fb.nonNullable.group({
-    full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    full_name: ['', [Validators.required, nonBlankValidator(), Validators.minLength(2), Validators.maxLength(100)]],
     avatar_url: [this.fallbackAvatarUrl],
     travel_style: ['mid-range' as 'budget' | 'mid-range' | 'luxury' | null],
     budget_range: ['medium' as 'low' | 'medium' | 'high' | null],
     email: [''],
-    phone: [''],
-    bio: [''],
+    phone: ['', [Validators.maxLength(30), Validators.pattern(/^(?=(?:\D*\d){7,})[+()\d\s.-]{7,30}$/)]],
+    bio: ['', [Validators.maxLength(1000)]],
     is_public_profile: [false],
     accepts_tour_bookings: [false],
-    public_bio: [''],
-    public_phone: [''],
-    public_zalo_url: [''],
+    public_bio: ['', [Validators.maxLength(1000)]],
+    public_phone: ['', [Validators.maxLength(30), Validators.pattern(/^(?=(?:\D*\d){7,})[+()\d\s.-]{7,30}$/)]],
+    public_zalo_url: ['', [Validators.maxLength(500), Validators.pattern(/^https:\/\/(?:www\.|chat\.)?zalo\.me(?:\/|$)/i)]],
   });
 
   readonly passwordForm = this.fb.nonNullable.group({
-    current_password: ['', [Validators.required]],
-    new_password: ['', [Validators.required, Validators.minLength(6)]],
-    confirm_password: ['', [Validators.required]],
+    current_password: ['', [Validators.required, Validators.maxLength(128)]],
+    new_password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
+    confirm_password: ['', [Validators.required, Validators.maxLength(128)]],
   });
 
   ngOnInit(): void {
@@ -134,11 +135,11 @@ export class UserProfileComponent implements OnInit {
           this.profileForm.patchValue({
             full_name: u.full_name,
             email: u.email || `${u.username}@smarttravel.com`,
-            phone: (u as any).phone || (u as any).phone_number || '',
+            phone: u.preferences_json?.phone || '',
             avatar_url: avatarUrl,
             travel_style: u.preferences_json?.travel_style || 'mid-range',
             budget_range: u.preferences_json?.budget_range || 'medium',
-            bio: (u.preferences_json as any)?.bio || '',
+            bio: u.preferences_json?.bio || '',
             is_public_profile: u.is_public_profile || false,
             accepts_tour_bookings: u.accepts_tour_bookings || false,
             public_bio: u.public_bio || '',
@@ -152,7 +153,7 @@ export class UserProfileComponent implements OnInit {
       },
       error: () => {
         this.isLoading.set(false);
-        this.errorMessage.set('Khong the tai thong tin ho so cua ban.');
+        this.errorMessage.set('Không thể tải thông tin hồ sơ của bạn.');
       },
     });
 
@@ -205,14 +206,18 @@ export class UserProfileComponent implements OnInit {
         this.savedTrips.set(res.saved?.data?.items || []);
         this.isSavedLoading.set(false);
       },
-      error: () => this.isSavedLoading.set(false)
+      error: (error) => {
+        this.isSavedLoading.set(false);
+        this.errorMessage.set(apiErrorMessage(error, 'Không thể tải lịch trình và bộ sưu tập đã lưu.'));
+      }
     });
   }
 
   viewCollection(collectionId: string): void {
     this.selectedCollectionId.set(collectionId);
     this.p1Service.getCollectionDetail(collectionId).subscribe({
-      next: (res) => this.selectedCollectionDetail.set(res.data)
+      next: (res) => this.selectedCollectionDetail.set(res.data),
+      error: error => this.errorMessage.set(apiErrorMessage(error, 'Không thể tải bộ sưu tập.')),
     });
   }
 
@@ -235,9 +240,15 @@ export class UserProfileComponent implements OnInit {
   }
 
   onChangePassword(): void {
-    if (this.passwordForm.invalid) return;
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      this.passwordErrorMsg.set('Vui lòng sửa các trường được đánh dấu màu đỏ.');
+      return;
+    }
     const { new_password, confirm_password } = this.passwordForm.getRawValue();
     if (new_password !== confirm_password) {
+      this.passwordForm.get('confirm_password')?.setErrors({ server: 'Xác nhận mật khẩu không khớp với mật khẩu mới.' });
+      this.passwordForm.get('confirm_password')?.markAsTouched();
       this.passwordErrorMsg.set('Mật khẩu mới và xác nhận mật khẩu không khớp.');
       return;
     }
@@ -258,13 +269,14 @@ export class UserProfileComponent implements OnInit {
       },
       error: (err) => {
         this.isPasswordChanging.set(false);
-        const message = err?.error?.message;
+        const message = apiErrorMessage(err, 'Không thể đổi mật khẩu. Vui lòng thử lại.');
+        applyApiErrors(this.passwordForm, err, message);
         this.passwordErrorMsg.set(
           message === 'Mat khau hien tai khong dung'
             ? 'Mật khẩu hiện tại không đúng.'
             : message === 'Mat khau moi phai khac mat khau hien tai'
               ? 'Mật khẩu mới phải khác mật khẩu hiện tại.'
-              : 'Không thể đổi mật khẩu. Vui lòng thử lại.',
+              : message,
         );
       },
     });
@@ -312,7 +324,11 @@ export class UserProfileComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.profileForm.invalid) return;
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      this.errorMessage.set('Vui lòng sửa các trường được đánh dấu màu đỏ.');
+      return;
+    }
 
     this.isSaving.set(true);
     this.successMessage.set(null);
@@ -325,17 +341,19 @@ export class UserProfileComponent implements OnInit {
       travel_style: formVal.travel_style,
       budget_range: formVal.budget_range,
       interests: this.selectedInterests(),
+      phone: formVal.phone.trim() || null,
+      bio: formVal.bio.trim() || null,
     };
 
     const payload = {
-      full_name: formVal.full_name,
+      full_name: formVal.full_name.trim().replace(/\s+/g, ' '),
       avatar_url: avatarUrl,
       preferences_json,
       is_public_profile: formVal.is_public_profile,
       accepts_tour_bookings: formVal.is_public_profile && formVal.accepts_tour_bookings,
-      public_bio: formVal.public_bio || null,
-      public_phone: formVal.public_phone || null,
-      public_zalo_url: formVal.public_zalo_url || null,
+      public_bio: formVal.public_bio.trim() || null,
+      public_phone: formVal.public_phone.trim() || null,
+      public_zalo_url: formVal.public_zalo_url.trim() || null,
     };
 
     this.userService.updateUserProfile(payload).subscribe({
@@ -345,7 +363,7 @@ export class UserProfileComponent implements OnInit {
           const updated = res.data;
           this.profile.set(updated);
           this.selectedAvatar.set(updated.avatar_url || this.fallbackAvatarUrl);
-          this.successMessage.set('Da cap nhat ho so thanh cong!');
+          this.successMessage.set('Đã cập nhật hồ sơ thành công!');
 
           const cachedUser: UserInfo = {
             id: updated.id,
@@ -354,16 +372,38 @@ export class UserProfileComponent implements OnInit {
             avatar_url: updated.avatar_url || this.fallbackAvatarUrl,
           };
           this.authService.currentUser.set(cachedUser);
-          localStorage.setItem('user_info', JSON.stringify(cachedUser));
+          sessionStorage.setItem('user_info', JSON.stringify(cachedUser));
 
           setTimeout(() => this.successMessage.set(null), 3000);
         }
       },
       error: (err) => {
         this.isSaving.set(false);
-        this.errorMessage.set(err?.error?.message || 'Co loi xay ra khi cap nhat ho so.');
+        this.errorMessage.set(applyApiErrors(this.profileForm, err, 'Không thể cập nhật hồ sơ.'));
       },
     });
+  }
+
+  profileFieldInvalid(fieldName: string): boolean {
+    const field = this.profileForm.get(fieldName);
+    return !!(field?.invalid && (field.dirty || field.touched));
+  }
+
+  profileFieldError(fieldName: string, label: string): string {
+    return controlErrorMessage(this.profileForm.get(fieldName), label, {
+      pattern: fieldName === 'public_phone' || fieldName === 'phone'
+        ? 'Số điện thoại phải có ít nhất 7 chữ số và chỉ dùng các ký tự + ( ) . -'
+        : 'Liên kết Zalo phải dùng HTTPS và thuộc tên miền zalo.me.',
+    });
+  }
+
+  passwordFieldInvalid(fieldName: string): boolean {
+    const field = this.passwordForm.get(fieldName);
+    return !!(field?.invalid && (field.dirty || field.touched));
+  }
+
+  passwordFieldError(fieldName: string, label: string): string {
+    return controlErrorMessage(this.passwordForm.get(fieldName), label);
   }
 
   onReset(): void {

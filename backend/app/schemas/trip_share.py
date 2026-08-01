@@ -26,7 +26,7 @@ class ShareUserBrief(BaseModel):
 class CreateTripInviteRequest(BaseModel):
     recipient: str | None = Field(default=None, max_length=254)
     # Kept for backward compatibility with older clients.
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=254)
     role: TripShareRole
     expires_in_days: int = Field(default=7, ge=1, le=30)
 

@@ -18,11 +18,11 @@ from app.services import p2_service
 
 router=APIRouter(tags=["Community P2"])
 
-@router.get("/public-trips/{publication_id}/feedback")
+@router.get("/public-trips/{publication_id}/feedback", dependencies=[Depends(rate_limit("community_feedback", 120))])
 async def get_feedback(publication_id:uuid.UUID, db:AsyncSession=Depends(get_db), current_user:User|None=Depends(get_optional_current_user)):
     publication=await p2_service.publication_or_404(db,publication_id); return envelope(data=await p2_service.feedback(db,publication,current_user.id if current_user else None))
 
-@router.post("/public-trips/{publication_id}/comments",status_code=201)
+@router.post("/public-trips/{publication_id}/comments", status_code=201, dependencies=[Depends(rate_limit("community_comment", 20))])
 async def add_comment(publication_id:uuid.UUID,payload:CommentCreate,current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     publication=await p2_service.publication_or_404(db,publication_id)
     if not publication.allow_comments: raise AppError("Tác giả đã tắt bình luận")
@@ -30,30 +30,31 @@ async def add_comment(publication_id:uuid.UUID,payload:CommentCreate,current_use
     user_rating = await db.scalar(select(PublicTripRating.rating).where(PublicTripRating.publication_id == publication.id, PublicTripRating.user_id == current_user.id))
     return envelope_created(data={"id":str(item.id),"content":item.content,"is_verified_trip":item.is_verified_trip,"rating":user_rating,"created_at":item.created_at,"user":{"id":str(current_user.id),"username":current_user.username,"full_name":current_user.full_name,"avatar_url":current_user.avatar_url}})
 
-@router.put("/public-trips/{publication_id}/rating")
+@router.put("/public-trips/{publication_id}/rating", dependencies=[Depends(rate_limit("community_rating", 30))])
 async def rate(publication_id:uuid.UUID,payload:RatingCreate,current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     publication=await p2_service.publication_or_404(db,publication_id); item=await db.scalar(select(PublicTripRating).where(PublicTripRating.publication_id==publication.id,PublicTripRating.user_id==current_user.id)); verified=await p2_service.has_verified_trip(db,current_user.id,publication)
-    if item: item.rating=payload.rating; item.is_verified_trip=verified
-    else: db.add(PublicTripRating(publication_id=publication.id,user_id=current_user.id,rating=payload.rating,is_verified_trip=verified))
-    await db.commit(); return envelope(data={"rating":payload.rating,"is_verified_trip":verified})
+    if item:
+        raise AppError("Bạn đã đánh giá chuyến đi này rồi. Mỗi người dùng chỉ được đánh giá 1 lần duy nhất.")
+    db.add(PublicTripRating(publication_id=publication.id,user_id=current_user.id,rating=payload.rating,is_verified_trip=verified))
+    await db.commit(); return envelope(data={"rating":payload.rating,"is_verified_trip":verified}, message="Đã lưu đánh giá của bạn")
 
 @router.get("/authors/{author_id}/follow-status")
 async def follow_status(author_id:uuid.UUID,current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     following=await db.scalar(select(AuthorFollow.id).where(AuthorFollow.follower_user_id==current_user.id,AuthorFollow.author_user_id==author_id)); return envelope(data={"following":bool(following)})
 
-@router.post("/authors/{author_id}/follow")
+@router.post("/authors/{author_id}/follow", dependencies=[Depends(rate_limit("community_follow", 30))])
 async def follow(author_id:uuid.UUID,current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     await p2_service.follow_author(db,current_user.id,author_id); return envelope(data={"following":True})
 
-@router.delete("/authors/{author_id}/follow")
+@router.delete("/authors/{author_id}/follow", dependencies=[Depends(rate_limit("community_unfollow", 30))])
 async def unfollow(author_id:uuid.UUID,current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     await db.execute(delete(AuthorFollow).where(AuthorFollow.follower_user_id==current_user.id,AuthorFollow.author_user_id==author_id)); await db.commit(); return envelope(data={"following":False})
 
-@router.get("/recommendations/me")
+@router.get("/recommendations/me", dependencies=[Depends(rate_limit("community_recommendations", 60))])
 async def recommend(limit:int=Query(12,ge=1,le=30),current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     return envelope(data=await p2_service.recommendations(db,current_user,limit))
 
-@router.post("/recommendations/{publication_id}/hide")
+@router.post("/recommendations/{publication_id}/hide", dependencies=[Depends(rate_limit("community_hide", 60))])
 async def hide_recommendation(publication_id:uuid.UUID,current_user:User=Depends(get_current_user),db:AsyncSession=Depends(get_db)):
     db.add(HiddenRecommendation(user_id=current_user.id,publication_id=publication_id))
     try: await db.commit()
@@ -126,14 +127,14 @@ async def create_booking_inquiry(publication_id: uuid.UUID, payload: BookingInqu
 
 
 @router.get("/booking-inquiries/sent")
-async def sent_booking_inquiries(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).join(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.requester_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()))).all()
+async def sent_booking_inquiries(limit: int = Query(100, ge=1, le=100), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).join(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.requester_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()).limit(limit))).all()
     return envelope(data=[_inquiry_payload(item, publication) for item, publication in rows])
 
 
 @router.get("/booking-inquiries/received")
-async def received_booking_inquiries(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).join(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.author_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()))).all()
+async def received_booking_inquiries(limit: int = Query(100, ge=1, le=100), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).join(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.author_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()).limit(limit))).all()
     return envelope(data=[_inquiry_payload(item, publication) for item, publication in rows])
 
 

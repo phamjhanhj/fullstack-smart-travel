@@ -17,7 +17,7 @@ router = APIRouter(prefix="/places", tags=["Places"])
 
 @router.get("/photo", dependencies=[Depends(rate_limit("place_photo", settings.RATE_LIMIT_PHOTO_PER_MINUTE))])
 async def get_destination_photo(
-    query: str = Query(min_length=1, description="Tên địa điểm cần tìm ảnh"),
+    query: str = Query(min_length=1, max_length=200, description="Tên địa điểm cần tìm ảnh"),
     count: int = Query(default=3, ge=1, le=10, description="Số lượng ảnh cần lấy"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -33,7 +33,7 @@ async def get_destination_photo(
 
 @router.get("/best-rated", dependencies=[Depends(rate_limit("place_best_rated", settings.RATE_LIMIT_PHOTO_PER_MINUTE))])
 async def get_best_rated_places(
-    query: str = Query(min_length=1, description="Tên địa điểm hoặc khu vực"),
+    query: str = Query(min_length=1, max_length=200, description="Tên địa điểm hoặc khu vực"),
     count: int = Query(default=5, ge=1, le=10),
     current_user: User = Depends(get_current_user),
 ):

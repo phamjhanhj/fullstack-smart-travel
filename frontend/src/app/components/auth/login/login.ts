@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
+import { applyApiErrors } from '../../../utils/form-errors';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +21,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   readonly loginForm = this.fb.nonNullable.group({
     login: ['', [Validators.required, Validators.maxLength(254)]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(128)]],
   });
 
   readonly isLoading = signal<boolean>(false);
@@ -80,7 +81,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.isLoading.set(false);
         this.needsVerification.set(err?.error?.message === 'Email chua duoc xac minh');
-        this.errorMessage.set(this.getApiErrorMessage(err));
+        this.errorMessage.set(applyApiErrors(this.loginForm, err, this.getApiErrorMessage(err)));
       },
     });
   }
@@ -102,6 +103,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   getFieldError(fieldName: 'login' | 'password'): string {
     const field = this.loginForm.get(fieldName);
     if (!field || !field.errors) return '';
+    if (typeof field.errors['server'] === 'string') return field.errors['server'];
 
     if (field.errors['required']) {
       return fieldName === 'login' ? 'Vui lòng nhập tên đăng nhập hoặc email.' : 'Vui lòng nhập mật khẩu.';
@@ -111,6 +113,9 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
     if (fieldName === 'password' && field.errors['minlength']) {
       return 'Mật khẩu phải có ít nhất 6 ký tự.';
+    }
+    if (fieldName === 'password' && field.errors['maxlength']) {
+      return 'Mật khẩu không được vượt quá 128 ký tự.';
     }
     return 'Thông tin chưa hợp lệ.';
   }

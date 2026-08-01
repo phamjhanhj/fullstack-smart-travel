@@ -16,7 +16,6 @@ import { AuthService, type ResponseEnvelope } from '../services/auth.service';
 
 interface RefreshData {
   access_token: string;
-  refresh_token: string;
 }
 
 let refreshInFlight$: Observable<string> | null = null;
@@ -26,8 +25,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const http = inject(HttpClient);
   const baseUrl = inject(API_BASE_URL);
   const authService = inject(AuthService);
-  const token = localStorage.getItem('access_token');
-  const isAuthEndpoint = /\/auth\/(login|register|refresh|logout)$/.test(req.url);
+  const token = sessionStorage.getItem('access_token');
+  const isAuthEndpoint = /\/auth\/(login|register|refresh|logout|verify-email|resend-verification)$/.test(req.url);
 
   const authReq =
     token && !isAuthEndpoint
@@ -36,8 +35,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (error.status !== 401 || isAuthEndpoint || !refreshToken) {
+      if (error.status !== 401 || isAuthEndpoint) {
         if (error.status === 401) {
           authService.clearSession();
           void router.navigate(['/login']);
@@ -47,13 +45,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
       if (!refreshInFlight$) {
         refreshInFlight$ = http
-          .post<ResponseEnvelope<RefreshData>>(`${baseUrl}/auth/refresh`, {
-            refresh_token: refreshToken,
-          })
+          .post<ResponseEnvelope<RefreshData>>(
+            `${baseUrl}/auth/refresh`,
+            {},
+            { withCredentials: true },
+          )
           .pipe(
             tap((response) => {
-              localStorage.setItem('access_token', response.data.access_token);
-              localStorage.setItem('refresh_token', response.data.refresh_token);
+              sessionStorage.setItem('access_token', response.data.access_token);
             }),
             map((response) => response.data.access_token),
             finalize(() => {

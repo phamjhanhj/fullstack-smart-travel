@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import uuid
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_optional_current_user, get_trip_owner_access
 from app.core.response import envelope, envelope_created
+from app.core.rate_limit import rate_limit
+from app.core.trip_limits import MAX_BUDGET_VND, MAX_TRIP_DURATION_DAYS
 from app.db.session import get_db
 from app.models.trip import Trip
 from app.models.user import User
@@ -94,17 +97,17 @@ async def archive_trip_publication(
     return envelope(data=None, message="Đã ẩn lịch trình công khai")
 
 
-@public_trips_router.get("")
+@public_trips_router.get("", dependencies=[Depends(rate_limit("public_trip_list", 120))])
 async def list_public_trips(
     destination: str | None = Query(default=None, max_length=120),
     search: str | None = Query(default=None, max_length=200),
-    max_cost_per_person: int | None = Query(default=None, ge=0),
-    min_days: int | None = Query(default=None, ge=1),
-    max_days: int | None = Query(default=None, ge=1),
+    max_cost_per_person: int | None = Query(default=None, ge=0, le=MAX_BUDGET_VND),
+    min_days: int | None = Query(default=None, ge=1, le=MAX_TRIP_DURATION_DAYS),
+    max_days: int | None = Query(default=None, ge=1, le=MAX_TRIP_DURATION_DAYS),
     min_rating: float | None = Query(default=None, ge=1, le=5),
     traveler_type: str | None = Query(default=None, max_length=40),
     pace: str | None = Query(default=None, max_length=30),
-    sort: str = Query(default="newest"),
+    sort: Literal["newest", "popular", "rating", "cost_low", "duration_short"] = Query(default="newest"),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=12, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
@@ -200,9 +203,9 @@ async def import_public_trip(
     )
 
 
-@public_trips_router.get("/{slug}")
+@public_trips_router.get("/{slug}", dependencies=[Depends(rate_limit("public_trip_detail", 120))])
 async def get_public_trip(
-    slug: str,
+    slug: str = Path(min_length=1, max_length=200),
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_current_user),
 ):

@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.validators import TrimmedText
 
 ChatRole = Literal["user", "assistant"]
 SuggestionType = Literal["itinerary", "place", "budget"]
@@ -13,7 +14,7 @@ SuggestionStatus = Literal["pending", "accepted", "rejected"]
 
 
 class SendMessageRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=2000)
+    message: TrimmedText = Field(min_length=1, max_length=2000)
     stream: bool = False
 
 

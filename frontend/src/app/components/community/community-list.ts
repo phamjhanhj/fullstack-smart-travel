@@ -8,6 +8,7 @@ import { UserService, PublicUserSearchResult } from '../../services/user.service
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { MAX_BUDGET_VND, MAX_TRIP_DURATION_DAYS } from '../../config/trip-policy';
 
 @Component({
   selector: 'app-community-list',
@@ -33,6 +34,7 @@ export class CommunityListComponent implements OnInit {
 
   // ── Advanced filters ──
   readonly isFilterOpen = signal(false);
+  readonly filterError = signal<string | null>(null);
   filterSearch = '';
   filterMaxCost: number | null = null;
   filterMinDays: number | null = null;
@@ -147,6 +149,7 @@ export class CommunityListComponent implements OnInit {
   }
 
   load(): void {
+    if (this.view() === 'explore' && !this.validateFilters()) return;
     this.loading.set(true);
     this.error.set(null);
     if (this.view() === 'recommended') {
@@ -191,6 +194,7 @@ export class CommunityListComponent implements OnInit {
   }
 
   applyFilters(): void {
+    if (!this.validateFilters()) return;
     this.isFilterOpen.set(false);
     this.load();
   }
@@ -204,7 +208,27 @@ export class CommunityListComponent implements OnInit {
     this.filterTravelerType = '';
     this.filterPace = '';
     this.destination = '';
+    this.filterError.set(null);
     this.load();
+  }
+
+  private validateFilters(): boolean {
+    let message: string | null = null;
+    if (this.destination.trim().length > 120) {
+      message = 'Điểm đến không được vượt quá 120 ký tự.';
+    } else if (this.filterSearch.trim().length > 200) {
+      message = 'Từ khóa không được vượt quá 200 ký tự.';
+    } else if (this.filterMaxCost !== null && (!Number.isFinite(this.filterMaxCost) || this.filterMaxCost < 0 || this.filterMaxCost > MAX_BUDGET_VND)) {
+      message = 'Ngân sách lọc phải từ 0 đến 2.000.000.000 VND.';
+    } else if (this.filterMinDays !== null && (!Number.isInteger(this.filterMinDays) || this.filterMinDays < 1 || this.filterMinDays > MAX_TRIP_DURATION_DAYS)) {
+      message = `Số ngày tối thiểu phải từ 1 đến ${MAX_TRIP_DURATION_DAYS}.`;
+    } else if (this.filterMaxDays !== null && (!Number.isInteger(this.filterMaxDays) || this.filterMaxDays < 1 || this.filterMaxDays > MAX_TRIP_DURATION_DAYS)) {
+      message = `Số ngày tối đa phải từ 1 đến ${MAX_TRIP_DURATION_DAYS}.`;
+    } else if (this.filterMinDays !== null && this.filterMaxDays !== null && this.filterMinDays > this.filterMaxDays) {
+      message = 'Số ngày tối thiểu không được lớn hơn số ngày tối đa.';
+    }
+    this.filterError.set(message);
+    return message === null;
   }
 
   get activeFilterCount(): number {
@@ -222,8 +246,9 @@ export class CommunityListComponent implements OnInit {
 
   // ── User Search helpers ──
   onUserSearchInput(query: string): void {
-    this.userSearchQuery.set(query);
-    this.userSearchSubject.next(query);
+    const cappedQuery = query.slice(0, 50);
+    this.userSearchQuery.set(cappedQuery);
+    this.userSearchSubject.next(cappedQuery);
   }
 
   onUserSearchFocus(event: Event): void {

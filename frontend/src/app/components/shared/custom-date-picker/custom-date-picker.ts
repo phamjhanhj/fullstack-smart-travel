@@ -21,6 +21,8 @@ export class CustomDatePickerComponent implements ControlValueAccessor, OnInit, 
   @Input() disabled: boolean = false;
   @Input() isInvalid: boolean = false;
   @Input() minDate: string = '';
+  @Input() maxDate: string = '';
+  @Input() alignRight: boolean = false;
 
   @HostBinding('class.is-open') get hostIsOpen(): boolean {
     return this.isOpen;
@@ -32,6 +34,7 @@ export class CustomDatePickerComponent implements ControlValueAccessor, OnInit, 
 
   selectedValue: string = '';
   isOpen: boolean = false;
+  shouldAlignRight: boolean = false;
   
   viewDate: Date = new Date();
   calendarDays: Date[] = [];
@@ -82,13 +85,27 @@ export class CustomDatePickerComponent implements ControlValueAccessor, OnInit, 
   toggleDropdown(): void {
     if (this.disabled) return;
     this.isOpen = !this.isOpen;
-    if (this.isOpen && this.selectedValue) {
-      const parsed = this.parseDateStr(this.selectedValue);
-      if (parsed) {
-        this.viewDate = parsed;
-        this.generateCalendar();
+    if (this.isOpen) {
+      this.checkAlignment();
+      if (this.selectedValue) {
+        const parsed = this.parseDateStr(this.selectedValue);
+        if (parsed) {
+          this.viewDate = parsed;
+          this.generateCalendar();
+        }
       }
     }
+  }
+
+  private checkAlignment(): void {
+    if (this.alignRight) {
+      this.shouldAlignRight = true;
+      return;
+    }
+    if (!this.elementRef?.nativeElement) return;
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    this.shouldAlignRight = rect.left > windowWidth / 2 || (windowWidth - rect.left < 280);
   }
 
   prevMonth(event: Event): void {
@@ -151,6 +168,14 @@ export class CustomDatePickerComponent implements ControlValueAccessor, OnInit, 
     return checkDate.getTime() < minLimit.getTime();
   }
 
+  isDateDisabled(day: Date): boolean {
+    if (this.isPastDate(day)) return true;
+    const maxLimit = this.parseDateStr(this.maxDate);
+    if (!maxLimit) return false;
+    const checkDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return checkDate.getTime() > maxLimit.getTime();
+  }
+
   isToday(day: Date): boolean {
     const today = new Date();
     return day.getDate() === today.getDate() &&
@@ -181,7 +206,10 @@ export class CustomDatePickerComponent implements ControlValueAccessor, OnInit, 
       const mm = Number(parts[1]) - 1;
       const yyyy = Number(parts[2]);
       if (!isNaN(dd) && !isNaN(mm) && !isNaN(yyyy)) {
-        return new Date(yyyy, mm, dd);
+        const parsed = new Date(yyyy, mm, dd);
+        if (parsed.getFullYear() === yyyy && parsed.getMonth() === mm && parsed.getDate() === dd) {
+          return parsed;
+        }
       }
     }
     return null;

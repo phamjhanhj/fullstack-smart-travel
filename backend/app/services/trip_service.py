@@ -14,6 +14,7 @@ from app.models.trip import DayPlan, Trip
 from app.models.trip_share import TripParticipant
 from app.models.user import User
 from app.core.exceptions import AppError
+from app.core.trip_limits import MAX_TRIP_DURATION_DAYS
 from app.schemas.trip import CategoryBudgetBrief, CreateTripRequest, UpdateTripRequest
 from app.services.trip_share_service import attach_access
 from app.services import trip_history_service
@@ -133,6 +134,18 @@ async def update_trip(db: AsyncSession, trip: Trip, payload: UpdateTripRequest, 
     final_status = update_data.get("status", trip.status)
     if final_end_date < final_start_date:
         raise AppError("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.", status_code=422)
+    duration_days = (final_end_date - final_start_date).days + 1
+    if duration_days > MAX_TRIP_DURATION_DAYS:
+        raise AppError(
+            f"Chuyến đi tối đa {MAX_TRIP_DURATION_DAYS} ngày. Hãy rút ngắn thời gian hoặc chia thành nhiều chuyến.",
+            status_code=422,
+            data={
+                "code": "TRIP_DURATION_TOO_LONG",
+                "field": "end_date",
+                "actual": duration_days,
+                "maximum": MAX_TRIP_DURATION_DAYS,
+            },
+        )
     if final_status == "completed" and final_end_date > date.today():
         raise AppError("Không thể hoàn thành chuyến đi khi ngày kết thúc vẫn ở tương lai.", status_code=422)
     destination_changed = "destination" in update_data and update_data["destination"] != trip.destination

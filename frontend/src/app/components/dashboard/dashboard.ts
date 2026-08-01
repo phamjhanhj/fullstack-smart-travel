@@ -1,5 +1,4 @@
-declare const L: any;
-
+import * as L from 'leaflet';
 import { Component, inject, OnInit, signal, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
@@ -20,6 +19,18 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CustomSelectComponent } from '../shared/custom-select/custom-select';
 import { CustomDatePickerComponent } from '../shared/custom-date-picker/custom-date-picker';
 import { PwaService } from '../../services/pwa.service';
+import {
+  MAX_BUDGET_VND,
+  MAX_SYNC_AI_DAYS,
+  MAX_TRAVELERS,
+  MAX_TRIP_DURATION_DAYS,
+  estimateMinimumBudget,
+  formatBudgetDigits,
+  maximumEndDate,
+  parseBudgetDigits,
+  tripDurationDays,
+} from '../../config/trip-policy';
+import { apiErrorMessage, applyApiErrors, controlErrorMessage, integerValidator, nonBlankValidator } from '../../utils/form-errors';
 
 @Component({
   selector: 'app-dashboard',
@@ -71,11 +82,13 @@ export class DashboardComponent implements OnInit {
   readonly modalErrorMessage = signal<string | null>(null);
   readonly submitProgressMessage = signal<string | null>(null);
   readonly submittingMode = signal<'manual' | 'ai' | null>(null);
+  readonly createdTripId = signal<string | null>(null);
   readonly overBudgetTrips = signal<TripListItem[]>([]);
 
   // Delete Modal state signals
   readonly tripToDelete = signal<TripListItem | null>(null);
   readonly isDeleteModalOpen = signal<boolean>(false);
+  readonly deleteErrorMessage = signal<string | null>(null);
   readonly isDeletingTrip = signal<boolean>(false);
   readonly tripToUnpublish = signal<TripListItem | null>(null);
   readonly isUnpublishModalOpen = signal<boolean>(false);
@@ -267,13 +280,13 @@ export class DashboardComponent implements OnInit {
 
   // Create Trip Reactive Form
   readonly createForm = this.fb.nonNullable.group({
-    title: ['', [Validators.required, Validators.maxLength(200)]],
-    destination: ['', [Validators.required, Validators.maxLength(200)]],
+    title: ['', [Validators.required, nonBlankValidator(), Validators.maxLength(200)]],
+    destination: ['', [Validators.required, nonBlankValidator(), Validators.maxLength(200)]],
     start_date: ['', [Validators.required]],
     end_date: ['', [Validators.required]],
     budget: ['' as any],
-    num_travelers: [1, [Validators.required, Validators.min(1)]],
-    preferences: [''],
+    num_travelers: [1, [Validators.required, integerValidator(), Validators.min(1), Validators.max(MAX_TRAVELERS)]],
+    preferences: ['', [Validators.maxLength(1500)]],
   });
 
   private readonly destroyRef = inject(DestroyRef);
@@ -526,6 +539,7 @@ export class DashboardComponent implements OnInit {
       preferences: '',
     });
     this.modalErrorMessage.set(null);
+    this.createdTripId.set(null);
     this.isModalOpen.set(true);
   }
 
@@ -536,6 +550,13 @@ export class DashboardComponent implements OnInit {
   onSubmitTrip(mode: 'manual' | 'ai' = 'ai'): void {
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
+      this.modalErrorMessage.set('Vui lòng sửa các trường được đánh dấu màu đỏ trước khi tiếp tục.');
+      return;
+    }
+
+    const guardrailIssue = this.getTripGuardrailIssue(mode);
+    if (guardrailIssue) {
+      this.modalErrorMessage.set(guardrailIssue);
       return;
     }
 
@@ -557,15 +578,15 @@ export class DashboardComponent implements OnInit {
     this.modalErrorMessage.set(null);
     this.submitProgressMessage.set('Đang tạo chuyến đi...');
 
-    const rawBudget = formValue.budget ? Number(formValue.budget.toString().replace(/\./g, '')) : null;
+    const rawBudget = parseBudgetDigits(formValue.budget);
     const payload: CreateTripRequest = {
-      title: formValue.title,
-      destination: formValue.destination,
+      title: formValue.title.trim(),
+      destination: formValue.destination.trim(),
       start_date: startIso,
       end_date: endIso,
-      budget: isNaN(rawBudget as any) ? null : rawBudget,
+      budget: rawBudget,
       num_travelers: formValue.num_travelers,
-      preferences: formValue.preferences || null,
+      preferences: formValue.preferences.trim() || null,
     };
 
     this.tripService.createTrip(payload).subscribe({
@@ -606,8 +627,9 @@ export class DashboardComponent implements OnInit {
               this.isSubmitting.set(false);
               this.submittingMode.set(null);
               this.submitProgressMessage.set(null);
-              this.closeModal();
-              this.router.navigate(['/trip', tripId]);
+              this.createdTripId.set(tripId);
+              const reason = apiErrorMessage(err, 'Không thể sinh lịch trình AI.');
+              this.modalErrorMessage.set(`Đã tạo chuyến đi nhưng chưa thể sinh lịch trình. ${reason}`);
             },
           });
         } else {
@@ -626,8 +648,9 @@ export class DashboardComponent implements OnInit {
               this.isSubmitting.set(false);
               this.submittingMode.set(null);
               this.submitProgressMessage.set(null);
-              this.closeModal();
-              this.router.navigate(['/trip', tripId]);
+              this.createdTripId.set(tripId);
+              const reason = apiErrorMessage(err, 'Không thể khởi tạo các ngày cho chuyến đi.');
+              this.modalErrorMessage.set(`Đã tạo chuyến đi nhưng chưa thể khởi tạo lịch trình. ${reason}`);
             },
           });
         }
@@ -636,11 +659,9 @@ export class DashboardComponent implements OnInit {
         this.isSubmitting.set(false);
         this.submittingMode.set(null);
         this.submitProgressMessage.set(null);
-        if (err.error && err.error.message) {
-          this.modalErrorMessage.set(err.error.message);
-        } else {
-          this.modalErrorMessage.set('Không thể tạo chuyến đi. Vui lòng thử lại sau.');
-        }
+        this.modalErrorMessage.set(
+          applyApiErrors(this.createForm, err, 'Không thể tạo chuyến đi. Vui lòng thử lại sau.'),
+        );
       },
     });
   }
@@ -650,31 +671,71 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
+  getTripGuardrailIssue(mode: 'manual' | 'ai'): string | null {
+    const value = this.createForm.getRawValue();
+    const duration = tripDurationDays(value.start_date, value.end_date);
+    if (value.start_date && value.end_date && duration === null) {
+      return 'Ngày bắt đầu hoặc ngày kết thúc không hợp lệ.';
+    }
+    if (duration !== null && duration > MAX_TRIP_DURATION_DAYS) {
+      return `Chuyến đi tối đa ${MAX_TRIP_DURATION_DAYS} ngày. Hãy rút ngắn hoặc chia thành nhiều chuyến.`;
+    }
+    if (mode === 'ai' && duration !== null && duration > MAX_SYNC_AI_DAYS) {
+      return `AI hiện tạo chi tiết tối đa ${MAX_SYNC_AI_DAYS} ngày. Bạn vẫn có thể tạo chuyến đi thủ công.`;
+    }
+
+    const budget = parseBudgetDigits(value.budget);
+    if (budget !== null && (budget < 1 || budget > MAX_BUDGET_VND)) {
+      return `Ngân sách phải từ 1 đến ${this.formatCurrency(MAX_BUDGET_VND)}, hoặc để trống.`;
+    }
+    if (mode === 'ai' && duration !== null && budget !== null) {
+      const minimum = estimateMinimumBudget(duration, value.num_travelers);
+      if (budget < minimum) {
+        return `Ngân sách chưa đủ để tạo lịch trình khả thi. Mức tối thiểu ước tính là ${this.formatCurrency(minimum)}.`;
+      }
+    }
+    return null;
+  }
+
+  isTripCreationBlocked(mode: 'manual' | 'ai'): boolean {
+    return this.isSubmitting() || this.getTripGuardrailIssue(mode) !== null;
+  }
+
+  getAiGuardrailMessage(): string | null {
+    if (!this.createForm.get('start_date')?.value || !this.createForm.get('end_date')?.value) return null;
+    return this.getTripGuardrailIssue('ai');
+  }
+
+  getMaximumEndDate(): string {
+    return maximumEndDate(this.createForm.get('start_date')?.value);
+  }
+
+  openCreatedTrip(): void {
+    const tripId = this.createdTripId();
+    if (tripId) this.router.navigate(['/trip', tripId]);
+  }
+
   isFieldInvalid(fieldName: string): boolean {
     const field = this.createForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
+  createFieldError(fieldName: string, label: string): string {
+    return controlErrorMessage(this.createForm.get(fieldName), label);
+  }
+
   onBudgetInputChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    let value = input.value;
-    let raw = value.replace(/\D/g, '');
-    if (raw) {
-      const num = Number(raw);
-      const formatted = num.toLocaleString('en-US');
-      input.value = formatted;
-      this.createForm.get('budget')?.setValue(formatted, { emitEvent: false });
-    } else {
-      input.value = '';
-      this.createForm.get('budget')?.setValue('', { emitEvent: false });
-    }
+    const formatted = formatBudgetDigits(input.value);
+    input.value = formatted;
+    this.createForm.get('budget')?.setValue(formatted, { emitEvent: false });
   }
 
   formatNumberWithDots(val: number | string | null | undefined): string {
     if (val === null || val === undefined || val === '') return '';
     const clean = val.toString().replace(/\D/g, '');
     if (!clean) return '';
-    return Number(clean).toLocaleString('en-US');
+    return formatBudgetDigits(clean);
   }
 
   openDatePicker(input: HTMLInputElement): void {
@@ -686,20 +747,10 @@ export class DashboardComponent implements OnInit {
   }
 
   getTripDurationDays(): number | null {
-    const startVal = this.createForm.get('start_date')?.value;
-    const endVal = this.createForm.get('end_date')?.value;
-    if (startVal && endVal) {
-      const startIso = this.formatDdMmYyyyToIso(startVal);
-      const endIso = this.formatDdMmYyyyToIso(endVal);
-      const start = new Date(startIso);
-      const end = new Date(endIso);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end >= start) {
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        return diffDays;
-      }
-    }
-    return null;
+    return tripDurationDays(
+      this.createForm.get('start_date')?.value || '',
+      this.createForm.get('end_date')?.value || '',
+    );
   }
 
   onDateInputChange(event: Event, controlName: string): void {
@@ -1028,6 +1079,7 @@ export class DashboardComponent implements OnInit {
 
   confirmDeleteTrip(trip: TripListItem, event: Event): void {
     event.stopPropagation();
+    this.deleteErrorMessage.set(null);
     this.tripToDelete.set(trip);
     this.isDeleteModalOpen.set(true);
   }
@@ -1035,6 +1087,7 @@ export class DashboardComponent implements OnInit {
   closeDeleteModal(): void {
     this.isDeleteModalOpen.set(false);
     this.tripToDelete.set(null);
+    this.deleteErrorMessage.set(null);
   }
 
   performDeleteTrip(): void {
@@ -1051,7 +1104,7 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => {
         this.isDeletingTrip.set(false);
-        alert('Không thể xóa chuyến đi: ' + (err?.error?.detail || err.message));
+        this.deleteErrorMessage.set(apiErrorMessage(err, 'Không thể xóa chuyến đi.'));
       },
     });
   }

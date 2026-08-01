@@ -81,7 +81,7 @@
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-stack-md relative z-10">
           <!-- Username or email field -->
           <div>
-            <label class="font-label-md text-label-md text-on-surface-variant block mb-stack-sm ml-1" for="login">Tên đăng nhập hoặc email</label>
+            <label class="font-label-md text-label-md text-on-surface-variant block mb-stack-sm ml-1" for="login">Tên đăng nhập hoặc email <span class="text-rose-400">*</span></label>
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
               <input 
@@ -92,6 +92,7 @@
                 placeholder="username hoặc name@example.com"
                 type="text"
                 autocomplete="username"
+                maxlength="254"
               />
             </div>
             <div *ngIf="isFieldInvalid('login')" class="text-status-warning text-code-sm mt-1 ml-1 flex items-center gap-1">
@@ -103,7 +104,7 @@
           <!-- Password Field -->
           <div>
             <div class="flex justify-between items-center mb-stack-sm px-1">
-              <label class="font-label-md text-label-md text-on-surface-variant block" for="password">Mật khẩu</label>
+              <label class="font-label-md text-label-md text-on-surface-variant block" for="password">Mật khẩu <span class="text-rose-400">*</span></label>
               <a class="font-label-md text-label-md text-primary hover:text-primary-fixed transition-colors" href="#">Quên mật khẩu?</a>
             </div>
             <div class="relative group">
@@ -116,6 +117,7 @@
                 placeholder="••••••••" 
                 [type]="showPassword() ? 'text' : 'password'"
                 autocomplete="current-password"
+                maxlength="128"
               />
               <button 
                 class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer flex items-center justify-center bg-transparent border-none" 
@@ -127,7 +129,7 @@
             </div>
             <div *ngIf="isFieldInvalid('password')" class="text-status-warning text-code-sm mt-1 ml-1 flex items-center gap-1">
               <span class="material-symbols-outlined text-[14px]">info</span>
-              <span>Mật khẩu phải chứa ít nhất 6 ký tự.</span>
+              <span>{{ getFieldError('password') }}</span>
             </div>
           </div>
 

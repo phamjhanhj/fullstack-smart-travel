@@ -7,6 +7,7 @@ import uuid
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.schemas.validators import TrimmedText, is_safe_local_asset_path, validated_http_url
 
 LocationCategory = Literal["restaurant", "attraction", "hotel", "cafe", "other"]
 
@@ -63,13 +64,13 @@ class NearbyLocationResponse(LocationResponse):
 
 
 class UpsertLocationRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
-    address: str | None = None
+    name: TrimmedText = Field(min_length=1, max_length=200)
+    address: TrimmedText | None = Field(default=None, max_length=500)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     category: LocationCategory | None = None
-    google_place_id: str | None = None
-    photo_url: str | None = None
+    google_place_id: TrimmedText | None = Field(default=None, max_length=255)
+    photo_url: TrimmedText | None = Field(default=None, max_length=2048)
     rating: float | None = Field(default=None, ge=0, le=5)
 
     @field_validator("photo_url")
@@ -77,9 +78,9 @@ class UpsertLocationRequest(BaseModel):
     def validate_photo_url(cls, value: str | None) -> str | None:
         if not value:
             return None
-        if value.startswith(("http://", "https://", "/", "assets/")):
+        if is_safe_local_asset_path(value):
             return value
-        return None
+        return validated_http_url(value, "photo_url must be an http, https, or local asset URL")
 
 
 class UpsertLocationResponse(BaseModel):

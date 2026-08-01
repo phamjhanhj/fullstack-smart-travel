@@ -12,7 +12,6 @@ from app.services.activity_service import (
     _enrich_experience_route,
     _enforce_closed_loop_itinerary,
     _filter_avoided_candidates,
-    _fit_itinerary_to_budget,
     _lock_required_visits,
     _trim_optional_experiences_to_budget,
     _validate_itinerary,
@@ -74,7 +73,7 @@ def test_generate_days_request_accepts_planning_options() -> None:
         overwrite=True,
         must_visit=["My Khe"],
         avoid_places=["Cho dem"],
-        interest_weights={"foodie": 12, "culture": 4},
+        interest_weights={"foodie": 10, "culture": 4},
         budget_mode="strict",
         prioritize_user_places="high",
         transport_mode="taxi",
@@ -291,7 +290,6 @@ def test_closed_loop_enrichment_adds_arrival_lodging_and_return() -> None:
     data = {"days": [{"day_number": 1, "activities": []}, {"day_number": 2, "activities": []}]}
 
     _enforce_closed_loop_itinerary(data, trip, [], 2, payload)
-    _fit_itinerary_to_budget(data, trip.budget, payload.budget_mode)
 
     titles = [
         activity["title"]
