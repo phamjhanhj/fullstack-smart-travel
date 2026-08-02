@@ -384,6 +384,27 @@ export class PublicTripDetailComponent implements OnInit {
       },
     });
   }
+
+  moderateTrip(decision: 'uphold' | 'dismiss'): void {
+    const publication = this.trip();
+    if (!publication || this.saving()) return;
+    this.saving.set(true);
+    this.saveMessage.set(null);
+    this.publicTrips.moderatePublication(publication.id, decision).subscribe({
+      next: response => {
+        this.saving.set(false);
+        const newStatus = response.data?.moderation_status || (decision === 'uphold' ? 'flagged' : 'approved');
+        this.trip.update(curr => curr ? { ...curr, moderation_status: newStatus } : null);
+        this.saveMessage.set(
+          decision === 'uphold' ? 'Đã xác nhận vi phạm và ẩn bài viết khỏi cộng đồng.' : 'Đã bác bỏ báo cáo và mở hiển thị bài viết.'
+        );
+      },
+      error: err => {
+        this.saving.set(false);
+        this.saveMessage.set(apiErrorMessage(err, 'Không thể thực hiện thao tác kiểm duyệt.'));
+      },
+    });
+  }
   loadCollections(): void {
     this.p1Service.listCollections().subscribe({ next: response => this.collections.set(response.data || []) });
   }

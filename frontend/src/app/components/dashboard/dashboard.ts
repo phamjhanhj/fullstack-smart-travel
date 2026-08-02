@@ -243,26 +243,37 @@ export class DashboardComponent implements OnInit {
         'Check-in hồ Xuân Hương, săn mây đồi chè Cầu Đất, ăn bánh tráng nướng, uống sữa đậu nành nóng.',
     },
     {
-      name: 'Tokyo',
-      category: 'city',
-      description: 'Trải nghiệm sự giao thoa độc đáo giữa truyền thống và công nghệ tương lai.',
+      name: 'Ninh Bình',
+      category: 'culture',
+      description: 'Danh thắng sơn thủy hữu tình với di sản Tràng An và Tam Cốc Bích Động.',
       image:
-        'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=600&auto=format&fit=crop',
-      budget: 25000000,
-      days: 5,
+        'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=600&auto=format&fit=crop',
+      budget: 3200000,
+      days: 2,
       preferences:
-        'Tham quan ngã tư Shibuya đông đúc, đền Senso-ji cổ kính, tháp Tokyo, ăn sushi băng chuyền và ramen.',
+        'Đi thuyền khám phá Quần thể danh thắng Tràng An, leo núi Hang Múa ngắm toàn cảnh Tam Cốc, thưởng thức cơm cháy thịt dê.',
     },
     {
-      name: 'Bali',
+      name: 'Nha Trang',
       category: 'beach',
-      description: 'Đảo rồng với những đền đài tâm linh và bãi biển tuyệt đẹp.',
+      description: 'Thành phố biển ngập nắng với dải bãi cát trắng dừa xanh và vịnh biển quyến rũ.',
       image:
-        'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=600&auto=format&fit=crop',
-      budget: 15000000,
-      days: 5,
+        'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?q=80&w=600&auto=format&fit=crop',
+      budget: 5000000,
+      days: 4,
       preferences:
-        'Tham quan đền Uluwatu bên bờ đá, ruộng bậc thang Tegallalang, chơi đu dây Bali Swing.',
+        'Tắm biển Nha Trang, đi tour 4 đảo lặn biển ngắm san hô Hòn Mun, trải nghiệm VinWonders và ăn nem nướng.',
+    },
+    {
+      name: 'Hồ Chí Minh',
+      category: 'city',
+      description: 'Trung tâm kinh tế sầm uất với nhịp sống năng động, phố ẩm thực rực rỡ về đêm và kiến trúc di sản.',
+      image:
+        'https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=600&auto=format&fit=crop',
+      budget: 4500000,
+      days: 3,
+      preferences:
+        'Tham quan Dinh Độc Lập, Nhà thờ Đức Bà, Bưu điện Thành Phố, dạo phố đi bộ Nguyễn Huệ và ngắm toàn cảnh từ Landmark 81.',
     },
   ];
 

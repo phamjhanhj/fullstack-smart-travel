@@ -83,6 +83,16 @@ def _province_query_names(destination: str) -> list[str]:
         expanded.extend(["TP. Hồ Chí Minh", "Hồ Chí Minh"])
     if "Bà Rịa - Vũng Tàu" in names:
         expanded.extend(["Bà Rịa – Vũng Tàu", "Bà Rịa Vũng Tàu"])
+    if "Kiên Giang" in names or any(k in destination.lower() for k in ["phu quoc", "phú quốc"]):
+        expanded.extend(["Kiên Giang", "Phú Quốc", "Thành phố Phú Quốc", "Đảo Phú Quốc"])
+    if "Lào Cai" in names or any(k in destination.lower() for k in ["sa pa", "sapa"]):
+        expanded.extend(["Lào Cai", "Sa Pa", "Sapa"])
+    if "Khánh Hòa" in names or "nha trang" in destination.lower():
+        expanded.extend(["Khánh Hòa", "Nha Trang"])
+    if "Lâm Đồng" in names or "đà lạt" in destination.lower() or "da lat" in destination.lower():
+        expanded.extend(["Lâm Đồng", "Đà Lạt"])
+    if "Quảng Ninh" in names or "hạ long" in destination.lower() or "ha long" in destination.lower():
+        expanded.extend(["Quảng Ninh", "Hạ Long"])
     return list(dict.fromkeys(expanded))
 
 

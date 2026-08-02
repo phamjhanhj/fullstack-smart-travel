@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.core.deps import get_admin_user, get_current_user, get_optional_current_user
 from app.core.exceptions import AppError, NotFoundError
 from app.core.response import envelope, envelope_created
@@ -14,7 +15,8 @@ from app.models.p1_features import UserNotification
 from app.models.user import User
 from app.models.public_trip import PublicTripPublication
 from app.schemas.p2_features import BookingInquiryCreate, BookingInquiryStatusUpdate, CommentCreate, RatingCreate, ReportCreate, ReportStatusUpdate
-from app.services import p2_service
+from app.schemas.public_trip import PublicTripResponse
+from app.services import p2_service, public_trip_service
 
 router=APIRouter(tags=["Community P2"])
 
@@ -65,7 +67,7 @@ async def hide_recommendation(publication_id:uuid.UUID,current_user:User=Depends
 async def report_public_trip(publication_id: uuid.UUID, payload: ReportCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     publication = await p2_service.publication_or_404(db, publication_id)
     if publication.author_user_id == current_user.id:
-        raise AppError("Ban khong the bao cao chuyen di cua chinh minh")
+        raise AppError("Bạn không thể báo cáo chuyến đi của chính mình")
     db.add(CommunityReport(reporter_user_id=current_user.id, publication_id=publication.id, reason=payload.reason, details=payload.details))
     try:
         await db.commit()
@@ -92,9 +94,9 @@ async def report_public_profile(username: str, payload: ReportCreate, current_us
     return envelope_created(data={"reported": True}, message="Da tiep nhan bao cao")
 
 
-def _inquiry_payload(item: TourBookingInquiry, publication: PublicTripPublication) -> dict:
+def _inquiry_payload(item: TourBookingInquiry, publication: PublicTripPublication | None) -> dict:
     return {
-        "id": str(item.id), "publication_id": str(item.publication_id), "trip_title": publication.title,
+        "id": str(item.id), "publication_id": str(item.publication_id), "trip_title": publication.title if publication else "Chuyến đi",
         "requester_user_id": str(item.requester_user_id), "author_user_id": str(item.author_user_id),
         "contact_name": item.contact_name, "contact_phone": item.contact_phone,
         "travelers": item.travelers, "message": item.message, "status": item.status,
@@ -112,6 +114,7 @@ async def create_booking_inquiry(publication_id: uuid.UUID, payload: BookingInqu
         raise AppError("Ban khong the gui yeu cau cho chinh minh")
     item = TourBookingInquiry(publication_id=publication.id, requester_user_id=current_user.id, author_user_id=author.id, **payload.model_dump())
     db.add(item)
+    await db.flush()
     db.add(UserNotification(
         user_id=author.id,
         type="booking_inquiry_received",
@@ -128,13 +131,13 @@ async def create_booking_inquiry(publication_id: uuid.UUID, payload: BookingInqu
 
 @router.get("/booking-inquiries/sent")
 async def sent_booking_inquiries(limit: int = Query(100, ge=1, le=100), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).join(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.requester_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()).limit(limit))).all()
+    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).outerjoin(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.requester_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()).limit(limit))).all()
     return envelope(data=[_inquiry_payload(item, publication) for item, publication in rows])
 
 
 @router.get("/booking-inquiries/received")
 async def received_booking_inquiries(limit: int = Query(100, ge=1, le=100), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).join(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.author_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()).limit(limit))).all()
+    rows = (await db.execute(select(TourBookingInquiry, PublicTripPublication).outerjoin(PublicTripPublication, PublicTripPublication.id == TourBookingInquiry.publication_id).where(TourBookingInquiry.author_user_id == current_user.id).order_by(TourBookingInquiry.created_at.desc()).limit(limit))).all()
     return envelope(data=[_inquiry_payload(item, publication) for item, publication in rows])
 
 
@@ -142,32 +145,120 @@ async def received_booking_inquiries(limit: int = Query(100, ge=1, le=100), curr
 async def update_booking_inquiry_status(inquiry_id: uuid.UUID, payload: BookingInquiryStatusUpdate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     item = await db.scalar(select(TourBookingInquiry).where(TourBookingInquiry.id == inquiry_id, TourBookingInquiry.author_user_id == current_user.id))
     if not item:
-        raise NotFoundError("Khong tim thay yeu cau dat tour")
+        raise NotFoundError("Không tìm thấy yêu cầu đặt tour")
     item.status = payload.status
     dedupe_key = f"booking-inquiry-status:{item.id}:{payload.status}"
-    existing_notification = await db.scalar(select(UserNotification.id).where(UserNotification.dedupe_key == dedupe_key))
+    existing_notification = await db.scalar(
+        select(UserNotification.id).where(
+            UserNotification.user_id == item.requester_user_id,
+            UserNotification.dedupe_key == dedupe_key
+        ).limit(1)
+    )
     if not existing_notification:
+        status_vn = "Đã liên hệ" if payload.status == "contacted" else ("Đã đóng" if payload.status == "closed" else "Mới")
         db.add(UserNotification(
             user_id=item.requester_user_id,
             type="booking_inquiry_status",
-            title="Yeu cau dat tour da cap nhat",
-            message=f"Trang thai yeu cau cua ban: {payload.status}",
+            title="Yêu cầu đặt tour đã cập nhật",
+            message=f"Trạng thái yêu cầu của bạn: {status_vn}",
             action_url="/profile?tab=bookings",
             payload_json={"inquiry_id": str(item.id), "status": payload.status},
             dedupe_key=dedupe_key,
         ))
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        # Retry status update without notification collision
+        item = await db.scalar(select(TourBookingInquiry).where(TourBookingInquiry.id == inquiry_id))
+        if item:
+            item.status = payload.status
+            await db.commit()
+
+    if item:
+        await db.refresh(item)
+
     publication = await db.scalar(select(PublicTripPublication).where(PublicTripPublication.id == item.publication_id))
-    return envelope(data=_inquiry_payload(item, publication), message="Da cap nhat trang thai")
+    return envelope(data=_inquiry_payload(item, publication), message="Đã cập nhật trạng thái")
 @router.get("/community-reports")
 async def list_community_reports(status: str = Query("open", pattern="^(open|upheld|dismissed)$"), current_user: User = Depends(get_admin_user), db: AsyncSession = Depends(get_db)):
     items = list((await db.execute(select(CommunityReport).where(CommunityReport.status == status).order_by(CommunityReport.created_at.asc()).limit(100))).scalars().all())
+
+    publication_ids = [item.publication_id for item in items if item.publication_id]
+    reported_user_ids = [item.reported_user_id for item in items if item.reported_user_id]
+    publications = []
+    reported_users = []
+    if publication_ids:
+        publications = list((await db.execute(
+            select(PublicTripPublication)
+            .where(PublicTripPublication.id.in_(publication_ids))
+            .options(selectinload(PublicTripPublication.author))
+        )).scalars().all())
+    if reported_user_ids:
+        reported_users = list((await db.execute(
+            select(User).where(User.id.in_(reported_user_ids))
+        )).scalars().all())
+
+    publication_by_id = {publication.id: publication for publication in publications}
+    reported_user_by_id = {user.id: user for user in reported_users}
+
+    def target_payload(item: CommunityReport) -> dict | None:
+        if item.publication_id:
+            publication = publication_by_id.get(item.publication_id)
+            if not publication:
+                return None
+            return {
+                "type": "trip",
+                "id": str(publication.id),
+                "title": publication.title,
+                "destination": publication.destination,
+                "cover_image_url": publication.cover_image_url,
+                "author_name": publication.author.full_name,
+                "moderation_status": publication.moderation_status,
+                "slug": publication.slug,
+            }
+        if item.reported_user_id:
+            reported_user = reported_user_by_id.get(item.reported_user_id)
+            if not reported_user:
+                return None
+            return {
+                "type": "profile",
+                "id": str(reported_user.id),
+                "title": reported_user.full_name,
+                "username": reported_user.username,
+                "avatar_url": reported_user.avatar_url,
+            }
+        return None
+
     return envelope(data=[{
         "id": str(item.id), "reporter_user_id": str(item.reporter_user_id),
         "publication_id": str(item.publication_id) if item.publication_id else None,
         "reported_user_id": str(item.reported_user_id) if item.reported_user_id else None,
         "reason": item.reason, "details": item.details, "status": item.status, "created_at": item.created_at,
+        "target": target_payload(item),
     } for item in items])
+
+
+@router.get("/community-reports/{report_id}/publication")
+async def get_reported_publication(report_id: uuid.UUID, current_user: User = Depends(get_admin_user), db: AsyncSession = Depends(get_db)):
+    item = await db.scalar(select(CommunityReport).where(CommunityReport.id == report_id))
+    if not item:
+        raise NotFoundError("Không tìm thấy báo cáo")
+    if not item.publication_id:
+        raise AppError("Báo cáo này không thuộc một chuyến đi", status_code=422)
+
+    publication = await db.scalar(
+        select(PublicTripPublication)
+        .where(PublicTripPublication.id == item.publication_id)
+        .options(selectinload(PublicTripPublication.author))
+    )
+    if not publication:
+        raise NotFoundError("Chuyến đi trong báo cáo không còn tồn tại")
+
+    return envelope(data=PublicTripResponse(**public_trip_service.publication_payload(
+        publication,
+        public_view=True,
+    )))
 
 
 @router.patch("/community-reports/{report_id}")
@@ -176,9 +267,32 @@ async def review_community_report(report_id: uuid.UUID, payload: ReportStatusUpd
     if not item:
         raise NotFoundError("Khong tim thay bao cao")
     item.status = "upheld" if payload.decision == "uphold" else "dismissed"
-    if item.publication_id and payload.decision == "uphold":
+    if item.publication_id:
         publication = await db.scalar(select(PublicTripPublication).where(PublicTripPublication.id == item.publication_id))
         if publication:
-            publication.moderation_status = "flagged"
+            publication.moderation_status = "flagged" if payload.decision == "uphold" else "approved"
     await db.commit()
     return envelope(data={"id": str(item.id), "status": item.status}, message="Da xu ly bao cao")
+
+
+@router.patch("/public-trips/{publication_id}/moderation-review")
+async def review_publication_moderation(
+    publication_id: uuid.UUID,
+    payload: ReportStatusUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    publication = await db.scalar(select(PublicTripPublication).where(PublicTripPublication.id == publication_id))
+    if not publication:
+        raise NotFoundError("Khong tim thay bai viet")
+    publication.moderation_status = "flagged" if payload.decision == "uphold" else "approved"
+    reports = list((await db.execute(
+        select(CommunityReport).where(CommunityReport.publication_id == publication_id)
+    )).scalars().all())
+    for r in reports:
+        r.status = "upheld" if payload.decision == "uphold" else "dismissed"
+    await db.commit()
+    return envelope(
+        data={"id": str(publication.id), "moderation_status": publication.moderation_status},
+        message="Da cap nhat trang thai kiem duyet",
+    )

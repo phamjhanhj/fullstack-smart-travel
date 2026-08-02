@@ -41,6 +41,7 @@ class UserProfileResponse(BaseModel):
     email: str | None = None
     full_name: str
     avatar_url: str | None = None
+    is_admin: bool = False
     preferences_json: UserPreferences | None = None
     is_public_profile: bool = False
     accepts_tour_bookings: bool = False

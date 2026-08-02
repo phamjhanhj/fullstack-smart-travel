@@ -79,6 +79,7 @@ class LoginUserInfo(BaseModel):
     email: str | None = None
     full_name: str
     avatar_url: str | None = None
+    is_admin: bool = False
 
 
 class LoginResponse(BaseModel):
@@ -106,6 +107,7 @@ class MeResponse(BaseModel):
     email: str | None = None
     full_name: str
     avatar_url: str | None = None
+    is_admin: bool = False
     preferences_json: UserPreferences | None = None
 
     @field_validator("preferences_json", mode="before")

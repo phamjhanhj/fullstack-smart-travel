@@ -238,6 +238,14 @@
               <span class="font-bold text-xs">Xem bài công khai</span>
             </button>
             <button
+              class="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-glass rounded-xl hover:bg-white/10 text-on-surface transition-all cursor-pointer shadow-sm"
+              (click)="openHistory()"
+              title="Xem lịch sử chỉnh sửa chuyến đi"
+            >
+              <span class="material-symbols-outlined text-[18px]">history</span>
+              <span class="font-bold text-xs">Xem lịch sử</span>
+            </button>
+            <button
               class="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/25 text-emerald-400 font-bold transition-all cursor-pointer shadow-sm"
               (click)="exportExcel()"
               title="Xuất lịch trình chuyến đi ra file Excel (mỗi ngày 1 tab)"
@@ -414,15 +422,6 @@
                 Ngày {{ day.day_number }}
               </button>
             </div>
-
-            <!-- History Button -->
-            <button
-              class="flex items-center gap-2 px-4 py-2 bg-white/5 border border-glass rounded-xl hover:bg-white/10 text-on-surface text-sm font-bold transition-all cursor-pointer shrink-0"
-              (click)="openHistory()"
-            >
-              <span class="material-symbols-outlined text-[18px]">history</span>
-              <span>Xem lịch sử</span>
-            </button>
           </div>
 
           <!-- Active Day Timeline Content -->
@@ -520,7 +519,9 @@
 
                 <!-- Activity details glass-card -->
                 <div
-                  class="glass-card rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row gap-3 sm:gap-5 border border-glass cursor-pointer hover:border-primary/40 hover:bg-white/[0.03] transition-colors"
+                  [id]="'activity-card-' + act.id"
+                  class="glass-card rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row gap-3 sm:gap-5 border border-glass cursor-pointer hover:border-primary/40 hover:bg-white/[0.03] transition-all duration-300"
+                  [ngClass]="{ 'ring-2 ring-primary ring-offset-2 ring-offset-bg-slate-deep animate-pulse border-primary/80': highlightedActivityId() === act.id }"
                   [class.cursor-pointer]="canEditTrip()"
                   (click)="canEditTrip() && openEditActivityModal(day.id, act)"
                 >
@@ -568,20 +569,7 @@
                   <div class="flex flex-col justify-between gap-2 border-t sm:border-t-0 border-glass/40 pt-2.5 sm:pt-0 shrink-0">
                     <!-- Top Actions Bar -->
                     <div class="flex items-center justify-between sm:justify-end gap-1.5 flex-wrap">
-                      <button *ngIf="canEditTrip()" type="button" class="flex items-center justify-center p-1 rounded-lg border border-emerald-500/30" [ngClass]="hasCheckedIn(act.id) ? 'text-emerald-300 bg-emerald-500/10' : 'text-on-surface-variant'" (click)="quickCheckIn(act, $event)" [disabled]="hasCheckedIn(act.id)" [title]="hasCheckedIn(act.id) ? 'Đã check-in' : 'Check-in nhanh'">
-                        <span class="material-symbols-outlined text-[16px] sm:text-[18px]">{{ hasCheckedIn(act.id) ? 'where_to_vote' : 'add_location_alt' }}</span>
-                      </button>
-                      <button
-                        *ngIf="canEditTrip()"
-                        type="button"
-                        class="flex items-center justify-center p-1 rounded-lg border transition-colors"
-                        [ngClass]="act.is_locked ? 'text-amber-300 border-amber-500/40 bg-amber-500/10' : 'text-on-surface-variant border-transparent hover:text-amber-300'"
-                        [disabled]="updatingLockId() === act.id"
-                        (click)="toggleActivityLock(act, $event)"
-                        [title]="act.is_locked ? 'Mở khóa hoạt động' : 'Khóa để AI không thay đổi'"
-                      >
-                        <span class="material-symbols-outlined text-[16px] sm:text-[18px]">{{ act.is_locked ? 'lock' : 'lock_open' }}</span>
-                      </button>
+
                       <button
                         class="flex items-center gap-1 text-[11px] sm:text-xs text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 px-2 sm:px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                         (click)="openGoogleMaps(act, $event)"
@@ -1893,7 +1881,7 @@
   <!-- Right Side NavBar: AI Assistant Sidebar (Fixed Aside) -->
   <aside
     *ngIf="activeSubTab() === 'itinerary'"
-    class="fixed right-0 top-16 bottom-0 w-96 bg-surface-container-high/80 backdrop-blur-2xl border-l border-glass shadow-2xl flex flex-col z-40 transition-all duration-300"
+    class="fixed right-0 top-16 bottom-16 md:bottom-0 w-full md:w-96 bg-surface-container-high/95 backdrop-blur-2xl border-l border-glass shadow-2xl flex flex-col z-[60] transition-all duration-300"
     [ngClass]="isChatOpen() ? 'translate-x-0 flex' : 'translate-x-full hidden'"
   >
     <!-- Sidebar Header -->
@@ -1919,13 +1907,13 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- Collapse Button -->
+          <!-- Collapse / Close Button -->
           <button
-            class="text-on-surface-variant hover:text-on-surface bg-transparent border-none p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer flex items-center"
+            class="text-on-surface-variant hover:text-on-surface bg-transparent border-none p-1.5 rounded-lg hover:bg-white/10 transition-all cursor-pointer flex items-center"
             (click)="isChatOpen.set(false)"
-            title="Ẩn trợ lý AI"
+            title="Đóng"
           >
-            <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+            <span class="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
       </ng-container>
@@ -1949,13 +1937,13 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- Collapse Button -->
+          <!-- Collapse / Close Button -->
           <button
-            class="text-on-surface-variant hover:text-on-surface bg-transparent border-none p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer flex items-center"
+            class="text-on-surface-variant hover:text-on-surface bg-transparent border-none p-1.5 rounded-lg hover:bg-white/10 transition-all cursor-pointer flex items-center"
             (click)="isChatOpen.set(false)"
-            title="Ẩn lịch sử chỉnh sửa"
+            title="Đóng"
           >
-            <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+            <span class="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
       </ng-container>
@@ -2178,7 +2166,11 @@
 
         <article class="relative" *ngFor="let item of historyItems()">
           <div class="absolute -left-[23px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-bg-slate-deep"></div>
-          <div class="rounded-xl border border-glass bg-white/5 p-3.5 space-y-2.5">
+          <div
+            class="rounded-xl border border-glass bg-white/5 p-3.5 space-y-2.5 cursor-pointer hover:border-primary/50 hover:bg-white/10 transition-all active:scale-[0.99] group"
+            (click)="navigateToHistoryTarget(item)"
+            title="Nhấp để chuyển đến vị trí thay đổi"
+          >
             <div class="flex items-start gap-2.5">
               <div
                 class="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden"
@@ -2200,8 +2192,9 @@
                     {{ getHistoryEntityLabel(item.entity_type) }}
                   </span>
                 </div>
-                <p class="text-[10px] text-on-surface-variant">
-                  {{ item.created_at | date: 'dd/MM/yyyy HH:mm' }}
+                <p class="text-[10px] text-on-surface-variant flex items-center justify-between mt-0.5">
+                  <span>{{ item.created_at | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  <span class="material-symbols-outlined text-[13px] text-primary/70 group-hover:text-primary group-hover:translate-x-0.5 transition-all" title="Chuyển tới vị trí thay đổi">open_in_new</span>
                 </p>
               </div>
             </div>
@@ -2245,19 +2238,19 @@
     </div>
   </aside>
 
-  <!-- Chat Sidebar Scrim (Visible on < lg when chat is open) -->
+  <!-- Chat Sidebar Scrim (Visible on < md when chat is open) -->
   <div
     *ngIf="activeSubTab() === 'itinerary' && isChatOpen()"
     (click)="isChatOpen.set(false)"
-    class="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] transition-opacity duration-300"
+    class="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[50] transition-opacity duration-300"
   ></div>
 
   <!-- Floating Chat Toggle Button (Visible on all screens when chat is closed or history is open) -->
   <button
     *ngIf="activeSubTab() === 'itinerary' && (!isChatOpen() || activeRightTab() === 'history')"
     (click)="isChatOpen.set(true); activeRightTab.set('chat')"
-    class="fixed bottom-6 w-14 h-14 bg-gradient-to-tr from-[#3b82f6] to-[#8b5cf6] text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all z-[70] cursor-pointer"
-    [ngClass]="(isChatOpen() && activeRightTab() === 'history') ? 'right-[408px]' : 'right-6'"
+    class="fixed bottom-24 md:bottom-6 w-14 h-14 bg-gradient-to-tr from-[#3b82f6] to-[#8b5cf6] text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all z-[70] cursor-pointer"
+    [ngClass]="(isChatOpen() && activeRightTab() === 'history') ? 'hidden md:flex md:right-[408px]' : 'right-4 md:right-6'"
   >
     <span class="material-symbols-outlined text-[24px]">chat</span>
   </button>

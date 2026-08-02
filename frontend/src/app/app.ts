@@ -21,6 +21,7 @@ export class App {
   private readonly p1Service = inject(P1Service);
 
   readonly isAuthenticated = this.authService.isAuthenticated;
+  readonly isAdmin = this.authService.isAdmin;
   readonly currentUser = this.authService.currentUser;
 
   currentUrl = signal<string>('');
@@ -74,7 +75,11 @@ export class App {
   }
 
   isCommunityPath(): boolean {
-    return this.currentUrl().startsWith('/community');
+    return this.currentUrl().startsWith('/community') && !this.isModerationPath();
+  }
+
+  isModerationPath(): boolean {
+    return this.currentUrl().startsWith('/community/moderation');
   }
 
   logout(): void {

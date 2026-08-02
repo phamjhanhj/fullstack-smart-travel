@@ -6,7 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, is_admin_user
 from app.core.response import envelope
 from app.core.rate_limit import rate_limit
 from app.core.exceptions import NotFoundError
@@ -19,9 +19,15 @@ from app.services import user_service
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+def _profile_response(user: User) -> UserProfileResponse:
+    return UserProfileResponse.model_validate(user).model_copy(
+        update={"is_admin": is_admin_user(user)}
+    )
+
+
 @router.get("/me")
 async def get_profile(current_user: User = Depends(get_current_user)):
-    return envelope(data=UserProfileResponse.model_validate(current_user))
+    return envelope(data=_profile_response(current_user))
 
 
 @router.get("/public-search", dependencies=[Depends(rate_limit("public_search", 30))])
@@ -116,7 +122,7 @@ async def update_profile(
 ):
     updated_user = await user_service.update_profile(db, current_user, payload)
     return envelope(
-        data=UserProfileResponse.model_validate(updated_user),
+        data=_profile_response(updated_user),
         message="Cap nhat thanh cong",
     )
 

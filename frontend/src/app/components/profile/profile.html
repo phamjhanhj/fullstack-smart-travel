@@ -484,14 +484,31 @@
             </div>
             <div *ngIf="receivedInquiries().length === 0" class="glass-card p-8 rounded-3xl text-center text-on-surface-variant text-sm">Bạn chưa nhận được yêu cầu đặt tour nào.</div>
             <div *ngFor="let item of receivedInquiries()" class="glass-card border border-glass rounded-3xl p-5 space-y-4">
-              <div class="flex flex-wrap justify-between gap-3">
-                <div><h4 class="font-bold text-on-surface">{{ item.trip_title }}</h4><p class="text-sm text-on-surface-variant">{{ item.contact_name }} · {{ item.contact_phone }} · {{ item.travelers }} người</p></div>
-                <span class="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/30">{{ bookingStatusLabel(item.status) }}</span>
+              <div class="flex flex-wrap justify-between items-start gap-3">
+                <div>
+                  <h4 class="font-bold text-on-surface text-base">{{ item.trip_title }}</h4>
+                  <p class="text-sm text-on-surface-variant mt-0.5">
+                    <span class="font-medium text-on-surface">{{ item.contact_name }}</span> · {{ item.contact_phone }} · <span class="text-primary font-medium">{{ item.travelers }} người</span>
+                  </p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-bold border transition-colors" [ngClass]="bookingStatusClass(item.status)">
+                  {{ bookingStatusLabel(item.status) }}
+                </span>
               </div>
-              <p *ngIf="item.message" class="text-sm text-on-surface-variant bg-black/15 rounded-xl p-3">{{ item.message }}</p>
-              <div class="flex flex-wrap gap-2">
-                <button type="button" (click)="updateInquiryStatus(item, 'contacted')" [disabled]="item.status === 'contacted'" class="px-4 py-2 rounded-xl bg-primary/15 text-primary border border-primary/30 text-xs font-bold disabled:opacity-40">Đã liên hệ</button>
-                <button type="button" (click)="updateInquiryStatus(item, 'closed')" [disabled]="item.status === 'closed'" class="px-4 py-2 rounded-xl bg-white/5 border border-glass text-xs font-bold disabled:opacity-40">Đóng yêu cầu</button>
+              <p *ngIf="item.message" class="text-sm text-on-surface-variant bg-black/20 rounded-xl p-3.5 border border-white/5 whitespace-pre-line">{{ item.message }}</p>
+              <div class="flex flex-wrap items-center gap-2 pt-1">
+                <button type="button" (click)="updateInquiryStatus(item, 'contacted')" [disabled]="item.status === 'contacted'"
+                  class="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-default"
+                  [ngClass]="item.status === 'contacted' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 opacity-90' : 'bg-primary/15 text-primary border-primary/30 hover:bg-primary/25'">
+                  <span *ngIf="item.status === 'contacted'" class="material-symbols-outlined text-sm">check_circle</span>
+                  <span>{{ item.status === 'contacted' ? 'Đã liên hệ' : 'Đánh dấu đã liên hệ' }}</span>
+                </button>
+                <button type="button" (click)="updateInquiryStatus(item, item.status === 'closed' ? 'new' : 'closed')"
+                  class="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer"
+                  [ngClass]="item.status === 'closed' ? 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40 hover:bg-zinc-500/30' : 'bg-white/5 border-glass text-on-surface-variant hover:bg-white/10'">
+                  <span *ngIf="item.status === 'closed'" class="material-symbols-outlined text-sm">do_not_disturb_on</span>
+                  <span>{{ item.status === 'closed' ? 'Đã đóng (Bấm để mở lại)' : 'Đóng yêu cầu' }}</span>
+                </button>
               </div>
             </div>
           </section>
@@ -499,9 +516,14 @@
           <section *ngIf="!isBookingsLoading()" class="space-y-4 pt-4 border-t border-glass">
             <div class="flex items-center justify-between"><h3 class="text-lg font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">outbox</span>Yêu cầu đã gửi</h3><span class="text-xs text-on-surface-variant">{{ sentInquiries().length }} yêu cầu</span></div>
             <div *ngIf="sentInquiries().length === 0" class="glass-card p-8 rounded-3xl text-center text-on-surface-variant text-sm">Bạn chưa gửi yêu cầu đặt tour nào.</div>
-            <a *ngFor="let item of sentInquiries()" [routerLink]="['/community']" class="glass-card border border-glass rounded-3xl p-5 flex flex-wrap justify-between gap-3 no-underline text-on-surface">
-              <div><h4 class="font-bold">{{ item.trip_title }}</h4><p class="text-sm text-on-surface-variant">{{ item.travelers }} người · gửi {{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</p></div>
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/30 h-fit">{{ bookingStatusLabel(item.status) }}</span>
+            <a *ngFor="let item of sentInquiries()" [routerLink]="['/community', item.publication_id]" class="glass-card border border-glass rounded-3xl p-5 flex flex-wrap justify-between items-center gap-3 no-underline text-on-surface hover:border-primary/40 transition-all group">
+              <div>
+                <h4 class="font-bold group-hover:text-primary transition-colors">{{ item.trip_title }}</h4>
+                <p class="text-sm text-on-surface-variant mt-0.5">{{ item.travelers }} người · gửi {{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold border h-fit transition-colors" [ngClass]="bookingStatusClass(item.status)">
+                {{ bookingStatusLabel(item.status) }}
+              </span>
             </a>
           </section>
         </div>

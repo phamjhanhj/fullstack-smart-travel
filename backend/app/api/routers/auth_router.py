@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, is_admin_user
 from app.core.exceptions import AppError, UnauthorizedError
 from app.core.rate_limit import rate_limit
 from app.core.response import envelope, envelope_created
@@ -91,7 +91,9 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     data = LoginResponse(
         access_token=access_token,
         expires_in=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
-        user=LoginUserInfo.model_validate(user),
+        user=LoginUserInfo.model_validate(user).model_copy(
+            update={"is_admin": is_admin_user(user)}
+        ),
     )
     response = envelope(data=data, message="Dang nhap thanh cong")
     _set_refresh_cookie(response, refresh_token)
@@ -133,4 +135,7 @@ async def logout(
 
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user)):
-    return envelope(data=MeResponse.model_validate(current_user))
+    data = MeResponse.model_validate(current_user).model_copy(
+        update={"is_admin": is_admin_user(current_user)}
+    )
+    return envelope(data=data)

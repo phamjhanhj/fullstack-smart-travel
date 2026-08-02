@@ -1,8 +1,6 @@
 """
 Entry point cua ung dung FastAPI.
-Khoi tao app, dang ky middleware CORS, exception handlers, va toan bo 32 endpoints
-duoc chia theo 7 module dung yeu cau (Auth, Users, Trips, Day Plans & Activities,
-Locations, Budget, AI Chat & Suggestions). Chat suggestions extraction prompt added.
+Khoi tao app, dang ky middleware CORS, exception handlers.
 """
 from __future__ import annotations
 

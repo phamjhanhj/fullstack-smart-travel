@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "http://localhost:4200,http://100.110.155.58:4200,http://127.0.0.1:4200"
     ALLOWED_HOSTS: str = "localhost,127.0.0.1,testserver,100.110.155.58"
 
-    ADMIN_EMAILS: str = ""
+    ADMIN_EMAILS: str = "phanh12012004@gmail.com"
 
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_AUTH_PER_MINUTE: int = 10

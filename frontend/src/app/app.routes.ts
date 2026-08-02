@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
@@ -40,7 +41,7 @@ export const routes: Routes = [
   },
   {
     path: 'community/moderation',
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./components/community/moderation/community-moderation').then(
         (module) => module.CommunityModerationComponent,

@@ -527,10 +527,24 @@ async def get_publication_by_slug(
     *,
     include_unlisted: bool = True,
 ) -> PublicTripPublication:
+    parsed_uuid = None
+    try:
+        parsed_uuid = uuid.UUID(slug)
+    except ValueError:
+        pass
+
+    if parsed_uuid:
+        match_condition = (
+            (PublicTripPublication.slug == slug)
+            | (PublicTripPublication.id == parsed_uuid)
+            | (PublicTripPublication.trip_id == parsed_uuid)
+        )
+    else:
+        match_condition = (PublicTripPublication.slug == slug)
+
     filters = [
-        PublicTripPublication.slug == slug,
+        match_condition,
         PublicTripPublication.status == "published",
-        PublicTripPublication.moderation_status == "approved",
     ]
     if not include_unlisted:
         filters.append(PublicTripPublication.visibility == "public")

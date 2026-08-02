@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom, tap, map } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
@@ -16,6 +16,7 @@ export interface UserInfo {
   email?: string | null;
   full_name: string;
   avatar_url?: string | null;
+  is_admin?: boolean;
   created_at?: string;
 }
 
@@ -36,6 +37,7 @@ export class AuthService {
   // Current logged in user details
   readonly currentUser = signal<UserInfo | null>(null);
   readonly isAuthenticated = signal<boolean>(false);
+  readonly isAdmin = computed(() => this.currentUser()?.is_admin === true);
   private readonly initialization: Promise<void>;
 
   constructor() {

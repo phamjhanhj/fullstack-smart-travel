@@ -91,6 +91,7 @@ export interface PublicTrip {
   cover_image_url: string | null;
   visibility: string;
   status: string;
+  moderation_status: string;
   duration_days: number;
   travel_month: number | null;
   travel_year: number | null;
@@ -161,6 +162,18 @@ export interface CommunityReport {
   details: string | null;
   status: 'open' | 'upheld' | 'dismissed';
   created_at: string;
+  target?: {
+    type: 'trip' | 'profile';
+    id: string;
+    title: string;
+    destination?: string | null;
+    cover_image_url?: string | null;
+    author_name?: string | null;
+    moderation_status?: string | null;
+    slug?: string | null;
+    username?: string | null;
+    avatar_url?: string | null;
+  } | null;
 }
 export interface BookingInquiry {
   id: string;
@@ -256,8 +269,19 @@ export class PublicTripService {
   listCommunityReports(status: 'open' | 'upheld' | 'dismissed' = 'open'): Observable<ResponseEnvelope<CommunityReport[]>> {
     return this.http.get<ResponseEnvelope<CommunityReport[]>>(`${this.baseUrl}/community-reports`, { params: { status } });
   }
+  getCommunityReportTrip(reportId: string): Observable<ResponseEnvelope<PublicTrip>> {
+    return this.http.get<ResponseEnvelope<PublicTrip>>(
+      `${this.baseUrl}/community-reports/${encodeURIComponent(reportId)}/publication`,
+    );
+  }
   reviewCommunityReport(reportId: string, decision: 'uphold' | 'dismiss') {
     return this.http.patch<ResponseEnvelope<{ id: string; status: string }>>(`${this.baseUrl}/community-reports/${reportId}`, { decision });
+  }
+  moderatePublication(publicationId: string, decision: 'uphold' | 'dismiss') {
+    return this.http.patch<ResponseEnvelope<{ id: string; moderation_status: string }>>(
+      `${this.baseUrl}/public-trips/${publicationId}/moderation-review`,
+      { decision },
+    );
   }
   reportTrip(publicationId: string, reason: string, details?: string) {
     return this.http.post(`${this.baseUrl}/public-trips/${publicationId}/report`, { reason, details: details || null });

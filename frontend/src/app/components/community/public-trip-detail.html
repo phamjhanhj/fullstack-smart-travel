@@ -120,7 +120,7 @@
               Yêu cầu đặt tour
             </button>
             <button
-              *ngIf="publication.author.id !== auth.currentUser()?.id"
+              *ngIf="!auth.isAdmin() && publication.author.id !== auth.currentUser()?.id"
               type="button"
               (click)="reportTrip()"
               class="px-4 py-3 rounded-xl border border-border-glass text-on-surface-variant text-sm flex items-center gap-2 hover:text-red-400 hover:border-red-500/40 transition-all"
@@ -128,6 +128,37 @@
               <span class="material-symbols-outlined text-base">flag</span>
               Báo cáo
             </button>
+
+            <!-- Admin Moderation Buttons -->
+            <ng-container *ngIf="auth.isAdmin()">
+              <button
+                *ngIf="publication.moderation_status !== 'flagged'"
+                type="button"
+                (click)="moderateTrip('uphold')"
+                class="px-5 py-3 rounded-xl border border-red-500/40 bg-red-500/15 text-red-300 font-bold text-sm flex items-center gap-2 hover:bg-red-500/25 transition-all cursor-pointer"
+              >
+                <span class="material-symbols-outlined text-base">block</span>
+                Xác nhận vi phạm & Ẩn
+              </button>
+              <button
+                *ngIf="publication.moderation_status !== 'flagged'"
+                type="button"
+                (click)="moderateTrip('dismiss')"
+                class="px-5 py-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 font-bold text-sm flex items-center gap-2 hover:bg-emerald-500/25 transition-all cursor-pointer"
+              >
+                <span class="material-symbols-outlined text-base">check_circle</span>
+                Bác bỏ báo cáo
+              </button>
+              <button
+                *ngIf="publication.moderation_status === 'flagged'"
+                type="button"
+                (click)="moderateTrip('dismiss')"
+                class="px-5 py-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 font-bold text-sm flex items-center gap-2 hover:bg-emerald-500/25 transition-all cursor-pointer"
+              >
+                <span class="material-symbols-outlined text-base">visibility</span>
+                Phục hồi & Hiển thị lại
+              </button>
+            </ng-container>
             <button
               (click)="save()"
               [disabled]="saving()"

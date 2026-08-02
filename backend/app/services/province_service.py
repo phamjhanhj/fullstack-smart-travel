@@ -37,6 +37,7 @@ CURRENT_TO_LEGACY: dict[str, tuple[str, ...]] = {
     "Đồng Tháp": ("Đồng Tháp", "Tiền Giang"),
     "Cà Mau": ("Cà Mau", "Bạc Liêu"),
     "An Giang": ("An Giang", "Kiên Giang"),
+    "Kiên Giang": ("Kiên Giang", "An Giang"),
     "Hà Nội": ("Hà Nội",),
     "Huế": ("Thừa Thiên Huế", "Huế"),
     "Quảng Ninh": ("Quảng Ninh",),

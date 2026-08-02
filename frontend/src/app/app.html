@@ -36,8 +36,26 @@
         <span>Cộng đồng</span>
         <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isCommunityPath()"></div>
       </a>
+      <a
+        *ngIf="isAdmin()"
+        routerLink="/community/moderation"
+        class="text-on-surface-variant hover:text-on-surface font-label-md transition-colors flex items-center gap-1.5 h-full relative no-underline"
+      >
+        <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+        <span>Quản trị</span>
+        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-on-surface" *ngIf="isModerationPath()"></div>
+      </a>
     </nav>
     <div class="flex items-center gap-4">
+      <a
+        *ngIf="isAdmin()"
+        routerLink="/community/moderation"
+        class="md:hidden text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center no-underline"
+        title="Kiểm duyệt cộng đồng"
+        aria-label="Kiểm duyệt cộng đồng"
+      >
+        <span class="material-symbols-outlined">admin_panel_settings</span>
+      </a>
       <!-- Theme Switcher -->
       <button (click)="toggleTheme()" class="text-on-surface-variant hover:text-on-surface transition-colors bg-transparent border-none p-0 cursor-pointer flex items-center justify-center" title="Đổi giao diện">
         <span class="material-symbols-outlined">{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</span>

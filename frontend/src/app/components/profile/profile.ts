@@ -186,15 +186,39 @@ export class UserProfileComponent implements OnInit {
   }
 
   updateInquiryStatus(item: BookingInquiry, status: 'new' | 'contacted' | 'closed'): void {
+    const previousStatus = item.status;
+    this.receivedInquiries.update(list => list.map(i => i.id === item.id ? { ...i, status } : i));
     this.publicTripService.updateBookingInquiryStatus(item.id, status).subscribe({
-      next: () => { this.successMessage.set('Đã cập nhật trạng thái yêu cầu.'); this.loadBookingInquiries(); },
-      error: error => this.errorMessage.set(error?.error?.message || 'Không thể cập nhật yêu cầu.'),
+      next: (res) => {
+        this.successMessage.set('Đã cập nhật trạng thái yêu cầu.');
+        if (res.data) {
+          this.receivedInquiries.update(list => list.map(i => i.id === item.id ? res.data : i));
+        }
+      },
+      error: error => {
+        this.receivedInquiries.update(list => list.map(i => i.id === item.id ? { ...i, status: previousStatus } : i));
+        this.errorMessage.set(apiErrorMessage(error, 'Không thể cập nhật yêu cầu.'));
+      },
     });
   }
 
   bookingStatusLabel(status: string): string {
     return status === 'new' ? 'Mới' : status === 'contacted' ? 'Đã liên hệ' : 'Đã đóng';
   }
+
+  bookingStatusClass(status: string): string {
+    switch (status) {
+      case 'new':
+        return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      case 'contacted':
+        return 'bg-sky-500/15 text-sky-400 border-sky-500/30';
+      case 'closed':
+        return 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30';
+      default:
+        return 'bg-primary/10 text-primary border-primary/30';
+    }
+  }
+
   loadSavedTabData(): void {
     this.isSavedLoading.set(true);
     forkJoin({
@@ -368,8 +392,10 @@ export class UserProfileComponent implements OnInit {
           const cachedUser: UserInfo = {
             id: updated.id,
             username: updated.username,
+            email: updated.email,
             full_name: updated.full_name,
             avatar_url: updated.avatar_url || this.fallbackAvatarUrl,
+            is_admin: updated.is_admin,
           };
           this.authService.currentUser.set(cachedUser);
           sessionStorage.setItem('user_info', JSON.stringify(cachedUser));

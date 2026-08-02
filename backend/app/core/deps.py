@@ -117,8 +117,11 @@ async def get_trip_owner_access(
     return await trip_share_service.get_owned_trip_or_404(db, trip_id, current_user.id)
 
 
+def is_admin_user(user: User) -> bool:
+    return bool(user.email and user.email.lower() in settings.admin_email_set)
+
+
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    admin_emails = settings.admin_email_set
-    if not admin_emails or (current_user.email or "").lower() not in admin_emails:
+    if not is_admin_user(current_user):
         raise ForbiddenError("Ban khong co quyen truy cap chuc nang quan tri")
     return current_user

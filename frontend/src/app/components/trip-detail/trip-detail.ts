@@ -316,6 +316,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   readonly historyPage = signal<number>(1);
   readonly historyTotal = signal<number>(0);
   readonly historyLimit = 30;
+  readonly highlightedActivityId = signal<string | null>(null);
 
   // Explore Tab State Signals
   readonly exploreLocations = signal<LocationResponse[]>([]);
@@ -1510,6 +1511,88 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   getHistoryActorInitials(item: TripHistoryEvent): string {
     const name = this.getHistoryActorName(item).trim();
     return name ? name.substring(0, 2).toUpperCase() : 'HT';
+  }
+
+  navigateToHistoryTarget(item: TripHistoryEvent): void {
+    if (!item) return;
+    const meta = item.metadata || {};
+    const entityType = (item.entity_type || '').toLowerCase();
+    const entityId = item.entity_id;
+
+    // 1. Budget items (check before activity to avoid truthy entityId condition)
+    if (
+      entityType === 'budget' ||
+      entityType === 'budget_item' ||
+      meta['budget_item_id'] ||
+      meta['category']
+    ) {
+      this.activeSubTab.set('budget');
+      return;
+    }
+
+    // 2. Activity events
+    if (
+      entityType === 'activity' ||
+      meta['activity_id'] ||
+      meta['day_id'] ||
+      meta['day_number']
+    ) {
+      const activityId = meta['activity_id'] || (entityType === 'activity' ? entityId : null);
+      const dayId = meta['day_id'];
+      const dayNumber = meta['day_number'];
+
+      // Switch to itinerary sub-tab
+      this.activeSubTab.set('itinerary');
+
+      // Find matching day in current trip days
+      const daysList = this.days();
+      let targetDayIdx = -1;
+
+      if (dayId) {
+        targetDayIdx = daysList.findIndex((d) => d.id === dayId);
+      } else if (dayNumber) {
+        targetDayIdx = daysList.findIndex((d) => d.day_number === Number(dayNumber));
+      } else if (activityId) {
+        targetDayIdx = daysList.findIndex((d) => (d.activities || []).some((a) => a.id === activityId));
+      }
+
+      if (targetDayIdx >= 0) {
+        this.selectDayTab(targetDayIdx);
+        this.routeDayIndex.set(targetDayIdx);
+      }
+
+      // Smooth scroll to target activity card and highlight it
+      if (activityId) {
+        setTimeout(() => {
+          const el = document.getElementById(`activity-card-${activityId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            this.highlightedActivityId.set(activityId);
+            setTimeout(() => {
+              if (this.highlightedActivityId() === activityId) {
+                this.highlightedActivityId.set(null);
+              }
+            }, 2500);
+          }
+        }, 150);
+      }
+      return;
+    }
+
+    // 3. Settings / Participants / Shares / Publications
+    if (
+      entityType === 'trip' ||
+      entityType === 'participant' ||
+      entityType === 'share' ||
+      entityType === 'share_invite' ||
+      entityType === 'publication'
+    ) {
+      this.activeSubTab.set('settings');
+      return;
+    }
+
+    // Default fallback
+    this.activeSubTab.set('itinerary');
   }
 
   private buildGeneratePayload(): GenerateDaysRequest {

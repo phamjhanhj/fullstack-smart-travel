@@ -18,6 +18,7 @@ export interface UserProfileResponse {
   email?: string | null;
   full_name: string;
   avatar_url: string | null;
+  is_admin: boolean;
   preferences_json: UserPreferences | null;
   is_public_profile: boolean;
   accepts_tour_bookings: boolean;
